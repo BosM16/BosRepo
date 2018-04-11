@@ -1,6 +1,7 @@
 # BosRepo
 
-<img src='https://g.gravizo.com/svg?
+<img src='https://g.gravizo.com/svg?;
+
 @startuml;
 
 participant "Bridge" as A;
