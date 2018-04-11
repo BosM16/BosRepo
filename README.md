@@ -4,7 +4,7 @@
 <details>
 <summary></summary>
 
-@startuml;
+<!-- @startuml; -->
 
 participant "First Class" as A;
 participant "Second Class" as B;
@@ -21,6 +21,6 @@ B -> A: Request Created;
 deactivate B;
 A -> User: Done;
 deactivate A;
-@enduml
+<!-- @enduml -->
 
 </details>
