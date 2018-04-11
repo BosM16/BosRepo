@@ -1,9 +1,10 @@
 # BosRepo
 
-<img src='https://g.gravizo.com/svg?;
+![Alt text](https://g.gravizo.com/svg?
 
 @startuml;
 
+actor User;
 participant "Bridge" as A;
 participant "Motionplanner" as B;
 participant "ObstDetect" as C;
@@ -22,3 +23,5 @@ Deactivate A;
 @enduml;
 
 '>
+
+)
