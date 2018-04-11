@@ -1,6 +1,6 @@
 # BosRepo
 
-![Alt text](https://g.gravizo.com/source/custom_mark_bos?)
+![Alt text](https://g.gravizo.com/svg?)
 <details>
 <summary></summary>
 
