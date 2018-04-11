@@ -4,23 +4,23 @@
 <details>
 <summary></summary>
 
-<!-- @startuml; -->
+@startuml;
 
-participant "First Class" as A;
-participant "Second Class" as B;
-participant "Last Class" as C;
-User -> A: DoWork;
+participant "Bridge" as A;
+participant "Motionplanner" as B;
+participant "ObstDetect" as C;
+
+User -> A: INIT - req:global_costmap;
 activate A;
-A -> B: Create Request;
-activate B;
-B -> C: DoWork;
+A -> C: process_global_costmap/req: global_costmap;
 activate C;
-C -> B: WorkDone;
-destroy C;
-B -> A: Request Created;
+C -> A: resp: basic shapes room, static obstacles;
+A -> B: room, static obstacles;
+activate B;
 deactivate B;
-A -> User: Done;
-deactivate A;
-<!-- @enduml -->
+A -> User: Resp: None
+Deactivate A
+
+@enduml
 
 </details>
