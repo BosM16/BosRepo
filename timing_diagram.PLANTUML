@@ -52,7 +52,6 @@ B -> C: Req: (topic)/trigger-DynObst;
 activate C;
 C --> B: Speed_cmd;
 deactivate C;
-B ->: (topic)/position;
 B --> A: Resp: cmd_vel;
 deactivate B;
 <- A: cmd_vel;
