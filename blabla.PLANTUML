@@ -13,12 +13,12 @@ A -> B: Req: Init, Costmap;
 activate B;
 B -> D: Req: global_costmap;
 activate D;
-D -> B: Resp: BasicShape;
+D --> B: Resp: BasicShape;
 deactivate D;
 activate C;
 B -> C: Room, obst;
 deactivate C
-B -> A: Resp: None;
+B --> A: Resp: None;
 deactivate B;
 deactivate A;
 
@@ -36,14 +36,14 @@ deactivate A;
 activate A;
 A -> B: Req: CurrentState(T,t);
 activate D;
-D -> B: (topic)/DynObst;
+D --> B: (topic)/DynObst;
 deactivate D;
 B -> C: Req: (topic)/trigger-DynObst;
 activate C;
-C -> B: Speed_cmd;
+C --> B: Speed_cmd;
 deactivate C;
 B -> User: (topic)/position;
-B -> A: Resp: cmd_vel;
+B --> A: Resp: cmd_vel;
 A -> User: cmd_vel;
 deactivate A;
 
