@@ -8,8 +8,8 @@ participant "Motionplanner" as C;
 participant "Obstacle_detect" as D;
 
 -> A: Room, StatObst, Global_Costmap;
-note left: InitPlanner
 activate A;
+note left: InitPlanner
 A -> B: Req: Init, Costmap;
 activate B;
 B -> D: Req: global_costmap;
@@ -48,7 +48,6 @@ deactivate B;
 <- A: cmd_vel;
 deactivate A;
 A -> A: RATE
-
 @enduml
 custom_mark13
  }
