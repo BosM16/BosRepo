@@ -6,6 +6,7 @@ participant "Local_Planner" as A;
 participant "Bridge" as B;
 participant "Motionplanner" as C;
 participant "Obstacle_detect" as D;
+
 User -> A: Room, StatObst, Global_Costmap;
 activate A;
 A -> B: Req: Init, Costmap;
@@ -21,7 +22,7 @@ B -> A: Resp: None;
 deactivate B;
 deactivate A;
 
-
+actor User;
 User -> A: Global_Plan;
 activate A;
 A -> B: Req: Path;
