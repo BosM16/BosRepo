@@ -22,7 +22,6 @@ B --> A: Resp: None;
 deactivate B;
 deactivate A;
 
-actor User;
 User -> A: Global_Plan;
 activate A;
 A -> B: Req: Path;
