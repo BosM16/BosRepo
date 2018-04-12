@@ -1,7 +1,6 @@
 <img src='https://g.gravizo.com/svg?
 custom_mark13
 @startuml;
-
 participant "Local_Planner" as A;
 participant "Bridge" as B;
 participant "Motionplanner" as C;
@@ -9,7 +8,7 @@ participant "Obstacle_detect" as D;
 
 -> A: Room, StatObst, Global_Costmap;
 activate A;
-note left: InitPlanner
+note left: InitPlanner;
 A -> B: Req: Init, Costmap;
 activate B;
 B -> D: Req: global_costmap;
@@ -18,20 +17,20 @@ D --> B: Resp: BasicShape;
 deactivate D;
 activate C;
 B -> C: Room, obst;
-deactivate C
+deactivate C;
 B --> A: Resp: None;
 deactivate B;
 deactivate A;
 
 -> A: Global_Plan;
-note left: ConfigPlanner
+note left: ConfigPlanner;
 activate A;
 A -> B: Req: Path;
 activate B;
-B -> C: goal (next waypoint)
-note over C: (topic)/trigger
+B -> C: goal (next waypoint);
+note over C: (topic)/trigger;
 deactivate A;
-A -> A: RATE
+A -> A: RATE;
 deactivate B;
 
 activate A;
@@ -47,7 +46,7 @@ B --> A: Resp: cmd_vel;
 deactivate B;
 <- A: cmd_vel;
 deactivate A;
-A -> A: RATE
+A -> A: RATE;
 @enduml
 custom_mark13
  }
