@@ -24,7 +24,7 @@ B --> A: Resp: None;
 deactivate B;
 deactivate A;
 
--#red> A: Loop 1
+-[#red]> A: Loop 1
 -> A: Global_Plan;
 note left: ConfigPlanner;
 activate A;
@@ -57,7 +57,7 @@ deactivate B;
 <- A: cmd_vel;
 deactivate A;
 <[#0000FF]- A: Loop 2
-<#red- A: Loop 1
+<[]#red]- A: Loop 1
 
 @enduml
 custom_mark13
