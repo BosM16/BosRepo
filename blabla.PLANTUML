@@ -1,6 +1,7 @@
 <img src='https://g.gravizo.com/svg?
 custom_mark13
 @startuml;
+
 participant "Local_Planner" as A;
 participant "Bridge" as B;
 participant "Motionplanner" as C;
@@ -22,6 +23,7 @@ B --> A: Resp: None;
 deactivate B;
 deactivate A;
 
+-> A: Loop 1
 -> A: Global_Plan;
 note left: ConfigPlanner;
 activate A;
@@ -30,9 +32,9 @@ activate B;
 B -> C: goal (next waypoint);
 note over C: (topic)/trigger;
 deactivate A;
-A -> A: RATE;
 deactivate B;
 
+-> A: Loop 2
 activate A;
 A -> B: Req: CurrentState(T,t);
 activate B;
@@ -49,7 +51,8 @@ B --> A: Resp: cmd_vel;
 deactivate B;
 <- A: cmd_vel;
 deactivate A;
-A -> A: RATE;
+<- A: Loop 2
+<- A: Loop 1
 
 @enduml;
 custom_mark13
