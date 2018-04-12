@@ -22,7 +22,6 @@ deactivate B;
 
 
 User -> A: Global_Plan;
-activate A;
 A -> B: Req: Path;
 activate B;
 B -> C: (topic)/trigger;
