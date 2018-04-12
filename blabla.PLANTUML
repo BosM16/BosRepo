@@ -29,6 +29,7 @@ activate B;
 B -> C: (topic)/trigger;
 B -> C: goal (next waypoint);
 deactivate B;
+deactivate A;
 
 @enduml
 custom_mark13
