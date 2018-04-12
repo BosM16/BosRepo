@@ -1,6 +1,6 @@
 # BosRepo
 
-![Alt text](https://github.com/BosMathias/BosRepo/blob/master/new.dot)
+![Alt text](https://github.com/BosMathias/BosRepo/blob/master/blabla.dot)
 <details>
 <summary></summary>
 
