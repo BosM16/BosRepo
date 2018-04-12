@@ -2,21 +2,48 @@
 custom_mark13
 @startuml;
 actor User;
-participant "First Class" as A;
-participant "Second Class" as B;
-participant "Last Class" as C;
-User -> A: DoWork;
+participant "Local_Planner" as A;
+participant "Bridge" as B;
+participant "Motionplanner" as C;
+participant "Obstacle_detect" as D;
+User -> A: Room, StatObst, Global_Costmap;
 activate A;
-A -> B: Create Request;
+A -> B: Req: Init, Costmap;
 activate B;
-B -> C: DoWork;
+B -> D: Req: global_costmap;
+activate D;
+D -> B: Resp: BasicShape;
+deactivate D;
 activate C;
-C -> B: WorkDone;
-destroy C;
-B -> A: Request Created;
+B -> C: Room, obst;
+deactivate C
+B -> A: Resp: None;
 deactivate B;
-A -> User: Done;
 deactivate A;
+
+User -> A: Global_Plan;
+activate A;
+A -> B: Req: Path;
+activate B;
+B -> C: (topic)/trigger;
+B -> C: goal (next waypoint);
+deactivate B;
+deactivate A;
+
+activate A;
+A -> B: Req: CurrentState(T,t);
+activate D;
+D -> B: (topic)/DynObst;
+deactivate D;
+B -> C: Req: (topic)/trigger-DynObst;
+activate C;
+C -> B: Speed_cmd;
+deactivate C;
+B -> : (topic)/position;
+B -> A: Resp: cmd_vel;
+A -> User: cmd_vel;
+deactivate A;
+
 @enduml
 custom_mark13
  }
