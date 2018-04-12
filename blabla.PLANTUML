@@ -32,6 +32,21 @@ B -> C: goal (next waypoint);
 deactivate B;
 deactivate A;
 
+
+activate A;
+A -> B: Req: CurrentState(T,t);
+activate D;
+D -> B: (topic)/DynObst;
+deactivate D;
+B -> C: Req: (topic)/trigger-DynObst;
+activate C;
+C -> B: Speed_cmd;
+deactivate C;
+B -> User: (topic)/position;
+B -> A: Resp: cmd_vel;
+A -> User: cmd_vel;
+deactivate A;
+
 @enduml
 custom_mark13
  }
