@@ -29,10 +29,10 @@ A -> B: Req: Path;
 activate B;
 B -> C: goal (next waypoint)
 note over C: (topic)/trigger
-deactivate A;
+destroy A;
 deactivate B;
 
-
+activate A;
 A -> B: Req: CurrentState(T,t);
 activate B;
 D --> B: (topic)/DynObst;
