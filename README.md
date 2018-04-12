@@ -1,6 +1,6 @@
 # BosRepo
 
-![Alt text](https://github.com/BosMathias/BosRepo/blob/master/blabla.PLANTUML)
+![Alt text](https://github.com/BosMathias/BosRepo/blob/master/new.txt)
 <details>
 <summary></summary>
 bla
