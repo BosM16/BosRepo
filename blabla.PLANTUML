@@ -16,8 +16,9 @@ B -> D: Req: global_costmap;
 activate D;
 D --> B: Resp: BasicShape;
 deactivate D;
-activate C;
 B -> C: Room, obst;
+activate C;
+C --> B: Ready
 deactivate C;
 B --> A: Resp: None;
 deactivate B;
@@ -30,18 +31,22 @@ activate A;
 A -> B: Req: Path;
 activate B;
 B -> C: goal (next waypoint);
-note over C: (topic)/trigger;
+activate C;
+C --> B: Robottrajectory / vel_traj & x & y traj: means ready
+note left: (topic)/trigger;
 deactivate A;
 deactivate B;
 
--> A: Loop 2
+-> A: <color purple>Loop 1</color>
 activate A;
 A -> B: Req: CurrentState(T,t);
 activate B;
+D->: Loop 3
 D<-: Local Costmap
 activate D;
 D --> B: (topic)/DynObst;
 deactivate D;
+D <-: Loop 3
 B -> C: Req: (topic)/trigger-DynObst;
 activate C;
 C --> B: Speed_cmd;
@@ -52,7 +57,7 @@ deactivate B;
 <- A: cmd_vel;
 deactivate A;
 <- A: Loop 2
-<- A: Loop 1
+<- A: <color purple>Loop 1</color>
 
 @enduml;
 custom_mark13
