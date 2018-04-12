@@ -32,7 +32,7 @@ note over C: (topic)/trigger
 destroy A;
 deactivate B;
 
-activate A;
+
 A -> B: Req: CurrentState(T,t);
 activate B;
 D --> B: (topic)/DynObst;
