@@ -36,7 +36,10 @@ deactivate B;
 activate A;
 A -> B: Req: CurrentState(T,t);
 activate B;
+D<-: Local Costmap
+activate D;
 D --> B: (topic)/DynObst;
+deactivate D;
 B -> C: Req: (topic)/trigger-DynObst;
 activate C;
 C --> B: Speed_cmd;
@@ -47,7 +50,8 @@ deactivate B;
 <- A: cmd_vel;
 deactivate A;
 A -> A: RATE;
-@enduml
+
+@enduml;
 custom_mark13
  }
 '/>
