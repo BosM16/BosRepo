@@ -31,8 +31,9 @@ A -> B: Req: Path;
 activate B;
 B -> C: goal (next waypoint)
 note over C: (topic)/trigger
+end note
 deactivate A;
-A->A: RATE
+A -> A: RATE
 deactivate B;
 
 activate A;
