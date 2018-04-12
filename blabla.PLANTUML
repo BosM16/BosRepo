@@ -7,7 +7,7 @@ participant "Bridge" as B;
 participant "Motionplanner" as C;
 participant "Obstacle_detect" as D;
 
-[ -> A: Room, StatObst, Global_Costmap;
+[-> A: Room, StatObst, Global_Costmap;
 activate A;
 A -> B: Req: Init, Costmap;
 activate B;
@@ -22,7 +22,7 @@ B --> A: Resp: None;
 deactivate B;
 deactivate A;
 
-[ -> A: Global_Plan;
+[-> A: Global_Plan;
 activate A;
 A -> B: Req: Path;
 activate B;
@@ -40,7 +40,7 @@ B -> C: Req: (topic)/trigger-DynObst;
 activate C;
 C --> B: Speed_cmd;
 deactivate C;
-B -> ]: (topic)/position;
+B ->]: (topic)/position;
 B --> A: Resp: cmd_vel;
 deactivate B;
 A -> User: cmd_vel;
