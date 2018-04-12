@@ -2,7 +2,6 @@
 custom_mark13
 @startuml;
 
-participant "Loop"
 participant "Local_Planner" as A;
 participant "Bridge" as B;
 participant "Motionplanner" as C;
@@ -31,7 +30,6 @@ A -> B: Req: Path;
 activate B;
 B -> C: goal (next waypoint)
 note over C: (topic)/trigger
-end note
 deactivate A;
 A -> A: RATE
 deactivate B;
