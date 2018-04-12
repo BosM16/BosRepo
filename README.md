@@ -3,7 +3,7 @@
 ![Alt text](https://github.com/BosMathias/BosRepo/blob/master/README.md)
 <details>
 <summary></summary>
-custom_mark13
+
 @startuml;
 actor User;
 participant "AANPASSING" as A;
@@ -22,5 +22,5 @@ deactivate B;
 A -> User: Done;
 deactivate A;
 @enduml
-custom_mark13
+
 </details>
