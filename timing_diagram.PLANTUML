@@ -1,0 +1,30 @@
+<img src='https://g.gravizo.com/svg?
+custom_mark13
+@startuml;
+
+participant "Local_Planner" as A;
+participant "Bridge" as B;
+participant "Motionplanner" as C;
+participant "Obstacle_detect" as D;
+
+-> A: Room, StatObst, Global_Costmap;
+activate A;
+note left: InitPlanner;
+A -> B: Req: Init, Costmap;
+activate B;
+B -> D: Req: global_costmap;
+activate D;
+D --> B: Resp: BasicShape;
+deactivate D;
+B -> C: Room, obst;
+activate C;
+C --> B: Ready
+deactivate C;
+B --> A: Resp: None;
+deactivate B;
+deactivate A;
+
+@enduml
+custom_mark13
+ }
+'/>
