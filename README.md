@@ -6,7 +6,7 @@
 custom_mark13
 @startuml;
 actor User;
-participant "First Class" as A;
+participant "Aanpassing" as A;
 participant "Second Class" as B;
 participant "Last Class" as C;
 User -> A: DoWork;
