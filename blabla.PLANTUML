@@ -21,6 +21,15 @@ B -> A: Resp: None;
 deactivate B;
 deactivate A;
 
+
+User -> A: Global_Plan;
+activate A;
+A -> B: Req: Path;
+activate B;
+B -> C: (topic)/trigger;
+B -> C: goal (next waypoint);
+deactivate B;
+
 @enduml
 custom_mark13
  }
