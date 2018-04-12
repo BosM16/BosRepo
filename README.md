@@ -1,6 +1,6 @@
 # BosRepo
 
-![Alt text](https://g.gravizo.com/source/custom_mark13?https%3A%2F%2Fraw.githubusercontent.com%2FTLmaK0%2Fgravizo%2Fmaster%2FREADME.md?1)
+![Alt text](https://github.com/BosMathias/BosRepo/blob/master/README.md)
 <details>
 <summary></summary>
 custom_mark13
