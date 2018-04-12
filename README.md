@@ -1,6 +1,6 @@
 # BosRepo
 
-![Alt text](https://github.com/BosMathias/BosRepo/blob/master/README.md)
+![Alt text](https://github.com/BosMathias/BosRepo/blob/master/new)
 <details>
 <summary></summary>
 
