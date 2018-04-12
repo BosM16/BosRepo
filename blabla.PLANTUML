@@ -41,8 +41,8 @@ B -> C: Req: (topic)/trigger-DynObst;
 activate C;
 C --> B: Speed_cmd;
 deactivate C;
-B -> User: (topic)/position;
 B --> A: Resp: cmd_vel;
+deactivate B;
 A -> User: cmd_vel;
 deactivate A;
 
