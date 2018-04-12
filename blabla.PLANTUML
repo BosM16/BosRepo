@@ -30,10 +30,10 @@ activate B;
 B -> C: (topic)/trigger;
 B -> C: goal (next waypoint);
 deactivate B;
-deactivate A;
 
 
-activate A;
+
+
 A -> B: Req: CurrentState(T,t);
 activate D;
 D --> B: (topic)/DynObst;
