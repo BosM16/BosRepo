@@ -24,6 +24,20 @@ B --> A: Resp: None;
 deactivate B;
 deactivate A;
 
+-[#red]> A: Loop 1
+-> A: Global_Plan;
+note left: ConfigPlanner;
+activate A;
+A -> B: Req: Path;
+activate B;
+B -> C: goal (next waypoint);
+activate C;
+C --> B: Robottrajectory / vel_traj & x & y traj: means ready
+deactivate C;
+note left: (topic)/trigger;
+deactivate A;
+deactivate B;
+
 @enduml
 custom_mark13
  }
