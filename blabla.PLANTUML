@@ -32,12 +32,11 @@ B -> C: goal (next waypoint);
 deactivate B;
 
 
-
-
 A -> B: Req: CurrentState(T,t);
 activate D;
 D --> B: (topic)/DynObst;
 deactivate D;
+activate B;
 B -> C: Req: (topic)/trigger-DynObst;
 activate C;
 C --> B: Speed_cmd;
