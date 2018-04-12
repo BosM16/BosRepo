@@ -1,7 +1,7 @@
 <img src='https://g.gravizo.com/svg?
 custom_mark13
 @startuml;
-actor User;
+participant User;
 participant "Local_Planner" as A;
 participant "Bridge" as B;
 participant "Motionplanner" as C;
