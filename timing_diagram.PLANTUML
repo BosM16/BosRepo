@@ -42,12 +42,12 @@ deactivate B;
 activate A;
 A -> B: Req: CurrentState(T,t);
 activate B;
-D-[#green]>: Loop 3
+D <-[#green]: Loop 3
 D<-: Local Costmap
 activate D;
 D --> B: (topic)/DynObst;
 deactivate D;
-D <[#green]-: Loop 3
+D [#green]->: Loop 3
 B -> C: Req: (topic)/trigger-DynObst;
 activate C;
 C --> B: Speed_cmd;
