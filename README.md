@@ -1,9 +1,8 @@
 # BosRepo
 
-![Alt text](https://github.com/BosMathias/BosRepo/blob/master/blabla.PLANTUML)
+![Alt text](https//github.com/BosMathias/BosRepo/master/README.md)
 <details>
 <summary></summary>
-<!-- custom_mark13
 @startuml;
 actor User;
 participant "First Class" as A;
@@ -22,5 +21,4 @@ deactivate B;
 A -> User: Done;
 deactivate A;
 @enduml
-custom_mark13 -->
 </details>
