@@ -33,9 +33,9 @@ activate B;
 B -> C: goal (next waypoint);
 activate C;
 C --> B: Robottrajectory / vel_traj & x & y traj: means ready
+note right: (topic)/trigger;
 B --> A: Ready (srv response 'planned')
 deactivate C;
-note left: (topic)/trigger;
 deactivate A;
 deactivate B;
 
