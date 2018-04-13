@@ -7,7 +7,7 @@ participant "Bridge" as B;
 participant "Motionplanner" as C;
 participant "Obstacle_detect" as D;
 
--> A: Room, StatObst, Global_Costmap;
+-> A: Global_Costmap;
 activate A;
 note left: InitPlanner;
 A -> B: Req: Init, Costmap;
