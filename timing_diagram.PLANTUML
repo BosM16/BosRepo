@@ -48,7 +48,9 @@ activate B;
 B -> A: Resp: Goal Reached (y/n);
 deactivate B;
 deactivate A;
+<- A: Goal Reached (y/n)
 
+-> A: Goal not reached
 activate A;
 A -> B: Req: Current State;
 note left: ComputeVelCommand (service)
