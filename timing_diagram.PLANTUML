@@ -16,7 +16,6 @@ B -> D: Req: Global Costmap;
 activate D;
 D --> B: Resp: Room, Static Obstacles;
 deactivate D;
-note left: Settings (topic)
 B -> C: Room, Static Obstacles;
 activate C;
 C --> B: Ready;
@@ -33,7 +32,6 @@ A -> B: Req: Global Plan;
 activate B;
 B -> C: Goal (next waypoint)
 activate C;
-note left: Trigger (topic);
 C --> B: Velocity & Pose Trajectory (x & y);
 B --> A: Resp: Planning Ready;
 deactivate C;
@@ -52,14 +50,14 @@ deactivate A;
 
 -> A: Goal not reached
 activate A;
-A -> B: Req: Current State;
 note left: ComputeVelCommand (service)
+A -> B: Req: Current State;
 activate B;
 D <[#green]-: Loop 3
 D<-: Local Costmap;
 activate D;
 note left: DynObst (topic);
-D --> B: 
+D --> B: Dynamic Obstacle;
 deactivate D;
 D -[#green]>: Loop 3
 B -> C: Dynamic Obstacles;
