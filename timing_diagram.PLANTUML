@@ -12,6 +12,7 @@ activate A;
 note left: InitPlanner (service);
 A -> B: Req: Global Costmap;
 activate B;
+note left: GlobalCostmapPass (service);
 B -> D: Req: Global Costmap;
 activate D;
 D --> B: Resp: Room, Static Obstacles;
