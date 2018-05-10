@@ -45,8 +45,8 @@ A -> B: Req: Goal Reached ;
 activate B;
 B -> A: Resp: Goal Reached (y/n);
 deactivate B;
-deactivate A;
 <- A: Goal Reached (y/n)
+deactivate A;
 
 -> A: Goal not reached
 activate A;
@@ -56,7 +56,6 @@ activate B;
 D <[#green]-: Loop 3
 D<-: Local Costmap;
 activate D;
-note left: DynObst (topic);
 D --> B: Dynamic Obstacle;
 deactivate D;
 D -[#green]>: Loop 3
