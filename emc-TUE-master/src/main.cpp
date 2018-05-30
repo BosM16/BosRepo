@@ -13,6 +13,8 @@ int main() {
     cp.control_increment_x = 0.02; // in [m/s]
     cp.control_increment_y = 0.03; // in [m/s]
     cp.contol_increment_angle = 2 * (2 * PI) / 360; //in [rad]
+    cp.K_y = 1.0;
+    cp.K_theta = 1.0;
 
     //Initialize perception Perception_Parameters
     Perception_Parameters_Drive_Towards_Wall pp;
