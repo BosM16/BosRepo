@@ -48,6 +48,8 @@ typedef struct Control_Parameters_Follow_Wall {
     float control_increment_x; // needed for drive towards wall
     float control_increment_y;
     float contol_increment_angle;
+    float K_y;
+    float K_theta;
 } Control_Parameters_Follow_Wall;
 
 typedef struct Perception_Parameters_Drive_Towards_Wall {
