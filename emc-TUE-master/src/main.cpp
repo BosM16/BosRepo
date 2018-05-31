@@ -35,8 +35,10 @@ int main() {
     WM_state wm;
 
     Distance_Measurement dist_meas;
+    Wall_Follow_Angle_Error wall_follow_angle_error;
     std::vector<float> distances;
     wm.dist_meas = &dist_meas;
+    wm.wall_follow_angle_error = &wall_follow_angle_error;
     dist_meas.distances = &distances;
     dist_meas.forward_distance_measured = 0;
     dist_meas.forward_distance_measured = 0; // ??
