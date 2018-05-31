@@ -170,8 +170,8 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
         for (int i = rob->pp->int_left_side[0]; i < rob->pp->int_left_side[1]; i++) {
           Point datapoint;
           // Transformation from polar coordinates (laser scan data) to cartesian.
-          datapoint.x = &(*(wm->dist_meas)->distances)[i]*std::cos(current_angle);
-          datapoint.y = &(*(wm->dist_meas)->distances)[i]*std::sin(current_angle);
+          datapoint.x = *(wm->dist_meas)->distances[i]*std::cos(current_angle);
+          datapoint.y = *(wm->dist_meas)->distances[i]*std::sin(current_angle);
 
           datapoints.push_back(datapoint)
 
@@ -207,8 +207,8 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
         for (int i = rob->pp->int_right_side[0]; i < rob->pp->int_right_side[1]; i++) {
           Point datapoint;
           // Transformation from polar coordinates (laser scan data) to cartesian.
-          datapoint.x = &(*(wm->dist_meas)->distances)[i]*std::cos(current_angle);
-          datapoint.y = &(*(wm->dist_meas)->distances)[i]*std::sin(current_angle);
+          datapoint.x = *(wm->dist_meas)->distances[i]*std::cos(current_angle);
+          datapoint.y = *(wm->dist_meas)->distances[i]*std::sin(current_angle);
 
           datapoints.push_back(datapoint)
 
