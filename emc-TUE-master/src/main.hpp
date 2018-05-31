@@ -77,6 +77,7 @@ typedef struct Distance_Measurement {
 
 typedef struct WM_state {
     Distance_Measurement *dist_meas;
+    Wall_Follow_Angle_Error *wall_follow_angle_error;
 } WM_state;
 
 typedef struct Desired_Robot_State {
