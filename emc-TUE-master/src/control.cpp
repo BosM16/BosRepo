@@ -14,7 +14,7 @@ bool control_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
     // Vergelijk status met tube
     if (std::abs(wall_follow_error > rob->cp->tolerance_on_desired_distance)) {
         // if measured min distance is larger than tolerance, give it positive motion in y direction
-        // dit is vervangen door P-controller:
+        // ADDITION: dit is vervangen door P-controller:
         // rob->desired_robot_state->vy += rob->cp->control_increment_y;
 
         rob->desired_robot_state->vy = rob->cp->K_y * wall_follow_error;
@@ -33,7 +33,7 @@ bool control_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
     float wall_follow_angle_error = wm->orientation_relative_to_wall;
 
     rob->desired_robot_state->vtheta = rob->cp->K_theta * wall_follow_angle_error;
-
+    // END Addition
 
     // Vervangen code:
     // if (wm->dist_meas->forward_distance_measured * std::cos(rob->cp->angle_between_min_distance_and_forward_check) -

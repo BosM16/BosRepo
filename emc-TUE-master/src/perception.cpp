@@ -159,7 +159,8 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
                                               &rob->pp->int_left_forward, &result_forward);
 
         // ADDITION software task
-        // Make a cartesian version of every data point wrt the robot frame and
+
+        // 1) Make a cartesian version of every data point wrt the robot frame and
         // put the points in a vector.
 
         // Initialize angle to iterate over interval.
@@ -177,8 +178,8 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
           current_angle -= rob->scan.angle_increment;
         }
 
-        // Calculate a linear function least squares fit through the data points.
-        // From the slope, extract an estimate of the orientation.
+        // 2) Calculate a linear function least squares fit through the data points.
+        // 3) From the slope, extract an estimate of the orientation.
         Line line
         wall = fit_line(datapoints, &line);
 
