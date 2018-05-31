@@ -30,7 +30,7 @@ bool control_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
 
 
     // controle op de orientatie
-    float wall_follow_angle_error = orientation_relative_to_wall;
+    float wall_follow_angle_error = wm->orientation_relative_to_wall;
 
     rob->desired_robot_state->vtheta = rob->cp->K_theta * wall_follow_angle_error;
 
