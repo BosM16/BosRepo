@@ -39,7 +39,7 @@ int main() {
     wm.dist_meas = &dist_meas;
     dist_meas.distances = &distances;
     dist_meas.forward_distance_measured = 0;
-    dist_meas.forward_distance_measured = 0;
+    dist_meas.forward_distance_measured = 0; // ??
 
     // Initialization of event queue
     Event_Queue eq;
@@ -49,7 +49,7 @@ int main() {
 
     // Initialization of robot motion state
     Desired_Robot_State desired_robot_state;
-    desired_robot_state.vx = 0; 
+    desired_robot_state.vx = 0;
     desired_robot_state.vy = 0;
     desired_robot_state.vtheta = 0;
 
