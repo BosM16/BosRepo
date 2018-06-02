@@ -236,6 +236,46 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
     return true;
 }
 
+//TODO added
+bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state *wm){
+    float angle = rob->pp->corner_search_angle; //angle defined relative to front neg value expected
+    float Ts = rob->pp->Ts;
+    float fc = rob->pp->fc;
+    float [3] x = rob->pp->previous_meas;
+    float [3] y = rob->pp->previous_filtered_meas;
+    float Ts = rob->pp->Ts;
+    float fc = rob->pp->fc;
+
+    //shift the values in the array
+    for(i=x.size()-2,i>=0,i--){
+      x[i] = x[i+1];
+    }
+    for(i=y.size()-2,i>=0,i--){
+      y[i] = y[i+1];
+    }
+
+    //take the right measurement
+    float alpha = wm->orientation_relative_to_wall;
+    float beta = wm->dist_meas->angle_min_distance_measured;
+    float D = wm->dist_meas->min_distance_measured;
+    float measurement = (*(wm->dist_meas)->distances)[ -rob->scan.angle_min
+                                                      /rob->scan.angle_increment]
+    x[3] = measurement-D/cos(beta-alpha);
+
+    //do the filtering, based on butterworth filter -> discretised w bilinear transform (see wiki)
+    float K = 2/Ts;
+    float wc = 2*pi*fc;
+
+    float A = pow(K, 2) + sqrt(2)*wc*K + pow(wc, 2);
+    float B = 2*pow(wc, 2) - 2*pow(K, 2);
+    float C = pow(K, 2) - sqrt(2)*wc*K + pow(wc, 2);
+
+    y[2] = 1/A * x[2] - 2*pow(K, 2)/A * x[1] +pow(K,2)/A * x[0] \
+           - B/A * y[1] - C/A * y[0];
+
+    return true;
+}
+
 bool perception(struct ROB_state *rob, struct WM_state *wm) {
     // Check helper.h for helper functions for constructing the world model
 
@@ -253,7 +293,7 @@ bool perception(struct ROB_state *rob, struct WM_state *wm) {
         }
 
         if (rob->FSM_state == FOLLOW_WALL) {
-            if (!perception_follow_wall(rob, wm))
+            if (!perception_follow_wall(rob, wm) && !filtered_error_measurement_at_angle(rob, wm))
                 return false;
         }
 

@@ -26,6 +26,12 @@ int main() {
     pp.int_left_forward = Interval(0,0);
     pp.int_right_forward = Interval(0,0);
 
+    //TODO added for filtered_error_measurement_at_angle
+    pp.corner_search_angle = PI/4; //angle defined relative to front neg value expected
+    pp.previous_meas = {0,0,0};
+    pp.previous_filtered_meas = {0,0,0};
+    pp.Ts = 0.01; // [s]
+    pp.fc = 10; // [Hz]
 
     //Initialize perception Perception_Parameters
     Monitor_Parameters_Drive_Towards_Wall mp;

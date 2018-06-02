@@ -59,9 +59,16 @@ typedef struct Perception_Parameters_Drive_Towards_Wall {
 
     // Interval of distances considered during wall following
     Interval int_left_side;
-    Interval int_right_side; 
+    Interval int_right_side;
     Interval int_left_forward;
     Interval int_right_forward;
+
+    //TODO added for filtered_error_measurement_at_angle
+    float corner_search_angle;
+    float [3] previous_meas;
+    float [3] previous_filtered_meas;
+    float Ts;
+    float fc;
 } Perception_Parameters_Drive_Towards_Wall;
 
 typedef struct Monitor_Parameters_Drive_Towards_Wall {
