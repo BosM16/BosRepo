@@ -32,6 +32,7 @@
 bool perception(struct ROB_state *rob, struct WM_state *wm);
 bool perception_drive_towards_wall(struct ROB_state *rob,struct WM_state *wm);
 bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state *wm);
+bool thresholding_operation_filtered_data(struct ROB_state *rob, struct WM_state *wm);
 bool perception_follow_wall(struct ROB_state *rob,struct WM_state *wm);
 bool average_of_local_distances(std::vector<float> *distances, const float * threshold, Interval * interval, float * result);
 

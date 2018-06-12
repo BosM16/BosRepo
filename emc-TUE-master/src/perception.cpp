@@ -3,6 +3,9 @@
 bool local_neighbourhood(struct ROB_state *rob, std::vector<float> *distances,
                          std::vector<std::vector<float> > *vec_distances,
                          std::vector<int> *start_index) {
+    /*Saves all vectors from distances that are <= pp.local_neighbourhood
+    to vec_distances. And saves the index from the first distance that is <=
+    pp.local_neighbourhood to start_index. */
     std::vector<float> temp_distance;
 
     bool in_neighbourhood = false;
@@ -41,12 +44,13 @@ bool perception_drive_towards_wall(struct ROB_state *rob, struct WM_state *wm) {
 
     std::vector<int> minima, maxima;
 
-
+    //helper.extrema, finds extrema
     extrema(&(*(wm->dist_meas)->distances), rob->pp->tolerance_extrema, &minima, &maxima);
 
     float global_minimum = FLT_MAX;
     int global_minimum_index = -1;
 
+    //loop over all minima to find the one with lowest value->global minimum
     for (std::vector<int>::iterator it = minima.begin(); it != minima.end(); ++it) {
         if ((*(wm->dist_meas)->distances)[*it] < global_minimum) {
             global_minimum = (*(wm->dist_meas)->distances)[*it];
@@ -54,6 +58,7 @@ bool perception_drive_towards_wall(struct ROB_state *rob, struct WM_state *wm) {
         }
     }
 
+    //saves the global minimum and the angle where this is measured
     wm->dist_meas->min_distance_measured = global_minimum;
     wm->dist_meas->angle_min_distance_measured = rob->scan.angle_min + rob->scan.angle_increment * global_minimum_index;
     if (wm->dist_meas->angle_min_distance_measured > 0) {
@@ -69,6 +74,7 @@ bool average_of_local_distances(std::vector<float> *distances, const float *thre
     // averages all distances in interval which are in the local neighbourhood defined by threshold
     int N = 0;
 
+    //threshold is not yet used but the local neighbourhood depends on interval
     for (int i = interval->i1; i <= interval->i2; i++) {
             *result += (*distances)[i];
             N++;
@@ -98,12 +104,14 @@ void initialize_wall_following(struct ROB_state *rob, struct WM_state *wm) {
 
     // Configuration Parameters of Perception and Control
     float alpha = rob->cp->angle_between_min_distance_and_forward_check;
+    //a = length of wall symmetric around laser beam at alpha
     float a = rob->pp->length_wall_segment_considered;
     float D = rob->cp->desired_distance;
 
 
     // Computation of indices of intervals
     int n_forward = 2 / incr * (alpha - std::atan(std::tan(alpha) - a / (2.0 * D)));
+    //n_side= nb of indices that covers the wall for length a (around min angle)
     int n_side = 2 / incr * std::atan(a / (2.0 * D));
 
     int i_side_left, i_side1_left, i_side2_left, i_forward_left, i_forward1_left, i_forward2_left;
@@ -113,9 +121,12 @@ void initialize_wall_following(struct ROB_state *rob, struct WM_state *wm) {
     // Angle [rad]: 0---------- -pi/2+alpha -------------------------- -pi/2 --------- angle_min
     // Index [-]    ---forward1_right----i_forward2_right--i_side1_right----i_side2_right-------
 
+    //index of the left and right side of the robot
     i_side_left = (PI / 2.0 - angle_min) / incr; // 107
     i_side_right = (-PI / 2.0 - angle_min) / incr; // 892
 
+    //describes the forward portion of the robot. it is defined as the part in
+    //front of the minimal distance from wall
     i_forward_left = (PI / 2.0 - alpha - angle_min) / incr;
     i_forward_right = (-PI / 2.0 + alpha - angle_min) / incr;
 
@@ -144,8 +155,7 @@ void initialize_wall_following(struct ROB_state *rob, struct WM_state *wm) {
 
 bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
     /*
-     * Compute a point estimate of the distance at the side and the distance a bit further.
-     * ADDITION software task: Compute orientation estimate relative to the wall.
+     * Compute a point estimate of the distance at the side and the distance a bit further
      */
     float result_side = 0;
     float result_forward = 0;
@@ -157,36 +167,6 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
                                           &rob->pp->int_left_side, &result_side);
         forward = average_of_local_distances(&(*(wm->dist_meas)->distances), &rob->pp->local_neighbourhood,
                                               &rob->pp->int_left_forward, &result_forward);
-
-        // ADDITION software task
-
-        // 1) Make a cartesian version of every data point wrt the robot frame and
-        // put the points in a vector.
-
-        // Initialize angle to iterate over interval.
-        current_angle = rob->scan.angle_max - rob->pp->int_left_side[0] * rob->scan.angle_increment;
-        std::vector<Point> datapoints;
-
-        for (int i = rob->pp->int_left_side[0]; i < rob->pp->int_left_side[1]; i++) {
-          Point datapoint;
-          // Transformation from polar coordinates (laser scan data) to cartesian.
-          datapoint.x = *(wm->dist_meas)->distances[i]*std::cos(current_angle);
-          datapoint.y = *(wm->dist_meas)->distances[i]*std::sin(current_angle);
-
-          datapoints.push_back(datapoint)
-
-          current_angle -= rob->scan.angle_increment;
-        }
-
-        // 2) Calculate a linear function least squares fit through the data points.
-        // 3) From the slope, extract an estimate of the orientation.
-        Line line
-        wall = fit_line(datapoints, &line);
-
-        float slope = - line.a / line.b;
-        wm->orientation_relative_to_wall = atan(slope);
-
-        // END of addition
         if (!side && !forward) {
             std::cout << "entering 1\n";
             return false;
@@ -196,34 +176,6 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
                                           &rob->pp->int_right_side, &result_side);
         forward = average_of_local_distances(&(*(wm->dist_meas)->distances), &rob->pp->local_neighbourhood,
                                              &rob->pp->int_right_forward, &result_forward);
-
-        // ADDITION software task
-        // Same approach as for left side.
-
-        // Initialize angle to iterate over interval.
-        current_angle = rob->scan.angle_max - rob->pp->int_right_side[0] * rob->scan.angle_increment;
-        std::vector<Point> datapoints;
-
-        for (int i = rob->pp->int_right_side[0]; i < rob->pp->int_right_side[1]; i++) {
-          Point datapoint;
-          // Transformation from polar coordinates (laser scan data) to cartesian.
-          datapoint.x = *(wm->dist_meas)->distances[i]*std::cos(current_angle);
-          datapoint.y = *(wm->dist_meas)->distances[i]*std::sin(current_angle);
-
-          datapoints.push_back(datapoint)
-
-          current_angle -= rob->scan.angle_increment;
-        }
-
-        // Calculate a linear function least squares fit through the data points.
-        // From the slope, extract an estimate of the orientation.
-        Line line
-        wall = fit_line(datapoints, &line);
-
-        float slope = - line.a / line.b;
-        wm->orientation_relative_to_wall = atan(slope);
-
-        // END of addition
         if (!side && !forward) {
             std::cout << "entering 2\n";
             return false;
@@ -232,7 +184,6 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
 
     wm->dist_meas->min_distance_measured = result_side;
     wm->dist_meas->forward_distance_measured = result_forward;
-
     return true;
 }
 
@@ -274,6 +225,32 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
            - B/A * y[1] - C/A * y[0];
 
     return true;
+}
+
+bool thresholding_operation_filtered_data(struct ROB_state *rob, struct WM_state *wm){
+    /*
+    Thresholding LaserData (supposed same dimensions as size of robot present)
+    To be carried out every time.
+    */
+    float meas_angle = rob->pp->corner_search_angle; //45 degrees
+    float min_angle = wm->dist_meas->angle_min_distance_measured;
+    float min_distance = wm->dist_meas->min_distance_measured;
+    float front_size_robot = wm->size_robot->width; //assumed to be known
+
+    float threshold = min_distance/cos(meas_angle + min_angle) +
+                      front_size_robot/cos(meas_angle);
+
+    //Check distance value at measuring angle (45 degrees)
+    float meas_angle_index = (rob->scan.angle_max + min_angle)/rob->cp->rob->scan.angle_increment;
+    float meas_distance = rob->scan.data[meas_angle_index];
+    if (meas_distance >= threshold){
+      // EVENT = take corner
+      return true;
+    }
+    else {
+      // event = follow wall
+      return false;
+    }
 }
 
 bool perception(struct ROB_state *rob, struct WM_state *wm) {
