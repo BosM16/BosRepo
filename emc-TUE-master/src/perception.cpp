@@ -224,6 +224,7 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
     y[2] = 1/A * x[2] - 2*pow(K, 2)/A * x[1] +pow(K,2)/A * x[0] \
            - B/A * y[1] - C/A * y[0];
 
+    rob->pp->previous_meas = y;
     return true;
 }
 
