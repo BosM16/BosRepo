@@ -252,18 +252,19 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
       y[i] = y[i+1];
     }
 
-    //alpha angle measured away from wall
-    if (rob->cp->side == RIGHT){
-      float alpha = wm->orientation_relative_to_wall;
-    }else if(rob->cp->side == LEFT){
-      float alpha = -wm->orientation_relative_to_wall;
+    //differentiate between two sides
+    int sign = 1;
+    if(rob->cp->side == LEFT){
+      sign = -1;
     }
 
+    //alpha angle measured away from wall
+    float alpha = sign * wm->orientation_relative_to_wall;
     float D = wm->dist_meas->min_distance_measured;
     //select correct measurement
-    float measurement = (*(wm->dist_meas)->distances)[ (rob->scan.angle_min - angle)
+    float measurement = (*(wm->dist_meas)->distances)[ (-rob->scan.angle_min - sign * angle)
                                                       /rob->scan.angle_increment]
-    x[3] = measurement-D/cos(alpha+ PI/2 -angle);
+    x[3] = measurement-D/cos(PI/2 -angle);
 
     //do the filtering, based on butterworth filter -> discretised w bilinear transform (see wiki)
     float K = 2/Ts;
