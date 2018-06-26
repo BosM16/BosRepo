@@ -236,9 +236,9 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
     return true;
 }
 
-//TODO added
+//TODO Addition for software task
 bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state *wm){
-    float angle = rob->pp->corner_search_angle; //angle defined relative to front neg value expected
+    float angle = rob->pp->corner_search_angle; //angle defined relative to front
     float Ts = rob->pp->Ts;
     float fc = rob->pp->fc;
     float [3] x = rob->pp->previous_meas;
@@ -252,17 +252,22 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
       y[i] = y[i+1];
     }
 
-    //take the right measurement
-    float alpha = wm->orientation_relative_to_wall;
-    float beta = wm->dist_meas->angle_min_distance_measured;
+    //alpha angle measured away from wall
+    if (rob->cp->side == RIGHT){
+      float alpha = wm->orientation_relative_to_wall;
+    }else if(rob->cp->side == LEFT){
+      float alpha = -wm->orientation_relative_to_wall;
+    }
+
     float D = wm->dist_meas->min_distance_measured;
+    //select correct measurement
     float measurement = (*(wm->dist_meas)->distances)[ (rob->scan.angle_min - angle)
                                                       /rob->scan.angle_increment]
-    x[3] = measurement-D/cos(beta-alpha-angle);
+    x[3] = measurement-D/cos(alpha+ PI/2 -angle);
 
     //do the filtering, based on butterworth filter -> discretised w bilinear transform (see wiki)
     float K = 2/Ts;
-    float wc = 2*pi*fc;
+    float wc = 2*PI*fc;
 
     float A = pow(K, 2) + sqrt(2)*wc*K + pow(wc, 2);
     float B = 2*pow(wc, 2) - 2*pow(K, 2);
@@ -271,6 +276,7 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
     y[2] = 1/A * x[2] - 2*pow(K, 2)/A * x[1] +pow(K,2)/A * x[0] \
            - B/A * y[1] - C/A * y[0];
 
+    rob->pp->previous_filtered_meas = y;
     return true;
 }
 
