@@ -241,8 +241,8 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
     float angle = rob->pp->corner_search_angle; //angle defined relative to front
     float Ts = rob->pp->Ts;
     float fc = rob->pp->fc;
-    float [3] x = rob->pp->previous_meas;
-    float [3] y = rob->pp->previous_filtered_meas;
+    float [3] x = rob->pp->error_at_angle;
+    float [3] y = rob->pp->filtered_error_at_angle;
 
     //shift the values in the array
     for(i=x.size()-2,i>=0,i--){
@@ -277,7 +277,7 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
     y[2] = 1/A * x[2] - 2*pow(K, 2)/A * x[1] +pow(K,2)/A * x[0] \
            - B/A * y[1] - C/A * y[0];
 
-    rob->pp->previous_filtered_meas = y;
+    rob->pp->filtered_error_at_angle = y;
     return true;
 }
 

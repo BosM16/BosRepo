@@ -65,8 +65,8 @@ typedef struct Perception_Parameters_Drive_Towards_Wall {
 
     //TODO added for filtered_error_measurement_at_angle
     float corner_search_angle;
-    float [3] previous_meas;
-    float [3] previous_filtered_meas;
+    float [3] error_at_angle;
+    float [3] filtered_error_at_angle;
     float Ts;
     float fc;
 } Perception_Parameters_Drive_Towards_Wall;

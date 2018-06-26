@@ -28,8 +28,8 @@ int main() {
 
     //TODO added for filtered_error_measurement_at_angle
     pp.corner_search_angle = PI/4; //angle defined relative to front neg value expected
-    pp.previous_meas = {0,0,0};
-    pp.previous_filtered_meas = {0,0,0};
+    pp.error_at_angle = {0,0,0};
+    pp.filtered_error_at_angle = {0,0,0};
     pp.Ts = 0.01; // [s]
     pp.fc = 10; // [Hz]
 
