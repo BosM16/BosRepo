@@ -8,6 +8,7 @@ bool state_machine(struct ROB_state *rob, struct Event_Queue *eq) {
     bool no_walls_in_neighbourhood = false;
     bool distance_within_bounds = false;
     bool angle_within_bounds = false;
+    bool corner_detected = false;
 
 
         while (!eq->events.empty()) {
@@ -22,6 +23,9 @@ bool state_machine(struct ROB_state *rob, struct Event_Queue *eq) {
                 distance_within_bounds = true;
             if (ev == ANGLE_WITHIN_BOUNDS)
                 angle_within_bounds = true;
+            //TODO addition software task
+            if (ev == CORNER_DETECTED)
+                corner_detected = true;
     }
 
 
@@ -58,12 +62,20 @@ bool state_machine(struct ROB_state *rob, struct Event_Queue *eq) {
 
 
             break;
+
         case FOLLOW_WALL:
             if(too_close_to_wall)
                 rob->FSM_state = STOP;
+            if(corner_detected)
+                rob-> FSM_state = TAKE_CORNER;
             std::cout << "FSM_state = FOLLOW_WALL" << std::endl;
 
             break;
+
+        case TAKE_CORNER:
+            rob-> FSM_state = STOP;
+            break;
+
         default:
             // stop
             rob->FSM_state = STOP;
