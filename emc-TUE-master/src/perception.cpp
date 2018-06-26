@@ -243,8 +243,6 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
     float fc = rob->pp->fc;
     float [3] x = rob->pp->previous_meas;
     float [3] y = rob->pp->previous_filtered_meas;
-    float Ts = rob->pp->Ts;
-    float fc = rob->pp->fc;
 
     //shift the values in the array
     for(i=x.size()-2,i>=0,i--){
@@ -258,9 +256,9 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
     float alpha = wm->orientation_relative_to_wall;
     float beta = wm->dist_meas->angle_min_distance_measured;
     float D = wm->dist_meas->min_distance_measured;
-    float measurement = (*(wm->dist_meas)->distances)[ -rob->scan.angle_min
+    float measurement = (*(wm->dist_meas)->distances)[ (rob->scan.angle_min - angle)
                                                       /rob->scan.angle_increment]
-    x[3] = measurement-D/cos(beta-alpha);
+    x[3] = measurement-D/cos(beta-alpha-angle);
 
     //do the filtering, based on butterworth filter -> discretised w bilinear transform (see wiki)
     float K = 2/Ts;
