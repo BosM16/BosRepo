@@ -239,7 +239,7 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
 //TODO Addition for software task
 bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state *wm){
     float angle = rob->pp->corner_search_angle; //angle defined relative to front
-    float Ts = rob->pp->Ts;
+    float Ts = 1.0 / rob->Rate;
     float fc = rob->pp->fc;
     float [3] x = rob->pp->error_at_angle;
     float [3] y = rob->pp->filtered_error_at_angle;
