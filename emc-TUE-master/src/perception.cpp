@@ -264,7 +264,7 @@ bool filtered_error_measurement_at_angle(struct ROB_state *rob, struct WM_state 
     //select correct measurement
     float measurement = (*(wm->dist_meas)->distances)[ (-rob->scan.angle_min - sign * angle)
                                                       /rob->scan.angle_increment]
-    x[3] = measurement-D/cos(PI/2 -angle);
+    x[2] = measurement-D/cos(PI/2 -angle);
 
     //do the filtering, based on butterworth filter -> discretised w bilinear transform (see wiki)
     float K = 2/Ts;
