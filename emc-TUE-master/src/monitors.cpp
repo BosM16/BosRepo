@@ -31,6 +31,11 @@ bool monitor_drive_towards_wall(struct ROB_state *rob, struct WM_state *wm, stru
 
 bool monitor_follow_wall(struct ROB_state *rob, struct WM_state *wm, struct Event_Queue *eq) {
     // TODO: Implement your monitors in the wall following case (minimum distance, wall in front, open space in side wall ...)
+
+    //TODO Addition software task
+    if(std::abs(rob->pp->filtered_error_at_angle) > rob->mp->threshold_corner_detect){
+        eq->events.push_back(CORNER_DETECTED)
+    }
     return true;
 }
 
