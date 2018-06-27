@@ -17,7 +17,9 @@ typedef enum event{
     TOO_CLOSE_TO_WALL,
     NO_WALLS_IN_NEIGHBOURHOOD,
     DISTANCE_WITHIN_BOUNDS,
-    ANGLE_WITHIN_BOUNDS
+    ANGLE_WITHIN_BOUNDS,
+    //TODO Addition software task
+    CORNER_DETECTED
 } Event;
 
 struct Event_Queue {
@@ -29,7 +31,9 @@ typedef enum state {
     STOP,
     SEARCH_WALL,
     DRIVE_TO_WALL,
-    FOLLOW_WALL
+    FOLLOW_WALL,
+    //TODO Addition software task
+    TAKE_CORNER
 } State;
 
 enum Side {

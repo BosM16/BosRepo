@@ -165,6 +165,8 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
 
         // Initialize angle to iterate over interval.
         current_angle = rob->scan.angle_max - rob->pp->int_left_side[0] * rob->scan.angle_increment;
+        // TODO why not use this?:
+        //current_angle = rob->scan.angle_min + rob->scan.angle_increment * rob->pp->int_left_side->i1
         std::vector<Point> datapoints;
 
         for (int i = rob->pp->int_left_side[0]; i < rob->pp->int_left_side[1]; i++) {
@@ -179,14 +181,13 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
         }
 
         // 2) Calculate a linear function least squares fit through the data points.
-        // 3) From the slope, extract an estimate of the orientation.
         Line line
         wall = fit_line(datapoints, &line);
-
+        // 3) From the slope, extract an estimate of the orientation.
         float slope = - line.a / line.b;
         wm->orientation_relative_to_wall = atan(slope);
-
         // END of addition
+
         if (!side && !forward) {
             std::cout << "entering 1\n";
             return false;
