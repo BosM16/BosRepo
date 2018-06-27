@@ -36,6 +36,8 @@ int main() {
     //Initialize perception Perception_Parameters
     Monitor_Parameters_Drive_Towards_Wall mp;
     mp.close_to_wall = 0.1;// [m]
+    //TODO Addition software task
+    mp.threshold_corner_detect = 0.4;// [m]
 
     // Initialization of world model
     WM_state wm;

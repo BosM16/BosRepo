@@ -73,6 +73,8 @@ typedef struct Perception_Parameters_Drive_Towards_Wall {
 
 typedef struct Monitor_Parameters_Drive_Towards_Wall {
     float close_to_wall;
+    //TODO Addition software task
+    float threshold_corner_detect;
 } Monitor_Parameters_Drive_Towards_Wall;
 
 typedef struct Distance_Measurement {
