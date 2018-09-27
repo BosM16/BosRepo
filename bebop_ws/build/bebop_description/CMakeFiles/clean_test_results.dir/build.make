@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rian/bebop_ws/src/bebop_autonomy/bebop_description
+CMAKE_SOURCE_DIR = /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rian/bebop_ws/build/bebop_description
+CMAKE_BINARY_DIR = /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description
 
 # Utility rule file for clean_test_results.
 
@@ -54,7 +54,7 @@ CMAKE_BINARY_DIR = /home/rian/bebop_ws/build/bebop_description
 include CMakeFiles/clean_test_results.dir/progress.make
 
 CMakeFiles/clean_test_results:
-	/usr/bin/python /opt/ros/kinetic/share/catkin/cmake/test/remove_test_results.py /home/rian/bebop_ws/build/bebop_description/test_results
+	/usr/bin/python /opt/ros/kinetic/share/catkin/cmake/test/remove_test_results.py /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description/test_results
 
 clean_test_results: CMakeFiles/clean_test_results
 clean_test_results: CMakeFiles/clean_test_results.dir/build.make
@@ -71,6 +71,6 @@ CMakeFiles/clean_test_results.dir/clean:
 .PHONY : CMakeFiles/clean_test_results.dir/clean
 
 CMakeFiles/clean_test_results.dir/depend:
-	cd /home/rian/bebop_ws/build/bebop_description && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rian/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/bebop_ws/build/bebop_description /home/rian/bebop_ws/build/bebop_description /home/rian/bebop_ws/build/bebop_description/CMakeFiles/clean_test_results.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description/CMakeFiles/clean_test_results.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/clean_test_results.dir/depend
 

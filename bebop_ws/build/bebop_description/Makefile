@@ -48,10 +48,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rian/bebop_ws/src/bebop_autonomy/bebop_description
+CMAKE_SOURCE_DIR = /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rian/bebop_ws/build/bebop_description
+CMAKE_BINARY_DIR = /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description
 
 #=============================================================================
 # Targets provided globally by CMake.
@@ -135,9 +135,9 @@ test/fast: test
 
 # The main all target
 all: cmake_check_build_system
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rian/bebop_ws/build/bebop_description/CMakeFiles /home/rian/bebop_ws/build/bebop_description/CMakeFiles/progress.marks
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description/CMakeFiles /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description/CMakeFiles/progress.marks
 	$(MAKE) -f CMakeFiles/Makefile2 all
-	$(CMAKE_COMMAND) -E cmake_progress_start /home/rian/bebop_ws/build/bebop_description/CMakeFiles 0
+	$(CMAKE_COMMAND) -E cmake_progress_start /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description/CMakeFiles 0
 .PHONY : all
 
 # The main clean target

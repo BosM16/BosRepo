@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rian/bebop_ws/src/bebop_autonomy/bebop_description
+CMAKE_SOURCE_DIR = /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rian/bebop_ws/build/bebop_description
+CMAKE_BINARY_DIR = /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description
 
 # Utility rule file for tests.
 
@@ -67,6 +67,6 @@ CMakeFiles/tests.dir/clean:
 .PHONY : CMakeFiles/tests.dir/clean
 
 CMakeFiles/tests.dir/depend:
-	cd /home/rian/bebop_ws/build/bebop_description && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rian/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/bebop_ws/build/bebop_description /home/rian/bebop_ws/build/bebop_description /home/rian/bebop_ws/build/bebop_description/CMakeFiles/tests.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description /home/rian/Documents/BosRepo/bebop_ws/build/bebop_description/CMakeFiles/tests.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/tests.dir/depend
 

@@ -7,7 +7,7 @@
 # new environment variables
 
 # modified environment variables
-export CMAKE_PREFIX_PATH="/home/rian/bebop_ws/devel/.private/bebop_description:$CMAKE_PREFIX_PATH"
-export PWD="/home/rian/bebop_ws/build/bebop_description"
-export ROSLISP_PACKAGE_DIRECTORIES="/home/rian/bebop_ws/devel/.private/bebop_description/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
-export ROS_PACKAGE_PATH="/home/rian/bebop_ws/src/bebop_autonomy/bebop_description:$ROS_PACKAGE_PATH"
+export CMAKE_PREFIX_PATH="/home/rian/Documents/BosRepo/bebop_ws/devel/.private/bebop_description:$CMAKE_PREFIX_PATH"
+export PWD="/home/rian/Documents/BosRepo/bebop_ws/build/bebop_description"
+export ROSLISP_PACKAGE_DIRECTORIES="/home/rian/Documents/BosRepo/bebop_ws/devel/.private/bebop_description/share/common-lisp:$ROSLISP_PACKAGE_DIRECTORIES"
+export ROS_PACKAGE_PATH="/home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_description:$ROS_PACKAGE_PATH"

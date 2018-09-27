@@ -4,5 +4,5 @@ PROJECT_PKG_CONFIG_INCLUDE_DIRS = "".split(';') if "" != "" else []
 PROJECT_CATKIN_DEPENDS = "".replace(';', ' ')
 PKG_CONFIG_LIBRARIES_WITH_PREFIX = "".split(';') if "" != "" else []
 PROJECT_NAME = "bebop_description"
-PROJECT_SPACE_DIR = "/home/rian/bebop_ws/devel/.private/bebop_description"
+PROJECT_SPACE_DIR = "/home/rian/Documents/BosRepo/bebop_ws/devel/.private/bebop_description"
 PROJECT_VERSION = "0.7.0"

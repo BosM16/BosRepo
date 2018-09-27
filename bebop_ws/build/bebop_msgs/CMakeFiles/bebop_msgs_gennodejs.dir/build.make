@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/rian/bebop_ws/src/bebop_autonomy/bebop_msgs
+CMAKE_SOURCE_DIR = /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_msgs
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/rian/bebop_ws/build/bebop_msgs
+CMAKE_BINARY_DIR = /home/rian/Documents/BosRepo/bebop_ws/build/bebop_msgs
 
 # Utility rule file for bebop_msgs_gennodejs.
 
@@ -67,6 +67,6 @@ CMakeFiles/bebop_msgs_gennodejs.dir/clean:
 .PHONY : CMakeFiles/bebop_msgs_gennodejs.dir/clean
 
 CMakeFiles/bebop_msgs_gennodejs.dir/depend:
-	cd /home/rian/bebop_ws/build/bebop_msgs && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rian/bebop_ws/src/bebop_autonomy/bebop_msgs /home/rian/bebop_ws/src/bebop_autonomy/bebop_msgs /home/rian/bebop_ws/build/bebop_msgs /home/rian/bebop_ws/build/bebop_msgs /home/rian/bebop_ws/build/bebop_msgs/CMakeFiles/bebop_msgs_gennodejs.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/rian/Documents/BosRepo/bebop_ws/build/bebop_msgs && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_msgs /home/rian/Documents/BosRepo/bebop_ws/src/bebop_autonomy/bebop_msgs /home/rian/Documents/BosRepo/bebop_ws/build/bebop_msgs /home/rian/Documents/BosRepo/bebop_ws/build/bebop_msgs /home/rian/Documents/BosRepo/bebop_ws/build/bebop_msgs/CMakeFiles/bebop_msgs_gennodejs.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/bebop_msgs_gennodejs.dir/depend
 
