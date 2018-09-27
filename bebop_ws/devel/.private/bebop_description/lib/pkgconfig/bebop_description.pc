@@ -1,0 +1,8 @@
+prefix=/home/mathias/BosRepo/bebop_ws/devel/.private/bebop_description
+
+Name: bebop_description
+Description: Description of bebop_description
+Version: 0.7.0
+Cflags: 
+Libs: -L/home/mathias/BosRepo/bebop_ws/devel/.private/bebop_description/lib 
+Requires: 

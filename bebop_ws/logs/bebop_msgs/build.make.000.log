@@ -1,0 +1,570 @@
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonAnimationsStateList[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonChargerStateChargingInfo[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonHeadlightsStateintensityChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateAllWifiScanChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonAnimationsStateList
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonHeadlightsStateintensityChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateAllWifiScanChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageContentForCurrentRun[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateWifiAuthChannelListChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateProductModel[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonChargerStateChargingInfo
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAlertStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageContentForCurrentRun
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateWifiAuthChannelListChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateProductModel
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageInfoStateListChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonAccessoryStateAccessoryConfigModificationEnabled[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3GPSStateNumberOfSatelliteChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAlertStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonChargerStateMaxChargeRateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonAccessoryStateAccessoryConfigModificationEnabled
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageInfoStateListChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3GPSStateNumberOfSatelliteChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateWifiSignalChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStateVideoStateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3GPSStateHomeTypeAvailabilityChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonChargerStateMaxChargeRateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonMavlinkStateMavlinkPlayErrorStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStateVideoStateChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateWifiSignalChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3GPSStateHomeTypeAvailabilityChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonMavlinkStateMavlinkPlayErrorStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStateVideoStateChangedV2[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PROStateFeatures[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonAccessoryStateAccessoryConfigChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateCountryListKnown[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStateVideoStateChangedV2
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateFlatTrimChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonAccessoryStateAccessoryConfigChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PROStateFeatures
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateCountryListKnown
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAutoTakeOffModeChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAttitudeChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonOverHeatStateOverHeatChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateFlatTrimChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonFlightPlanStateLockStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAutoTakeOffModeChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAttitudeChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonOverHeatStateOverHeatChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateGpsLocationChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateFlyingStateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateSensorsStatesListChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonFlightPlanStateLockStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonOverHeatStateOverHeatRegulationChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateGpsLocationChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateFlyingStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonChargerStateCurrentChargeStateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonARLibsVersionsStateControllerLibARCommandsVersion[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateSensorsStatesListChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStateVelocityRange[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonOverHeatStateOverHeatRegulationChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateBatteryStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonChargerStateCurrentChargeStateChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonARLibsVersionsStateControllerLibARCommandsVersion
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStateVelocityRange
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStatePositionChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateWifiScanListChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateLandingStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateBatteryStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonFlightPlanStateComponentStateListChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStatePositionChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateWifiScanListChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateLandingStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStatemoveToChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateVideoRecordingTimestamp[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateAllStatesChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonFlightPlanStateComponentStateListChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3AntiflickeringStateelectricFrequencyChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStatemoveToChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateVideoRecordingTimestamp
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateAllStatesChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonARLibsVersionsStateSkyControllerLibARCommandsVersion[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaStreamingStateVideoStreamModeChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonMavlinkStateMissionItemExecuted[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3AntiflickeringStateelectricFrequencyChanged
+[35m[1mScanning dependencies of target std_msgs_generate_messages_lisp[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonARLibsVersionsStateSkyControllerLibARCommandsVersion
+[  0%] Built target std_msgs_generate_messages_lisp
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonMavlinkStateMissionItemExecuted
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaStreamingStateVideoStreamModeChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateNavigateHomeStateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationStartedChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStatePitotCalibrationStateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonARLibsVersionsStateDeviceLibARCommandsVersion[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationStartedChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateNavigateHomeStateChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStatePitotCalibrationStateChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonARLibsVersionsStateDeviceLibARCommandsVersion
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaStreamingStateVideoEnableChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAirSpeedChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageInfoRemainingListChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonAudioStateAudioStreamingRunning[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAirSpeedChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaStreamingStateVideoEnableChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageInfoRemainingListChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStateVideoResolutionState[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonAudioStateAudioStreamingRunning
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3AntiflickeringStatemodeChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonChargerStateLastChargeRateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStatePictureStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStateVideoResolutionState
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3AntiflickeringStatemodeChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3GPSStateHomeTypeChosenChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonChargerStateLastChargeRateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateDeprecatedMassStorageContentChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStatePictureStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStateOrientationV2[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationRequiredState[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3GPSStateHomeTypeChosenChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateDeprecatedMassStorageContentChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStateOrientationV2
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonFlightPlanStateAvailabilityStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationRequiredState
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationAxisToCalibrateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAltitudeChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonFlightPlanStateAvailabilityStateChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationAxisToCalibrateChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateAltitudeChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCalibrationStateMagnetoCalibrationStateChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateCurrentDateChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStatePictureStateChangedV2[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3AccessoryStateConnectedAccessories[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonRunStateRunIdChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateCurrentDateChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3MediaRecordStatePictureStateChangedV2
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonRunStateRunIdChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3AccessoryStateConnectedAccessories
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStatedefaultCameraOrientationV2[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStateOrientation[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStatedefaultCameraOrientation[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateAllWifiAuthChannelChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStatedefaultCameraOrientationV2
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStateOrientation
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3CameraStatedefaultCameraOrientation
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateCurrentTimeChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageStateListChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3NetworkStateAllWifiAuthChannelChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonAccessoryStateSupportedAccessoriesListChanged[0m
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageContent[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateCurrentTimeChanged
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageStateListChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_CommonMavlinkStateMavlinkFilePlayingStateChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonAccessoryStateSupportedAccessoriesListChanged
+[35m[1mScanning dependencies of target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateSpeedChanged[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonCommonStateMassStorageContent
+[35m[1mScanning dependencies of target std_msgs_generate_messages_nodejs[0m
+[35m[1mScanning dependencies of target std_msgs_generate_messages_eus[0m
+[  0%] Built target std_msgs_generate_messages_nodejs
+[  0%] Built target std_msgs_generate_messages_eus
+[35m[1mScanning dependencies of target std_msgs_generate_messages_cpp[0m
+[35m[1mScanning dependencies of target std_msgs_generate_messages_py[0m
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_CommonMavlinkStateMavlinkFilePlayingStateChanged
+[  0%] Built target std_msgs_generate_messages_cpp
+[  0%] Built target _bebop_msgs_generate_messages_check_deps_Ardrone3PilotingStateSpeedChanged
+[  0%] Built target std_msgs_generate_messages_py
+[35m[1mScanning dependencies of target bebop_msgs_generate_messages_nodejs[0m
+[35m[1mScanning dependencies of target bebop_msgs_generate_messages_lisp[0m
+[35m[1mScanning dependencies of target bebop_msgs_generate_messages_eus[0m
+[35m[1mScanning dependencies of target bebop_msgs_generate_messages_cpp[0m
+[  0%] [34m[1mGenerating Javascript code from bebop_msgs/CommonAccessoryStateAccessoryConfigChanged.msg[0m
+[  1%] [34m[1mGenerating Lisp code from bebop_msgs/CommonAccessoryStateAccessoryConfigChanged.msg[0m
+[  1%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonAccessoryStateAccessoryConfigChanged.msg[0m
+[  1%] [34m[1mGenerating C++ code from bebop_msgs/CommonAccessoryStateAccessoryConfigChanged.msg[0m
+[  1%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStartedChanged.msg[0m
+[  1%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStartedChanged.msg[0m
+[  2%] [34m[1mGenerating Javascript code from bebop_msgs/CommonMavlinkStateMavlinkFilePlayingStateChanged.msg[0m
+[  2%] [34m[1mGenerating Lisp code from bebop_msgs/CommonMavlinkStateMavlinkFilePlayingStateChanged.msg[0m
+[  2%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStartedChanged.msg[0m
+[  2%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateAlertStateChanged.msg[0m
+[  2%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateAlertStateChanged.msg[0m
+[  2%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChangedV2.msg[0m
+[  3%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonMavlinkStateMavlinkFilePlayingStateChanged.msg[0m
+[  4%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChangedV2.msg[0m
+[  4%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateSensorsStatesListChanged.msg[0m
+[  4%] [34m[1mGenerating C++ code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStartedChanged.msg[0m
+[  4%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateSensorsStatesListChanged.msg[0m
+[  5%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateVideoRecordingTimestamp.msg[0m
+[  5%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateAlertStateChanged.msg[0m
+[  5%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateVideoRecordingTimestamp.msg[0m
+[  5%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCalibrationStatePitotCalibrationStateChanged.msg[0m
+[  5%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChangedV2.msg[0m
+[  5%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCalibrationStatePitotCalibrationStateChanged.msg[0m
+[  5%] [34m[1mGenerating Javascript code from bebop_msgs/CommonChargerStateCurrentChargeStateChanged.msg[0m
+[  5%] [34m[1mGenerating C++ code from bebop_msgs/CommonMavlinkStateMavlinkFilePlayingStateChanged.msg[0m
+[  6%] [34m[1mGenerating Lisp code from bebop_msgs/CommonChargerStateCurrentChargeStateChanged.msg[0m
+[  6%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateSensorsStatesListChanged.msg[0m
+[  6%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationAxisToCalibrateChanged.msg[0m
+[  6%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationAxisToCalibrateChanged.msg[0m
+[  7%] [34m[1mGenerating Javascript code from bebop_msgs/CommonHeadlightsStateintensityChanged.msg[0m
+[  8%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateVideoRecordingTimestamp.msg[0m
+[  8%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3CameraStateVelocityRange.msg[0m
+[  8%] [34m[1mGenerating Lisp code from bebop_msgs/CommonHeadlightsStateintensityChanged.msg[0m
+[  8%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCalibrationStatePitotCalibrationStateChanged.msg[0m
+[  8%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3NetworkStateWifiScanListChanged.msg[0m
+[  8%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3CameraStateVelocityRange.msg[0m
+[  8%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateAlertStateChanged.msg[0m
+[  8%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateAirSpeedChanged.msg[0m
+[  9%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3NetworkStateWifiScanListChanged.msg[0m
+[  9%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonChargerStateCurrentChargeStateChanged.msg[0m
+[ 10%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateAirSpeedChanged.msg[0m
+[ 10%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateAttitudeChanged.msg[0m
+[ 10%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationAxisToCalibrateChanged.msg[0m
+[ 10%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateAttitudeChanged.msg[0m
+[ 10%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3GPSStateNumberOfSatelliteChanged.msg[0m
+[ 11%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChangedV2.msg[0m
+[ 12%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonHeadlightsStateintensityChanged.msg[0m
+[ 12%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3GPSStateNumberOfSatelliteChanged.msg[0m
+[ 12%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateCountryListKnown.msg[0m
+[ 13%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateCountryListKnown.msg[0m
+[ 13%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChanged.msg[0m
+[ 13%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3CameraStateVelocityRange.msg[0m
+[ 13%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChanged.msg[0m
+[ 14%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateAutoTakeOffModeChanged.msg[0m
+[ 14%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3NetworkStateWifiScanListChanged.msg[0m
+[ 14%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateAutoTakeOffModeChanged.msg[0m
+[ 14%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateMassStorageStateListChanged.msg[0m
+[ 14%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateSensorsStatesListChanged.msg[0m
+[ 14%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateAirSpeedChanged.msg[0m
+[ 14%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateMassStorageStateListChanged.msg[0m
+[ 14%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateFlatTrimChanged.msg[0m
+[ 15%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateFlatTrimChanged.msg[0m
+[ 15%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateFlyingStateChanged.msg[0m
+[ 16%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateAttitudeChanged.msg[0m
+[ 16%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateFlyingStateChanged.msg[0m
+[ 17%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PROStateFeatures.msg[0m
+[ 17%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3GPSStateNumberOfSatelliteChanged.msg[0m
+[ 17%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateVideoRecordingTimestamp.msg[0m
+[ 17%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PROStateFeatures.msg[0m
+[ 17%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3GPSStateHomeTypeAvailabilityChanged.msg[0m
+[ 17%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateCountryListKnown.msg[0m
+[ 17%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3GPSStateHomeTypeAvailabilityChanged.msg[0m
+[ 17%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateWifiSignalChanged.msg[0m
+[ 18%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateWifiSignalChanged.msg[0m
+[ 18%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateGpsLocationChanged.msg[0m
+[ 18%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChanged.msg[0m
+[ 18%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateGpsLocationChanged.msg[0m
+[ 19%] [34m[1mGenerating Javascript code from bebop_msgs/CommonChargerStateMaxChargeRateChanged.msg[0m
+[ 19%] [34m[1mGenerating C++ code from bebop_msgs/CommonCalibrationStatePitotCalibrationStateChanged.msg[0m
+[ 20%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateAutoTakeOffModeChanged.msg[0m
+[ 20%] [34m[1mGenerating Lisp code from bebop_msgs/CommonChargerStateMaxChargeRateChanged.msg[0m
+[ 20%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateDeprecatedMassStorageContentChanged.msg[0m
+[ 20%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateDeprecatedMassStorageContentChanged.msg[0m
+[ 20%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateMassStorageInfoStateListChanged.msg[0m
+[ 20%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateMassStorageStateListChanged.msg[0m
+[ 21%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateMassStorageInfoStateListChanged.msg[0m
+[ 21%] [34m[1mGenerating Javascript code from bebop_msgs/CommonFlightPlanStateLockStateChanged.msg[0m
+[ 21%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateFlatTrimChanged.msg[0m
+[ 21%] [34m[1mGenerating Lisp code from bebop_msgs/CommonFlightPlanStateLockStateChanged.msg[0m
+[ 22%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStatemoveToChanged.msg[0m
+[ 23%] [34m[1mGenerating C++ code from bebop_msgs/CommonChargerStateCurrentChargeStateChanged.msg[0m
+[ 23%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStatemoveToChanged.msg[0m
+[ 23%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateFlyingStateChanged.msg[0m
+[ 23%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3AntiflickeringStatemodeChanged.msg[0m
+[ 23%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3AntiflickeringStatemodeChanged.msg[0m
+[ 23%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateCurrentTimeChanged.msg[0m
+[ 24%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PROStateFeatures.msg[0m
+[ 25%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateCurrentTimeChanged.msg[0m
+[ 25%] [34m[1mGenerating Javascript code from bebop_msgs/CommonAnimationsStateList.msg[0m
+[ 25%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3GPSStateHomeTypeAvailabilityChanged.msg[0m
+[ 25%] [34m[1mGenerating Lisp code from bebop_msgs/CommonAnimationsStateList.msg[0m
+[ 25%] [34m[1mGenerating C++ code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationAxisToCalibrateChanged.msg[0m
+[ 25%] [34m[1mGenerating Javascript code from bebop_msgs/CommonRunStateRunIdChanged.msg[0m
+[ 25%] [34m[1mGenerating Lisp code from bebop_msgs/CommonRunStateRunIdChanged.msg[0m
+[ 26%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3NetworkStateAllWifiScanChanged.msg[0m
+[ 26%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateWifiSignalChanged.msg[0m
+[ 26%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3NetworkStateAllWifiScanChanged.msg[0m
+[ 26%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3AntiflickeringStateelectricFrequencyChanged.msg[0m
+[ 26%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateGpsLocationChanged.msg[0m
+[ 27%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3AntiflickeringStateelectricFrequencyChanged.msg[0m
+[ 27%] [34m[1mGenerating Javascript code from bebop_msgs/CommonARLibsVersionsStateControllerLibARCommandsVersion.msg[0m
+[ 27%] [34m[1mGenerating C++ code from bebop_msgs/CommonHeadlightsStateintensityChanged.msg[0m
+[ 27%] [34m[1mGenerating Lisp code from bebop_msgs/CommonARLibsVersionsStateControllerLibARCommandsVersion.msg[0m
+[ 28%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonChargerStateMaxChargeRateChanged.msg[0m
+[ 28%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateBatteryStateChanged.msg[0m
+[ 28%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateBatteryStateChanged.msg[0m
+[ 29%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3MediaStreamingStateVideoStreamModeChanged.msg[0m
+[ 29%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateDeprecatedMassStorageContentChanged.msg[0m
+[ 29%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3MediaStreamingStateVideoStreamModeChanged.msg[0m
+[ 29%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateNavigateHomeStateChanged.msg[0m
+[ 29%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateMassStorageInfoStateListChanged.msg[0m
+[ 30%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateNavigateHomeStateChanged.msg[0m
+[ 30%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateMassStorageContentForCurrentRun.msg[0m
+[ 30%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3CameraStateVelocityRange.msg[0m
+[ 30%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateMassStorageContentForCurrentRun.msg[0m
+[ 30%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonFlightPlanStateLockStateChanged.msg[0m
+[ 30%] [34m[1mGenerating Javascript code from bebop_msgs/CommonARLibsVersionsStateDeviceLibARCommandsVersion.msg[0m
+[ 30%] [34m[1mGenerating Lisp code from bebop_msgs/CommonARLibsVersionsStateDeviceLibARCommandsVersion.msg[0m
+[ 31%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateMassStorageInfoRemainingListChanged.msg[0m
+[ 32%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStatemoveToChanged.msg[0m
+[ 32%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateMassStorageInfoRemainingListChanged.msg[0m
+[ 32%] [34m[1mGenerating Javascript code from bebop_msgs/CommonFlightPlanStateComponentStateListChanged.msg[0m
+[ 34%] [34m[1mGenerating Lisp code from bebop_msgs/CommonFlightPlanStateComponentStateListChanged.msg[0m
+[ 35%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3NetworkStateWifiScanListChanged.msg[0m
+[ 35%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3AntiflickeringStatemodeChanged.msg[0m
+[ 35%] [34m[1mGenerating Javascript code from bebop_msgs/CommonMavlinkStateMissionItemExecuted.msg[0m
+[ 35%] [34m[1mGenerating Lisp code from bebop_msgs/CommonMavlinkStateMissionItemExecuted.msg[0m
+[ 35%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3AccessoryStateConnectedAccessories.msg[0m
+[ 35%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateCurrentTimeChanged.msg[0m
+[ 35%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3AccessoryStateConnectedAccessories.msg[0m
+[ 36%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3MediaRecordStateVideoResolutionState.msg[0m
+[ 36%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonAnimationsStateList.msg[0m
+[ 36%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3MediaRecordStateVideoResolutionState.msg[0m
+[ 36%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChangedV2.msg[0m
+[ 36%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateAirSpeedChanged.msg[0m
+[ 37%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChangedV2.msg[0m
+[ 38%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonRunStateRunIdChanged.msg[0m
+[ 38%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateProductModel.msg[0m
+[ 38%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateProductModel.msg[0m
+[ 38%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateCurrentDateChanged.msg[0m
+[ 38%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3NetworkStateAllWifiScanChanged.msg[0m
+[ 38%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateCurrentDateChanged.msg[0m
+[ 39%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3GPSStateHomeTypeChosenChanged.msg[0m
+[ 39%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3AntiflickeringStateelectricFrequencyChanged.msg[0m
+[ 39%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3GPSStateHomeTypeChosenChanged.msg[0m
+[ 39%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateAttitudeChanged.msg[0m
+[ 39%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3CameraStateOrientationV2.msg[0m
+[ 40%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3CameraStateOrientationV2.msg[0m
+[ 40%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonARLibsVersionsStateControllerLibARCommandsVersion.msg[0m
+[ 40%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationRequiredState.msg[0m
+[ 40%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationRequiredState.msg[0m
+[ 40%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStatePositionChanged.msg[0m
+[ 41%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateBatteryStateChanged.msg[0m
+[ 41%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStatePositionChanged.msg[0m
+[ 42%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStateChanged.msg[0m
+[ 42%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3GPSStateNumberOfSatelliteChanged.msg[0m
+[ 42%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStateChanged.msg[0m
+[ 42%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3MediaStreamingStateVideoStreamModeChanged.msg[0m
+[ 42%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateLandingStateChanged.msg[0m
+[ 43%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateLandingStateChanged.msg[0m
+[ 43%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3NetworkStateWifiAuthChannelListChanged.msg[0m
+[ 43%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateNavigateHomeStateChanged.msg[0m
+[ 43%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3NetworkStateWifiAuthChannelListChanged.msg[0m
+[ 43%] [34m[1mGenerating Javascript code from bebop_msgs/CommonAudioStateAudioStreamingRunning.msg[0m
+[ 43%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateMassStorageContentForCurrentRun.msg[0m
+[ 43%] [34m[1mGenerating Lisp code from bebop_msgs/CommonAudioStateAudioStreamingRunning.msg[0m
+[ 44%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateCountryListKnown.msg[0m
+[ 45%] [34m[1mGenerating Javascript code from bebop_msgs/CommonARLibsVersionsStateSkyControllerLibARCommandsVersion.msg[0m
+[ 45%] [34m[1mGenerating Lisp code from bebop_msgs/CommonARLibsVersionsStateSkyControllerLibARCommandsVersion.msg[0m
+[ 46%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonARLibsVersionsStateDeviceLibARCommandsVersion.msg[0m
+[ 46%] [34m[1mGenerating Javascript code from bebop_msgs/CommonFlightPlanStateAvailabilityStateChanged.msg[0m
+[ 47%] [34m[1mGenerating Lisp code from bebop_msgs/CommonFlightPlanStateAvailabilityStateChanged.msg[0m
+[ 47%] [34m[1mGenerating Javascript code from bebop_msgs/CommonChargerStateChargingInfo.msg[0m
+[ 47%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateMassStorageInfoRemainingListChanged.msg[0m
+[ 47%] [34m[1mGenerating Lisp code from bebop_msgs/CommonChargerStateChargingInfo.msg[0m
+[ 47%] [34m[1mGenerating Javascript code from bebop_msgs/CommonMavlinkStateMavlinkPlayErrorStateChanged.msg[0m
+[ 47%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3MediaRecordStateVideoStateChanged.msg[0m
+[ 47%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonFlightPlanStateComponentStateListChanged.msg[0m
+[ 47%] [34m[1mGenerating Lisp code from bebop_msgs/CommonMavlinkStateMavlinkPlayErrorStateChanged.msg[0m
+[ 48%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3CameraStateOrientation.msg[0m
+[ 48%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3CameraStateOrientation.msg[0m
+[ 48%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientation.msg[0m
+[ 48%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonMavlinkStateMissionItemExecuted.msg[0m
+[ 49%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientation.msg[0m
+[ 49%] [34m[1mGenerating Javascript code from bebop_msgs/CommonAccessoryStateAccessoryConfigModificationEnabled.msg[0m
+[ 50%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3AccessoryStateConnectedAccessories.msg[0m
+[ 50%] [34m[1mGenerating Lisp code from bebop_msgs/CommonAccessoryStateAccessoryConfigModificationEnabled.msg[0m
+[ 50%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateAutoTakeOffModeChanged.msg[0m
+[ 50%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3NetworkStateAllWifiAuthChannelChanged.msg[0m
+[ 50%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3NetworkStateAllWifiAuthChannelChanged.msg[0m
+[ 50%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3MediaRecordStateVideoResolutionState.msg[0m
+[ 51%] [34m[1mGenerating Javascript code from bebop_msgs/CommonOverHeatStateOverHeatRegulationChanged.msg[0m
+[ 51%] [34m[1mGenerating Lisp code from bebop_msgs/CommonOverHeatStateOverHeatRegulationChanged.msg[0m
+[ 51%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChangedV2.msg[0m
+[ 51%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateMassStorageContent.msg[0m
+[ 52%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateMassStorageContent.msg[0m
+[ 52%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateMassStorageStateListChanged.msg[0m
+[ 52%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateAltitudeChanged.msg[0m
+[ 52%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateProductModel.msg[0m
+[ 52%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateAltitudeChanged.msg[0m
+[ 52%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3MediaStreamingStateVideoEnableChanged.msg[0m
+[ 53%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateCurrentDateChanged.msg[0m
+[ 53%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3MediaStreamingStateVideoEnableChanged.msg[0m
+[ 54%] [34m[1mGenerating Javascript code from bebop_msgs/CommonChargerStateLastChargeRateChanged.msg[0m
+[ 54%] [34m[1mGenerating Lisp code from bebop_msgs/CommonChargerStateLastChargeRateChanged.msg[0m
+[ 54%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3GPSStateHomeTypeChosenChanged.msg[0m
+[ 54%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChanged.msg[0m
+[ 55%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateFlatTrimChanged.msg[0m
+[ 56%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChanged.msg[0m
+[ 56%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3PilotingStateSpeedChanged.msg[0m
+[ 56%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3CameraStateOrientationV2.msg[0m
+[ 56%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3PilotingStateSpeedChanged.msg[0m
+[ 56%] [34m[1mGenerating Javascript code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientationV2.msg[0m
+[ 56%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationRequiredState.msg[0m
+[ 56%] [34m[1mGenerating Lisp code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientationV2.msg[0m
+[ 57%] [34m[1mGenerating Javascript code from bebop_msgs/CommonOverHeatStateOverHeatChanged.msg[0m
+[ 57%] [34m[1mGenerating Javascript code from bebop_msgs/CommonCommonStateAllStatesChanged.msg[0m
+[ 57%] [34m[1mGenerating Lisp code from bebop_msgs/CommonOverHeatStateOverHeatChanged.msg[0m
+[ 57%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateFlyingStateChanged.msg[0m
+[ 58%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStatePositionChanged.msg[0m
+[ 59%] [34m[1mGenerating Lisp code from bebop_msgs/CommonCommonStateAllStatesChanged.msg[0m
+[ 59%] [34m[1mGenerating Javascript code from bebop_msgs/CommonAccessoryStateSupportedAccessoriesListChanged.msg[0m
+[ 59%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStateChanged.msg[0m
+[ 59%] [34m[1mGenerating Lisp code from bebop_msgs/CommonAccessoryStateSupportedAccessoriesListChanged.msg[0m
+[ 59%] Built target bebop_msgs_generate_messages_nodejs
+[35m[1mScanning dependencies of target bebop_msgs_generate_messages_py[0m
+[ 59%] [34m[1mGenerating Python from MSG bebop_msgs/CommonAccessoryStateAccessoryConfigChanged[0m
+[ 59%] Built target bebop_msgs_generate_messages_lisp
+[ 59%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateLandingStateChanged.msg[0m
+[ 59%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3NetworkStateWifiAuthChannelListChanged.msg[0m
+[ 59%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PROStateFeatures.msg[0m
+[ 59%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3GPSStateHomeTypeAvailabilityChanged.msg[0m
+[ 59%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonAudioStateAudioStreamingRunning.msg[0m
+[ 60%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCalibrationStateMagnetoCalibrationStartedChanged[0m
+[ 61%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonARLibsVersionsStateSkyControllerLibARCommandsVersion.msg[0m
+[ 61%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonFlightPlanStateAvailabilityStateChanged.msg[0m
+[ 62%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateWifiSignalChanged.msg[0m
+[ 62%] [34m[1mGenerating Python from MSG bebop_msgs/CommonMavlinkStateMavlinkFilePlayingStateChanged[0m
+[ 62%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateGpsLocationChanged.msg[0m
+[ 62%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonChargerStateChargingInfo.msg[0m
+[ 62%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateAlertStateChanged[0m
+[ 62%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonMavlinkStateMavlinkPlayErrorStateChanged.msg[0m
+[ 62%] [34m[1mGenerating C++ code from bebop_msgs/CommonChargerStateMaxChargeRateChanged.msg[0m
+[ 63%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3CameraStateOrientation.msg[0m
+[ 63%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateDeprecatedMassStorageContentChanged.msg[0m
+[ 63%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3MediaRecordStateVideoStateChangedV2[0m
+[ 63%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientation.msg[0m
+[ 63%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonAccessoryStateAccessoryConfigModificationEnabled.msg[0m
+[ 64%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateSensorsStatesListChanged[0m
+[ 65%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateMassStorageInfoStateListChanged.msg[0m
+[ 65%] [34m[1mGenerating C++ code from bebop_msgs/CommonFlightPlanStateLockStateChanged.msg[0m
+[ 65%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3NetworkStateAllWifiAuthChannelChanged.msg[0m
+[ 67%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonOverHeatStateOverHeatRegulationChanged.msg[0m
+[ 67%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateVideoRecordingTimestamp[0m
+[ 67%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateMassStorageContent.msg[0m
+[ 67%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateAltitudeChanged.msg[0m
+[ 67%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStatemoveToChanged.msg[0m
+[ 67%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCalibrationStatePitotCalibrationStateChanged[0m
+[ 67%] [34m[1mGenerating Python from MSG bebop_msgs/CommonChargerStateCurrentChargeStateChanged[0m
+[ 67%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3MediaStreamingStateVideoEnableChanged.msg[0m
+[ 68%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonChargerStateLastChargeRateChanged.msg[0m
+[ 68%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChanged.msg[0m
+[ 69%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCalibrationStateMagnetoCalibrationAxisToCalibrateChanged[0m
+[ 69%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3AntiflickeringStatemodeChanged.msg[0m
+[ 70%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateCurrentTimeChanged.msg[0m
+[ 70%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3PilotingStateSpeedChanged.msg[0m
+[ 70%] [34m[1mGenerating Python from MSG bebop_msgs/CommonHeadlightsStateintensityChanged[0m
+[ 70%] [34m[1mGenerating EusLisp code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientationV2.msg[0m
+[ 70%] [34m[1mGenerating C++ code from bebop_msgs/CommonAnimationsStateList.msg[0m
+[ 71%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonOverHeatStateOverHeatChanged.msg[0m
+[ 71%] [34m[1mGenerating C++ code from bebop_msgs/CommonRunStateRunIdChanged.msg[0m
+[ 71%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3CameraStateVelocityRange[0m
+[ 71%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonCommonStateAllStatesChanged.msg[0m
+[ 71%] [34m[1mGenerating EusLisp code from bebop_msgs/CommonAccessoryStateSupportedAccessoriesListChanged.msg[0m
+[ 71%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3NetworkStateWifiScanListChanged[0m
+[ 71%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3NetworkStateAllWifiScanChanged.msg[0m
+[ 72%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3AntiflickeringStateelectricFrequencyChanged.msg[0m
+[ 72%] [34m[1mGenerating EusLisp manifest code for bebop_msgs[0m
+[ 73%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateAirSpeedChanged[0m
+[ 73%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateAttitudeChanged[0m
+[ 73%] [34m[1mGenerating C++ code from bebop_msgs/CommonARLibsVersionsStateControllerLibARCommandsVersion.msg[0m
+[ 73%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateBatteryStateChanged.msg[0m
+[ 73%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3GPSStateNumberOfSatelliteChanged[0m
+[ 73%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3MediaStreamingStateVideoStreamModeChanged.msg[0m
+[ 74%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateNavigateHomeStateChanged.msg[0m
+[ 74%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateCountryListKnown[0m
+[ 75%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3MediaRecordStateVideoStateChanged[0m
+[ 75%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateAutoTakeOffModeChanged[0m
+[ 75%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateMassStorageContentForCurrentRun.msg[0m
+[ 75%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateMassStorageStateListChanged[0m
+[ 75%] [34m[1mGenerating C++ code from bebop_msgs/CommonARLibsVersionsStateDeviceLibARCommandsVersion.msg[0m
+[ 75%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateMassStorageInfoRemainingListChanged.msg[0m
+[ 75%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateFlatTrimChanged[0m
+[ 76%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateFlyingStateChanged[0m
+[ 77%] [34m[1mGenerating C++ code from bebop_msgs/CommonFlightPlanStateComponentStateListChanged.msg[0m
+[ 77%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PROStateFeatures[0m
+[ 77%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3GPSStateHomeTypeAvailabilityChanged[0m
+[ 77%] [34m[1mGenerating C++ code from bebop_msgs/CommonMavlinkStateMissionItemExecuted.msg[0m
+[ 77%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3AccessoryStateConnectedAccessories.msg[0m
+[ 77%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateWifiSignalChanged[0m
+[ 78%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateGpsLocationChanged[0m
+[ 78%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3MediaRecordStateVideoResolutionState.msg[0m
+[ 78%] [34m[1mGenerating Python from MSG bebop_msgs/CommonChargerStateMaxChargeRateChanged[0m
+[ 79%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChangedV2.msg[0m
+[ 79%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateDeprecatedMassStorageContentChanged[0m
+[ 79%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateProductModel.msg[0m
+[ 79%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateMassStorageInfoStateListChanged[0m
+[ 80%] [34m[1mGenerating Python from MSG bebop_msgs/CommonFlightPlanStateLockStateChanged[0m
+[ 80%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateCurrentDateChanged.msg[0m
+[ 80%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStatemoveToChanged[0m
+[ 80%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3AntiflickeringStatemodeChanged[0m
+[ 80%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3GPSStateHomeTypeChosenChanged.msg[0m
+[ 80%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateCurrentTimeChanged[0m
+[ 81%] [34m[1mGenerating Python from MSG bebop_msgs/CommonAnimationsStateList[0m
+[ 82%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3CameraStateOrientationV2.msg[0m
+[ 82%] [34m[1mGenerating Python from MSG bebop_msgs/CommonRunStateRunIdChanged[0m
+[ 82%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3NetworkStateAllWifiScanChanged[0m
+[ 82%] [34m[1mGenerating C++ code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationRequiredState.msg[0m
+[ 82%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStatePositionChanged.msg[0m
+[ 82%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3AntiflickeringStateelectricFrequencyChanged[0m
+[ 83%] [34m[1mGenerating Python from MSG bebop_msgs/CommonARLibsVersionsStateControllerLibARCommandsVersion[0m
+[ 83%] [34m[1mGenerating C++ code from bebop_msgs/CommonCalibrationStateMagnetoCalibrationStateChanged.msg[0m
+[ 83%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateBatteryStateChanged[0m
+[ 84%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateLandingStateChanged.msg[0m
+[ 84%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3MediaStreamingStateVideoStreamModeChanged[0m
+[ 84%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateNavigateHomeStateChanged[0m
+[ 84%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3NetworkStateWifiAuthChannelListChanged.msg[0m
+[ 84%] [34m[1mGenerating C++ code from bebop_msgs/CommonAudioStateAudioStreamingRunning.msg[0m
+[ 85%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateMassStorageContentForCurrentRun[0m
+[ 85%] [34m[1mGenerating Python from MSG bebop_msgs/CommonARLibsVersionsStateDeviceLibARCommandsVersion[0m
+[ 85%] [34m[1mGenerating C++ code from bebop_msgs/CommonARLibsVersionsStateSkyControllerLibARCommandsVersion.msg[0m
+[ 86%] [34m[1mGenerating C++ code from bebop_msgs/CommonFlightPlanStateAvailabilityStateChanged.msg[0m
+[ 86%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateMassStorageInfoRemainingListChanged[0m
+[ 86%] [34m[1mGenerating Python from MSG bebop_msgs/CommonFlightPlanStateComponentStateListChanged[0m
+[ 86%] [34m[1mGenerating C++ code from bebop_msgs/CommonChargerStateChargingInfo.msg[0m
+[ 87%] [34m[1mGenerating Python from MSG bebop_msgs/CommonMavlinkStateMissionItemExecuted[0m
+[ 87%] [34m[1mGenerating C++ code from bebop_msgs/CommonMavlinkStateMavlinkPlayErrorStateChanged.msg[0m
+[ 87%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3MediaRecordStateVideoResolutionState[0m
+[ 87%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3AccessoryStateConnectedAccessories[0m
+[ 87%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3CameraStateOrientation.msg[0m
+[ 87%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3MediaRecordStatePictureStateChangedV2[0m
+[ 88%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateProductModel[0m
+[ 89%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientation.msg[0m
+[ 89%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateCurrentDateChanged[0m
+[ 89%] [34m[1mGenerating C++ code from bebop_msgs/CommonAccessoryStateAccessoryConfigModificationEnabled.msg[0m
+[ 89%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3GPSStateHomeTypeChosenChanged[0m
+[ 89%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3CameraStateOrientationV2[0m
+[ 89%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3NetworkStateAllWifiAuthChannelChanged.msg[0m
+[ 89%] [34m[1mGenerating C++ code from bebop_msgs/CommonOverHeatStateOverHeatRegulationChanged.msg[0m
+[ 90%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCalibrationStateMagnetoCalibrationRequiredState[0m
+[ 90%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStatePositionChanged[0m
+[ 90%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCalibrationStateMagnetoCalibrationStateChanged[0m
+[ 91%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateMassStorageContent.msg[0m
+[ 91%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateAltitudeChanged.msg[0m
+[ 91%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateLandingStateChanged[0m
+[ 92%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3NetworkStateWifiAuthChannelListChanged[0m
+[ 92%] [34m[1mGenerating Python from MSG bebop_msgs/CommonAudioStateAudioStreamingRunning[0m
+[ 92%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3MediaStreamingStateVideoEnableChanged.msg[0m
+[ 92%] [34m[1mGenerating C++ code from bebop_msgs/CommonChargerStateLastChargeRateChanged.msg[0m
+[ 92%] [34m[1mGenerating Python from MSG bebop_msgs/CommonARLibsVersionsStateSkyControllerLibARCommandsVersion[0m
+[ 93%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3MediaRecordStatePictureStateChanged.msg[0m
+[ 93%] [34m[1mGenerating Python from MSG bebop_msgs/CommonFlightPlanStateAvailabilityStateChanged[0m
+[ 93%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3PilotingStateSpeedChanged.msg[0m
+[ 94%] [34m[1mGenerating Python from MSG bebop_msgs/CommonChargerStateChargingInfo[0m
+[ 94%] [34m[1mGenerating C++ code from bebop_msgs/Ardrone3CameraStatedefaultCameraOrientationV2.msg[0m
+[ 94%] [34m[1mGenerating C++ code from bebop_msgs/CommonOverHeatStateOverHeatChanged.msg[0m
+[ 94%] [34m[1mGenerating Python from MSG bebop_msgs/CommonMavlinkStateMavlinkPlayErrorStateChanged[0m
+[ 95%] [34m[1mGenerating C++ code from bebop_msgs/CommonCommonStateAllStatesChanged.msg[0m
+[ 95%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3CameraStateOrientation[0m
+[ 95%] Built target bebop_msgs_generate_messages_eus
+[ 95%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3CameraStatedefaultCameraOrientation[0m
+[ 95%] [34m[1mGenerating C++ code from bebop_msgs/CommonAccessoryStateSupportedAccessoriesListChanged.msg[0m
+[ 96%] [34m[1mGenerating Python from MSG bebop_msgs/CommonAccessoryStateAccessoryConfigModificationEnabled[0m
+[ 96%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3NetworkStateAllWifiAuthChannelChanged[0m
+[ 96%] [34m[1mGenerating Python from MSG bebop_msgs/CommonOverHeatStateOverHeatRegulationChanged[0m
+[ 96%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateMassStorageContent[0m
+[ 96%] Built target bebop_msgs_generate_messages_cpp
+[ 97%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateAltitudeChanged[0m
+[ 97%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3MediaStreamingStateVideoEnableChanged[0m
+[ 97%] [34m[1mGenerating Python from MSG bebop_msgs/CommonChargerStateLastChargeRateChanged[0m
+[ 97%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3MediaRecordStatePictureStateChanged[0m
+[ 98%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3PilotingStateSpeedChanged[0m
+[ 98%] [34m[1mGenerating Python from MSG bebop_msgs/Ardrone3CameraStatedefaultCameraOrientationV2[0m
+[ 98%] [34m[1mGenerating Python from MSG bebop_msgs/CommonOverHeatStateOverHeatChanged[0m
+[ 98%] [34m[1mGenerating Python from MSG bebop_msgs/CommonCommonStateAllStatesChanged[0m
+[100%] [34m[1mGenerating Python from MSG bebop_msgs/CommonAccessoryStateSupportedAccessoriesListChanged[0m
+[100%] [34m[1mGenerating Python msg __init__.py for bebop_msgs[0m
+[100%] Built target bebop_msgs_generate_messages_py
+[35m[1mScanning dependencies of target bebop_msgs_generate_messages[0m
+[100%] Built target bebop_msgs_generate_messages

@@ -1,0 +1,8 @@
+prefix=/home/mathias/BosRepo/bebop_ws/install
+
+Name: bebop_tools
+Description: Description of bebop_tools
+Version: 0.7.0
+Cflags: 
+Libs: -L/home/mathias/BosRepo/bebop_ws/install/lib 
+Requires: bebop_msgs

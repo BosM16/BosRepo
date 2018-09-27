@@ -1,5 +1,0 @@
-<launch>
-
-<node pkg="try_out" type="try_out.py" name="try_out" output="screen"/>
-
-</launch>
