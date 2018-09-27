@@ -167,7 +167,7 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
         current_angle = rob->scan.angle_max - rob->pp->int_left_side[0] * rob->scan.angle_increment;
         std::vector<Point> datapoints;
 
-        for (int i = rob->pp->int_left_side[0]; i < rob->pp->int_left_side[1]; i++) {
+        for (int i = rob->pp->int_left_side->i1; i < rob->pp->int_left_side->i2; i++) {
           Point datapoint;
           // Transformation from polar coordinates (laser scan data) to cartesian.
           datapoint.x = *(wm->dist_meas)->distances[i]*std::cos(current_angle);
@@ -180,7 +180,7 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
 
         // 2) Calculate a linear function least squares fit through the data points.
         // 3) From the slope, extract an estimate of the orientation.
-        Line line
+        Line line;
         wall = fit_line(datapoints, &line);
 
         float slope = - line.a / line.b;
@@ -204,7 +204,7 @@ bool perception_follow_wall(struct ROB_state *rob, struct WM_state *wm) {
         current_angle = rob->scan.angle_max - rob->pp->int_right_side[0] * rob->scan.angle_increment;
         std::vector<Point> datapoints;
 
-        for (int i = rob->pp->int_right_side[0]; i < rob->pp->int_right_side[1]; i++) {
+        for (int i = rob->pp->int_right_side->i1; i < rob->pp->int_right_side->i2; i++) {
           Point datapoint;
           // Transformation from polar coordinates (laser scan data) to cartesian.
           datapoint.x = *(wm->dist_meas)->distances[i]*std::cos(current_angle);
