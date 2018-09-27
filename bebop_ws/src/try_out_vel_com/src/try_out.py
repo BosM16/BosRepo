@@ -21,17 +21,17 @@ class Try_out(object):
         print 'started'
         rospy.spin()
 
-    def flying(self):
+    def flying(self, empty):
         print 'flying'
         self.take_off.publish(Empty())
-        sleep(5)
+        rospy.sleep(5)
         cmd_vel = Twist()
         cmd_vel.linear.y = 0.4
         self.cmd_vel.publish(cmd_vel)
-        sleep(0.5)
+        rospy.sleep(0.5)
         cmd_vel.linear.y = -0.4
         self.cmd_vel.publish(cmd_vel)
-        sleep(0.5)
+        rospy.sleep(0.5)
         self.land.publish(Empty())
         print 'eagle has landed'
 
