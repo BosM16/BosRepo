@@ -45,24 +45,3 @@ find_package(catkin REQUIRED COMPONENTS
 ##     and list every .msg/.srv/.action file to be processed
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
-
-## Generate messages in the 'msg' folder
- add_message_files(
-  FILES
-    StaticObst.msg
- )
-
-## Generate services in the 'srv' folder
-add_service_files(
-  FILES
-    GlobalCostmapPass.srv
-)
-
-## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  geometry_msgs
-  actionlib_msgs
-  std_msgs
-  nav_msgs
-)

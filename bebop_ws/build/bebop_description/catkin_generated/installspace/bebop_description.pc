@@ -1,8 +1,0 @@
-prefix=/home/rian/Documents/BosRepo/bebop_ws/install
-
-Name: bebop_description
-Description: Description of bebop_description
-Version: 0.7.0
-Cflags: 
-Libs: -L/home/rian/Documents/BosRepo/bebop_ws/install/lib 
-Requires: 
