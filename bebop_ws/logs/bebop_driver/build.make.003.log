@@ -1,0 +1,4 @@
+[ 12%] Built target bebop_driver_gencfg
+[ 50%] Built target bebop
+[ 75%] Built target bebop_driver_node
+[100%] Built target bebop_driver_nodelet

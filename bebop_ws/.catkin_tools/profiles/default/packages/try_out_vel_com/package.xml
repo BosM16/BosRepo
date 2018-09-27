@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>try_out_vel_com</name>
-  <version>0.0.0</version>
+  <version>0.0.1</version>
   <description>
   try_out for sending vel commands
   </description>

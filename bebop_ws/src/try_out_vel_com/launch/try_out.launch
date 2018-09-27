@@ -1,5 +1,5 @@
 <launch>
 
-<node pkg="try_out_vel_com" type="try_out.py" name="try_out" output="screen"/>
+  <node name="try_out" pkg="try_out_vel_com" type="try_out.py" output="screen"/>
 
 </launch>

@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-from std_msgs.msg import Empty
-from std_msgs.msg import UInt8
+from std_msgs.msg import Empty, UInt8
 from geometry_msgs.msg import Twist
 import rospy
 
 
-class Bebop(object):
+class Try_out(object):
 
     def __init__(self):
         """
@@ -38,5 +37,5 @@ class Bebop(object):
 
 
 if __name__ == '__main__':
-    Billy = Bebop()
+    Billy = Try_out()
     Billy.start()
