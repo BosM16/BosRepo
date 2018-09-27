@@ -1,0 +1,8 @@
+Symlinking /home/rian/bebop_ws/devel/./setup.sh
+Symlinking /home/rian/bebop_ws/devel/./_setup_util.py
+Symlinking /home/rian/bebop_ws/devel/./env.sh
+Symlinking /home/rian/bebop_ws/devel/./setup.zsh
+Symlinking /home/rian/bebop_ws/devel/./setup.bash
+Symlinking /home/rian/bebop_ws/devel/lib/pkgconfig/catkin_tools_prebuild.pc
+Symlinking /home/rian/bebop_ws/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig-version.cmake
+Symlinking /home/rian/bebop_ws/devel/share/catkin_tools_prebuild/cmake/catkin_tools_prebuildConfig.cmake

@@ -1,0 +1,6 @@
+devel_space: /home/rian/bebop_ws/devel
+install: false
+install_space: /home/rian/bebop_ws/install
+profile: default
+source_space: /home/rian/bebop_ws/src
+workspace: /home/rian/bebop_ws
