@@ -10,10 +10,10 @@ class Try_out(object):
     def __init__(self):
         """
         """
-        self.cmd_vel = rospy.Publisher('cmd_vel', Twist, queue_size=1)
-        self.take_off = rospy.Publisher('takeoff', Empty, queue_size=1)
-        self.land = rospy.Publisher('land', Empty, queue_size=1)
-        self.flip = rospy.Publisher('flip', Empty, queue_size=1)
+        self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
+        self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
+        self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
+        self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
 
     def start(self):
@@ -24,14 +24,160 @@ class Try_out(object):
     def flying(self, empty):
         print 'flying'
         self.take_off.publish(Empty())
-        rospy.sleep(5)
+        rospy.sleep(4)
+
         cmd_vel = Twist()
-        cmd_vel.linear.y = 0.4
-        self.cmd_vel.publish(cmd_vel)
-        rospy.sleep(0.5)
+        rate = 10
+
+        k = 0.0
+
+        cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = -0.4
+        cmd_vel.linear.z = 0.0
+
+        # cmd_vel.angular.x = 0.0
+        # cmd_vel.angular.y = 0.0
+        cmd_vel.angular.z = 0.0
+
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = 0.0
         self.cmd_vel.publish(cmd_vel)
-        rospy.sleep(0.5)
+        rospy.sleep(0.6)
+
+        cmd_vel.linear.x = 0.4
+        cmd_vel.linear.y = 0.0
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = 0.0
+        self.cmd_vel.publish(cmd_vel)
+        rospy.sleep(0.6)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = 0.4
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = 0.0
+        self.cmd_vel.publish(cmd_vel)
+        rospy.sleep(0.6)
+
+        cmd_vel.linear.x = -0.4
+        cmd_vel.linear.y = 0.0
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = 0.0
+        cmd_vel.linear.z = 0.0
+
+        # cmd_vel.angular.x = 0.0
+        # cmd_vel.angular.y = 0.0
+        cmd_vel.angular.z = 0.0
+        self.cmd_vel.publish(cmd_vel)
+        rospy.sleep(1.5)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = -0.4
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = 0.4
+        cmd_vel.linear.y = 0.0
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = 0.4
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = -0.4
+        cmd_vel.linear.y = 0.0
+
+        for x in range(0, rate):
+            self.cmd_vel.publish(cmd_vel)
+            rospy.sleep(0.1)
+
+        cmd_vel.linear.x = 0.0
+        cmd_vel.linear.y = 0.0
+        cmd_vel.linear.z = 0.0
+
+        # cmd_vel.angular.x = 0.0
+        # cmd_vel.angular.y = 0.0
+        cmd_vel.angular.z = 0.0
+
+        print 'stop', cmd_vel
+        self.cmd_vel.publish(cmd_vel)
+
+        # cmd_vel.linear.y = 0.0
+        # for x in range(0, rate):
+        #     self.cmd_vel.publish(cmd_vel)
+        #     rospy.sleep(1/rate)
+        #
+        # rospy.sleep(1)
+        #
+        # cmd_vel.linear.y = 0.4
+        # for x in range(0, rate):
+        #     self.cmd_vel.publish(cmd_vel)
+        #     rospy.sleep(1/rate)
+        #
+        # rospy.sleep(1)
+        #
+        # cmd_vel.linear.y = 0.0
+        # for x in range(0, rate):
+        #     self.cmd_vel.publish(cmd_vel)
+        #     rospy.sleep(1/rate)
+        #
+        # rospy.sleep(1)
+        #
+        # cmd_vel.linear.y = -0.4
+        # for x in range(0, rate):
+        #     self.cmd_vel.publish(cmd_vel)
+        #     rospy.sleep(1/rate)
+        #
+        # rospy.sleep(1)
+        #
+        # cmd_vel.linear.y = 0.0
+        # for x in range(0, rate):
+        #     self.cmd_vel.publish(cmd_vel)
+        #     rospy.sleep(1/rate)
+        #
+        # rospy.sleep(1)
+        #
+        # cmd_vel.linear.y = 0.4
+        # for x in range(0, rate):
+        #     self.cmd_vel.publish(cmd_vel)
+        #     rospy.sleep(1/rate)
+        #
+        # rospy.sleep(1)
+        #
+        # cmd_vel.linear.y = 0.0
+        # for x in range(0, rate):
+        #     self.cmd_vel.publish(cmd_vel)
+        #     rospy.sleep(1/rate)
+
+        rospy.sleep(1)
+
         self.land.publish(Empty())
         print 'eagle has landed'
 
