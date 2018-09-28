@@ -1,1 +1,0 @@
-/usr/bin/c++  -fPIC   -shared -Wl,-soname,libgtest_main.so -o libgtest_main.so CMakeFiles/gtest_main.dir/src/gtest_main.cc.o  -L/home/mathias/BosRepo/bebop_ws/build/Try_out_vel_com/gtest/gtest/src -lpthread libgtest.so -lpthread -Wl,-rpath,/home/mathias/BosRepo/bebop_ws/build/Try_out_vel_com/gtest/gtest/src:/home/mathias/BosRepo/bebop_ws/build/Try_out_vel_com/gtest/gtest 

@@ -1,8 +1,0 @@
-prefix=/home/mathias/BosRepo/bebop_ws/install
-
-Name: catkin_tools_prebuild
-Description: Description of catkin_tools_prebuild
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/mathias/BosRepo/bebop_ws/install/lib 
-Requires: 

@@ -1,6 +1,0 @@
-devel_space: /home/mathias/BosRepo/bebop_ws/devel
-install: false
-install_space: /home/mathias/BosRepo/bebop_ws/install
-profile: default
-source_space: /home/mathias/BosRepo/bebop_ws/src
-workspace: /home/mathias/BosRepo/bebop_ws

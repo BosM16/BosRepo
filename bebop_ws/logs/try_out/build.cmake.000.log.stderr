@@ -1,4 +1,0 @@
-[31m[1mCMake Error[0m at /home/mathias/BosRepo/bebop_ws/src/Try_out_vel_com/CMakeLists.txt:50 (add_message_files):
-  Unknown CMake command "add_message_files".
-
-
