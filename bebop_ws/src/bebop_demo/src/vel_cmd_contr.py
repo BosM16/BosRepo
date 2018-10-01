@@ -76,7 +76,7 @@ class VelCommander(object):
         """Update the controller with newly calculated trajectories and velocity
         commands.
         """
-        pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
+        # pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
         if self._init:
             if not self._new_trajectories:
                 return
@@ -91,7 +91,7 @@ class VelCommander(object):
                 self._time += self._index*self._sample_time
                 self._index = 0
                 # Trigger motion planner.
-                self.fire_motionplanner(self._time, pose0)
+                self.fire_motionplanner(self._time)
             else:
                 self.calc_succeeded = False
                 print 'overtime!'
@@ -166,21 +166,16 @@ class VelCommander(object):
 
     def set_goal(self):
         self._time = 0.
-        pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
         self._new_trajectories = False
-        self.fire_motionplanner(self._time, pose0)
+        self.fire_motionplanner(self._time)
         self._init = True
         self.startup = True
 
-    def fire_motionplanner(self, time, pose0):
+    def fire_motionplanner(self, time):
         """Publishes inputs to motionplanner via Trigger topic.
         """
-        self._trigger.goal = self._goal
+        self._trigger.goal = self._goal  # ??????????????????????????????????????
         self._trigger.state = RobotPose(pose0[:])
-        self._trigger.dyn_obstacles = [Obstacle(
-            pose=self._robobst_est_pose[k], velocity=(
-                self._robobst_est_velocity[k]))
-                    for k in range(len(self._robobst))]
         self._trigger.current_time = time
         self._mp_trigger_topic.publish(self._trigger)
 
