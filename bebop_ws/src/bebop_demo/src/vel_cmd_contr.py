@@ -41,13 +41,14 @@ class VelCommander(object):
         self._vel_traj_applied = {'v': [], 'w': []}
 
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
-        rospy.Subscriber('demo', Empty, self.flying)
         self._mp_trigger_topic = rospy.Publisher(
             'mp_trigger', Trigger, queue_size=1)
         self._mp_configure_topic = rospy.Publisher(
             'mp_configure', Settings, queue_size=1)
+        rospy.Subscriber('demo', Empty, self.flying)
         rospy.Subscriber('mp_result', RobotTrajectory, self.get_mp_result)
         rospy.Subscriber('mp_feedback', Bool, self.get_mp_feedback)
+        rospy.Subscriber('pose_est', Pose2D, self.update_pose)
 
     def get_mp_feedback(self, data):
         """Sets motionplanner status. If False, then controller.start() will wait
@@ -72,11 +73,17 @@ class VelCommander(object):
         y_traj = data.y_traj
         self.store_trajectories(v_traj, w_traj, x_traj, y_traj)
 
+    def update_pose(self, pose):
+        '''updates the position estimate whenever new position data is
+        available from the kalman filter
+        '''
+        self._robot_est_pose = pose
+
     def update(self):
         """Update the controller with newly calculated trajectories and velocity
         commands.
         """
-        # pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
+        pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
         if self._init:
             if not self._new_trajectories:
                 return
@@ -91,7 +98,7 @@ class VelCommander(object):
                 self._time += self._index*self._sample_time
                 self._index = 0
                 # Trigger motion planner.
-                self.fire_motionplanner(self._time)
+                self.fire_motionplanner(self._time, pose0)
             else:
                 self.calc_succeeded = False
                 print 'overtime!'
@@ -99,9 +106,6 @@ class VelCommander(object):
                 self._cmd_twist.linear.y = 0.
                 return
 
-        # update position with feedforward position (temporary for testing).
-        self._robot_est_pose.x = self._traj['x'][self._index]
-        self._robot_est_pose.y = self._traj['y'][self._index]
         # Feedforward velocity command.
         self._cmd_twist.linear.x = self._traj['v'][self._index]
         self._cmd_twist.linear.y = self._traj['w'][self._index]
@@ -118,6 +122,7 @@ class VelCommander(object):
         self.cmd_vel.publish(self._cmd_twist)
         self._vel_traj_applied['v'].append(self._cmd_twist.linear.x)
         self._vel_traj_applied['w'].append(self._cmd_twist.linear.y)
+
         self._index += 1
 
     def load_trajectories(self):
@@ -166,12 +171,13 @@ class VelCommander(object):
 
     def set_goal(self):
         self._time = 0.
+        pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
         self._new_trajectories = False
-        self.fire_motionplanner(self._time)
+        self.fire_motionplanner(self._time, pose0)
         self._init = True
         self.startup = True
 
-    def fire_motionplanner(self, time):
+    def fire_motionplanner(self, time, pose0):
         """Publishes inputs to motionplanner via Trigger topic.
         """
         self._trigger.goal = self._goal  # ??????????????????????????????????????
@@ -238,9 +244,10 @@ class VelCommander(object):
         self.progress = True
         print 'flying'
 
+
 if __name__ == '__main__':
-    controller = Controller()
-    controller.start()
-    controller.configure()
-    controller.planning()
-    controller.set_goal()
+    vel_command = VelCommander()
+    vel_command.start()
+    vel_command.configure()
+    vel_command.planning()
+    vel_command.set_goal()

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist
 import numpy as np
 import rospy
 
@@ -10,7 +10,7 @@ class WorldModel(object):
     Contains all information of the world: the position of the obstacles, and
     the position and pose of the drone.
     '''
-
+# AANPASSEN VOOR MEERDERE RICHTINGEN!!
     def __init__(self):
         """
         Initialization of WorldModel object.
