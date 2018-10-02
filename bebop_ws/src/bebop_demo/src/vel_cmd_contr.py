@@ -230,6 +230,7 @@ class VelCommander(object):
         Args:
             waypoints : list of all waypoints coming from the global planner.
         """
+        ## Hardcoded goal! Rather read from topic?
         self._goal = RobotPose([0.5, 0.5])
 
         return True
@@ -239,8 +240,8 @@ class VelCommander(object):
         print 'flying'
 
 if __name__ == '__main__':
-    controller = Controller()
-    controller.start()
-    controller.configure()
-    controller.planning()
-    controller.set_goal()
+    vel_commander = VelCommander()
+    vel_commander.start()
+    vel_commander.configure()
+    vel_commander.planning()
+    vel_commander.set_goal()
