@@ -10,7 +10,15 @@ class Try_out(object):
     def __init__(self):
         """
         """
-        self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
+        ## uncomment for bebop_autonomy
+        # self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
+        # self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
+        # self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
+        # self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
+        # rospy.Subscriber('demo', Empty, self.flying)
+
+        ## use this for bebop_vel_ctrl + bebop_autonomy
+        self.cmd_vel = rospy.Publisher('/vel_ctrl/cmd_vel', Twist, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
@@ -31,6 +39,7 @@ class Try_out(object):
 
         k = 0.0
 
+        # move to the right
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = -0.4
         cmd_vel.linear.z = 0.0
@@ -44,11 +53,13 @@ class Try_out(object):
             self.cmd_vel.publish(cmd_vel)
             rospy.sleep(0.1)
 
+        # brake
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = 0.0
         self.cmd_vel.publish(cmd_vel)
         rospy.sleep(0.6)
 
+        # move forward
         cmd_vel.linear.x = 0.4
         cmd_vel.linear.y = 0.0
 
@@ -56,11 +67,13 @@ class Try_out(object):
             self.cmd_vel.publish(cmd_vel)
             rospy.sleep(0.1)
 
+        # brake
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = 0.0
         self.cmd_vel.publish(cmd_vel)
         rospy.sleep(0.6)
 
+        # move left
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = 0.4
 
@@ -68,11 +81,13 @@ class Try_out(object):
             self.cmd_vel.publish(cmd_vel)
             rospy.sleep(0.1)
 
+        # brake
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = 0.0
         self.cmd_vel.publish(cmd_vel)
         rospy.sleep(0.6)
 
+        # move backward
         cmd_vel.linear.x = -0.4
         cmd_vel.linear.y = 0.0
 
@@ -80,6 +95,7 @@ class Try_out(object):
             self.cmd_vel.publish(cmd_vel)
             rospy.sleep(0.1)
 
+        # brake
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = 0.0
         cmd_vel.linear.z = 0.0
@@ -90,6 +106,7 @@ class Try_out(object):
         self.cmd_vel.publish(cmd_vel)
         rospy.sleep(1.5)
 
+        # do the same without braking
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = -0.4
 

@@ -1,5 +1,5 @@
 <launch>
 
-  <node name="try_out" pkg="try_out_vel_com" type="try_out.py" output="screen"/>
+  <node name="try_out" pkg="bebop_demo" type="try_out.py" output="screen"/>
 
 </launch>

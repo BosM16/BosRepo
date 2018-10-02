@@ -8,14 +8,14 @@ from world_model import *
 from vel_cmd_contr import *
 
 
-class Fsm(object):
+class Demo(object):
     '''
     Switches to the desired state depending on task at hand
     '''
 
     def __init__(self):
         """
-        Initialization of Fsm object.
+        Initialization of Demo object.
         """
         rospy.init_node('fsm')
         vel_input = Vector3()
@@ -42,8 +42,8 @@ class Fsm(object):
 
 
 if __name__ == '__main__':
-    fsm = Fsm()
-    fsm.vel_cmd = VelCommander()
-    fsm.percep = Perception()
-    fsm.wm = WorldModel()
-    fsm.vel_cmd.start
+    demo = Demo()
+    demo.vel_cmd = VelCommander()
+    demo.percep = Perception()
+    demo.wm = WorldModel()
+    demo.vel_cmd.start()

@@ -1,0 +1,5 @@
+<launch>
+
+  <node name="bebop_demo" pkg="bebop_demo" type="bebop_demo.py" output="screen"/>
+
+</launch>
