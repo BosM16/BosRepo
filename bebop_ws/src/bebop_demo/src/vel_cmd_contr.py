@@ -180,7 +180,7 @@ class VelCommander(object):
     def fire_motionplanner(self, time, pose0):
         """Publishes inputs to motionplanner via Trigger topic.
         """
-        self._trigger.goal = self._goal  # ??????????????????????????????????????
+        self._trigger.goal = self._goal
         self._trigger.state = RobotPose(pose0[:])
         self._trigger.current_time = time
         self._mp_trigger_topic.publish(self._trigger)
@@ -236,6 +236,7 @@ class VelCommander(object):
         Args:
             waypoints : list of all waypoints coming from the global planner.
         """
+        ## Hardcoded goal! Rather read from topic?
         self._goal = RobotPose([0.5, 0.5])
 
         return True

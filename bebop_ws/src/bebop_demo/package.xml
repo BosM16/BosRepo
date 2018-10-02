@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>try_out_vel_com</name>
+  <name>bebop_demo</name>
   <version>0.0.1</version>
   <description>
   try_out for sending vel commands
@@ -10,7 +10,7 @@
 
   <license>Closed</license>
 
-  <url type="website">https://github.com/intermodalics-gip/omg_ros</url>
+  <url type="website">https://github.com/BosMathias/BosRepo</url>
 
   <buildtool_depend>catkin</buildtool_depend>
   <build_depend>geometry_msgs</build_depend>

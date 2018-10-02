@@ -8,16 +8,16 @@ from world_model import *
 from vel_cmd_contr import *
 
 
-class Fsm(object):
+class Demo(object):
     '''
     Switches to the desired state depending on task at hand.
     '''
 
     def __init__(self):
         """
-        Initialization of Fsm object.
+        Initialization of Demo object.
         """
-        rospy.init_node('fsm')
+        rospy.init_node('bebop_demo')
 
         self.pos_update = rospy.Publisher('pose_est', Pose2D, queue_size=1)
         rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_predict)
@@ -52,8 +52,9 @@ class Fsm(object):
         pos_output.y = self.percep.pose_vive.linear.y
         self.wm.correct_update(pos_output)
 
+
 if __name__ == '__main__':
-    fsm = Fsm()
-    fsm.percep = Perception()
-    fsm.wm = WorldModel()
-    fsm.start()
+    demo = Demo()
+    demo.percep = Perception()
+    demo.wm = WorldModel()
+    demo.start()

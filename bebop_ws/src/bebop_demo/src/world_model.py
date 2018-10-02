@@ -15,18 +15,18 @@ class WorldModel(object):
         """
         Initialization of WorldModel object.
         """
+        self.Ts = 0.01
         self.max_vel = 0.4  # m/s
         self.max_accel = 0.2  # m/s²
         self.pose_bebop = Twist()
-        self.xhat = 0
-        self.Phat = 0
+        self.xhat = 0.0
+        self.Phat = 0.0
 
-        # Matrices for Kalman filter
-        Ts = 0.01
-        self.A = 1
-        self.B = Ts
-        self.C = 1
-        self.D = 0
+        # Matrices for position Kalman filter
+        self.A = 1.0
+        self.B = self.Ts
+        self.C = 1.0
+        self.D = 0.0
 
         # self.pose_obst = Pose2D
 
