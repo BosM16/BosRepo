@@ -14,16 +14,21 @@ class Demo(object):
     '''
 
     def __init__(self):
-        """
+        '''
         Initialization of Demo object.
-        """
+        '''
         rospy.init_node('bebop_demo')
 
+        # BOS: self.pos_update zou world model moeten publishen + wm ook
+        # Subscriber maken?
         self.pos_update = rospy.Publisher('pose_est', Pose2D, queue_size=1)
-        rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_predict)
-        rospy.Subscriber('twist1_pub_', Twist, self.kalman_correct)
+        rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_pos_predict)
+        rospy.Subscriber('twist1_pub_', Twist, self.kalman_pos_correct)
 
     def start(self):
+        '''
+        Starts running of bebop_demo node.
+        '''
         rospy.spin()
 
     def kalman_predict(self, data):
@@ -38,23 +43,23 @@ class Demo(object):
         pose_est.x = self.wm.xhat.x
         self.pos_update.publish(pose_est)
 
-    def kalman_correct(self, data):
+    def kalman_pos_correct(self, data):
         # timing data to know length of preceding prediction step necessary
         '''
         Checks whether perception has received new position info from the drone
         and then triggers the kalman filter to apply a correction step.
         '''
-        while not self.percep.new_val:
+        while not self.pc.new_val:
             rospy.sleep(0.00001)  # moet beter kunnen
 
         pos_output = Pose2D
-        pos_output.x = self.percep.pose_vive.linear.x
-        pos_output.y = self.percep.pose_vive.linear.y
-        self.wm.correct_update(pos_output)
+        pos_output.x = self.pc.pose_vive.linear.x
+        pos_output.y = self.pc.pose_vive.linear.y
+        self.wm.correct_pos_update(pos_output)
 
 
 if __name__ == '__main__':
     demo = Demo()
-    demo.percep = Perception()
+    demo.pc = Perception()
     demo.wm = WorldModel()
     demo.start()

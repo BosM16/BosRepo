@@ -15,7 +15,8 @@ class WorldModel(object):
         """
         Initialization of WorldModel object.
         """
-        self.Ts = 0.01
+        # Parameters.
+        self.Ts = 0.01 # s
         self.max_vel = 0.4  # m/s
         self.max_accel = 0.2  # m/s²
         self.pose_bebop = Twist()
@@ -27,10 +28,9 @@ class WorldModel(object):
         self.B = self.Ts
         self.C = 1.0
         self.D = 0.0
-
         # self.pose_obst = Pose2D
 
-    def predict_update(self, vel_input):
+    def predict_pos_update(self, vel_input):
         """
         Prediction step of the kalman filter. Update the position of the drone
         using the reference velocity commands.
@@ -40,7 +40,7 @@ class WorldModel(object):
         self.xhat = A*xhat + B*vel_input
         self.Phat = A*Phat*A + Q
 
-    def correct_update(self, pos_meas_x, pos_meas_y, pos_meas_z):
+    def correct_pos_update(self, pos_meas_x, pos_meas_y, pos_meas_z):
         """
         Correction step of the kalman filter. Update the position of the drone
         using the measurements.
