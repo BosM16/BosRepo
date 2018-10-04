@@ -19,8 +19,6 @@ class Demo(object):
         '''
         rospy.init_node('bebop_demo')
 
-        # BOS: self.pos_update zou world model moeten publishen + wm ook
-        # Subscriber maken?
         self.pos_update = rospy.Publisher('pose_est', Pose2D, queue_size=1)
         rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_pos_predict)
         rospy.Subscriber('twist1_pub_', Twist, self.kalman_pos_correct)
@@ -51,11 +49,7 @@ class Demo(object):
         to apply a correction step.
         '''
         self.pc.pose_vive = data  # data moet nog verwerkt worden naar gewenste formaat
-
-        pos_output = Pose2D
-        pos_output.x = self.pc.pose_vive.linear.x
-        pos_output.y = self.pc.pose_vive.linear.y
-        self.wm.correct_pos_update(pos_output)
+        self.wm.correct_pos_update(self.pc.pose_vive)
         self.pc.new_val = False
 
 
