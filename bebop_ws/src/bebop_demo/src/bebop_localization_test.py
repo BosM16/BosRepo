@@ -8,7 +8,7 @@ from world_model import *
 from vel_cmd_contr import *
 
 
-class Demo(object):
+class LocalizationTest(object):
     '''
     Switches to the desired state depending on task at hand.
     '''
@@ -19,8 +19,6 @@ class Demo(object):
         '''
         rospy.init_node('bebop_demo')
 
-        # BOS: self.pos_update zou world model moeten publishen + wm ook
-        # Subscriber maken?
         self.pos_update = rospy.Publisher('pose_est', Pose2D, queue_size=1)
         rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_pos_predict)
         rospy.Subscriber('twist1_pub_', Twist, self.kalman_pos_correct)
@@ -50,7 +48,8 @@ class Demo(object):
         information to the perception and then triggers the kalman filter
         to apply a correction step.
         '''
-        self.pc.pose_vive = data  # data moet nog verwerkt worden naar gewenste formaat
+        self.pc.pose_vive = data
+        # data moet nog verwerkt worden naar gewenste formaat
 
         pos_output = Pose2D
         pos_output.x = self.pc.pose_vive.linear.x
@@ -60,7 +59,7 @@ class Demo(object):
 
 
 if __name__ == '__main__':
-    demo = Demo()
-    demo.pc = Perception()
-    demo.wm = WorldModel()
-    demo.start()
+    test = LocalizationTest()
+    test.pc = Perception()
+    test.wm = WorldModel()
+    test.start()

@@ -10,14 +10,14 @@ class Try_out(object):
     def __init__(self):
         """
         """
-        ## uncomment for bebop_autonomy
+        # uncomment for bebop_autonomy
         # self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         # self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         # self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         # self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
         # rospy.Subscriber('demo', Empty, self.flying)
 
-        ## use this for bebop_vel_ctrl + bebop_autonomy
+        # use this for bebop_vel_ctrl + bebop_autonomy
         self.cmd_vel = rospy.Publisher('/vel_ctrl/cmd_vel', Twist, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
@@ -47,7 +47,6 @@ class Try_out(object):
         # cmd_vel.angular.x = 0.0
         # cmd_vel.angular.y = 0.0
         cmd_vel.angular.z = 0.0
-
 
         for x in range(0, rate):
             self.cmd_vel.publish(cmd_vel)

@@ -16,7 +16,7 @@ class WorldModel(object):
         Initialization of WorldModel object.
         """
         # Parameters.
-        self.Ts = 0.01 # s
+        self.Ts = 0.01  # s
         self.max_vel = 0.4  # m/s
         self.max_accel = 0.2  # m/s²
         self.pose_bebop = Twist()
