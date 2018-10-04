@@ -4,10 +4,10 @@
 
   <include file="$(find bebop_vel_ctrl)/launch/bebop_vel_ctrl.launch" />
 
-    <!-- Manual flight -->
+    <!-- Manual flight - Also safety measure -->
   <include file="$(find bebop_vel_ctrl)/launch/bebop_teleop.launch" />
 
-    <!-- Autonomous flying instead of teleop -->
-  <!-- <include file="$(find bebop_demo)/launch/square_flying.launch" /> -->
+    <!-- Autonomous flight -->
+  <include file="$(find bebop_demo)/launch/square_flying.launch" />
 
 </launch>
