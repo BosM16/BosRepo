@@ -21,14 +21,7 @@ class Perception(object):
 
         # Name of topic can change depending on name used in the code for
         # reading out the vive.
-        rospy.Subscriber('twist1_pub_', Twist, self.get_vive_data)
         rospy.Subscriber('/bebop/odom', Odometry, self.get_bebop_data)
-
-    def get_vive_data(self, data):
-        """
-        Updates pose data with vive measurements.
-        """
-        self.pose_vive = data
 
     def get_bebop_data(self, data):
         """
@@ -36,6 +29,7 @@ class Perception(object):
         """
         self.pose_bebop = data.pose.pose
         self.twist_bebop = data.twist.twist
+
 
 if __name__ == '__main__':
     perception = Perception()

@@ -31,12 +31,12 @@ class Demo(object):
         '''
         rospy.spin()
 
-    def kalman_predict(self, data):
+    def kalman_pos_predict(self, data):
         '''
         Based on the velocity commands send out by the velocity controller,
         calculate a prediction of the position in the future.
         '''
-        self.wm.predict_update(data)
+        self.wm.predict_pos_update(data)
 
         pose_est = Pose2D()
         pose_est.x = self.wm.xhat.x
@@ -46,16 +46,17 @@ class Demo(object):
     def kalman_pos_correct(self, data):
         # timing data to know length of preceding prediction step necessary
         '''
-        Checks whether perception has received new position info from the drone
-        and then triggers the kalman filter to apply a correction step.
+        Whenever a new position measurement is available, sends this
+        information to the perception and then triggers the kalman filter
+        to apply a correction step.
         '''
-        while not self.pc.new_val:
-            rospy.sleep(0.00001)  # moet beter kunnen
+        self.pc.pose_vive = data  # data moet nog verwerkt worden naar gewenste formaat
 
         pos_output = Pose2D
         pos_output.x = self.pc.pose_vive.linear.x
         pos_output.y = self.pc.pose_vive.linear.y
         self.wm.correct_pos_update(pos_output)
+        self.pc.new_val = False
 
 
 if __name__ == '__main__':
