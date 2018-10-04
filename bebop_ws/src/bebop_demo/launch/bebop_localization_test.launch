@@ -1,13 +1,11 @@
 <launch>
 
   <node name="bebop_demo" pkg="bebop_demo" type="bebop_localization_test.py" output="screen"/>
+  <node name="try_out" pkg="bebop_demo" type="square_flying.py" output="screen"/>
 
   <include file="$(find bebop_vel_ctrl)/launch/bebop_vel_ctrl.launch" />
 
     <!-- Manual flight - Also safety measure -->
   <include file="$(find bebop_vel_ctrl)/launch/bebop_teleop.launch" />
-
-    <!-- Autonomous flight -->
-  <include file="$(find bebop_demo)/launch/square_flying.launch" />
 
 </launch>
