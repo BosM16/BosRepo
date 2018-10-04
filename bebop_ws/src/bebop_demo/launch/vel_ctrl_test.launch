@@ -1,6 +1,6 @@
 <launch>
 
-  <node name="try_out" pkg="bebop_demo" type="try_out.py" output="screen"/>
+  <node name="try_out" pkg="bebop_demo" type="square_flying.py" output="screen"/>
 
   <!---  -->
   <include file="$(find bebop_vel_ctrl)/launch/bebop_vel_ctrl.launch" />
