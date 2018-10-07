@@ -50,11 +50,10 @@ class VelCommander(object):
         rospy.Subscriber('demo', Robotpose, self.planning)
         rospy.Subscriber('mp_result', RobotTrajectory, self.get_mp_result)
         rospy.Subscriber('mp_feedback', Bool, self.get_mp_feedback)
-        rospy.Subscriber('pose_est', Pose2D, self.update_pose)
 
     def get_mp_feedback(self, data):
-        """Sets motionplanner status. If False, then controller.start() will wait
-        with starting the controller until True.
+        """Sets motionplanner status. If False, then controller.start() will
+        wait with starting the controller until True.
 
         Args:
             data : boolean received from 'mp_feedback' topic, published by
@@ -75,15 +74,12 @@ class VelCommander(object):
         y_traj = data.y_traj
         self.store_trajectories(v_traj, w_traj, x_traj, y_traj)
 
-    def update_pose(self, pose):
-        '''updates the position estimate whenever new position data is
-        available from the kalman filter
-        '''
-        self._robot_est_pose = pose
-
     def update(self):
-        """Update the controller with newly calculated trajectories and velocity
-        commands.
+        """
+        - Updates the controller with newly calculated trajectories and
+        velocity commands.
+        - Sends out new velocity command.
+        - Retrieves new pose estimate.
         """
         pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
         if self._init:
@@ -106,8 +102,22 @@ class VelCommander(object):
                 print 'overtime!'
                 self._cmd_twist.linear.x = 0.
                 self._cmd_twist.linear.y = 0.
+                self.cmd_vel.publish(self._cmd_twist)  # BOS aan RIAN: dit
+                # stond hier niet. Maar als dat hier niet staat wordt het
+                # commando gewoon niet uitgestuurd doordat er return staat?
                 return
 
+        self.send_vel_cmd()
+        self.get_pose_est()  # BOS aan RIAN: In deze volgorde stond het.
+        # Maar moet ge niet net in het begin van deze functie de pose opvragen?
+        # We willen op tijdstip k
+
+        self._index += 1
+
+    def send_vel_cmd(self):
+        '''Combines the feedforward and feedback commands to generate a
+        velocity command and publishes this command.
+        '''
         # Feedforward velocity command.
         self._cmd_twist.linear.x = self._traj['v'][self._index]
         self._cmd_twist.linear.y = self._traj['w'][self._index]
@@ -120,12 +130,15 @@ class VelCommander(object):
             self._traj['y'][self._index]
             - self._robot_est_pose.y) * self.feedback_gain
             + self._cmd_twist.linear.y)
+
         # send velocity sample
         self.cmd_vel.publish(self._cmd_twist)
         self._vel_traj_applied['v'].append(self._cmd_twist.linear.x)
         self._vel_traj_applied['w'].append(self._cmd_twist.linear.y)
 
-        self._index += 1
+    def get_pose_est(self):
+        '''Retrieves a new pose estimate from world model.
+        '''
 
         cmd_twist = TwistStamped()
         cmd_twist.header.stamp = rospy.Time.now()
