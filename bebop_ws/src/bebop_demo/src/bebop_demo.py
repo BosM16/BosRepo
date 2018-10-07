@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from geometry_msgs.msg import Twist, Pose2D
+from ???.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import rospy
 
 from perception import *
@@ -12,6 +13,8 @@ class Demo(object):
     '''
     Switches to the desired state depending on task at hand.
     '''
+    # make buffer containing all velocity commands up to timestamp of last
+    # kalman correction step
 
     def __init__(self):
         '''
@@ -22,12 +25,22 @@ class Demo(object):
         self.pos_update = rospy.Publisher('pose_est', Pose2D, queue_size=1)
         rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_pos_predict)
         rospy.Subscriber('twist1_pub_', Twist, self.kalman_pos_correct)
+        rospy.Service("get_pose", GetPoseEst,
+                      self.DO_KALMAN_SHIZZLE)
 
     def start(self):
         '''
         Starts running of bebop_demo node.
         '''
         rospy.spin()
+
+    def DO_KALMAN_SHIZZLE(self, vel_cmd):
+        '''
+        '''
+        vel_cmd.linear.x
+        vel_cmd.linear.y
+        pose_est = Pose2D()
+        return GetPoseEstResponse(pose_est)
 
     def kalman_pos_predict(self, data):
         '''
@@ -38,7 +51,7 @@ class Demo(object):
 
         pose_est = Pose2D()
         pose_est.x = self.wm.xhat.x
-        pose_est.x = self.wm.xhat.x
+        pose_est.y = self.wm.xhat.y
         self.pos_update.publish(pose_est)
 
     def kalman_pos_correct(self, data):
