@@ -3,6 +3,7 @@
 from geometry_msgs.msg import Twist, TwistStamped, Pose, Pose2D
 from std_msgs.msg import Bool, Empty, UInt8
 from bebop_demo.srv import GetPoseEst
+from visualization_msgs.msg import MarkerArray
 
 import rospy
 
@@ -50,6 +51,10 @@ class VelCommander(object):
         rospy.Subscriber('demo', Robotpose, self.planning)
         rospy.Subscriber('mp_result', RobotTrajectory, self.get_mp_result)
         rospy.Subscriber('mp_feedback', Bool, self.get_mp_feedback)
+
+        # markers
+        self.trajectory_marker = rospy.Publisher(
+            'motionplanner_traj_marker', Marker, queue_size=1)
 
     def get_mp_feedback(self, data):
         """Sets motionplanner status. If False, then controller.start() will
@@ -108,6 +113,10 @@ class VelCommander(object):
                 self._index = 1
                 # Trigger motion planner.
                 self.fire_motionplanner(self._time, pose0)
+                point = self._robot_est_pose
+                self.__publish_marker(
+                    self._traj['x'][:], self._traj['y'][:], point)
+                self._
             else:
                 self.calc_succeeded = False
                 print 'overtime!'
@@ -137,8 +146,6 @@ class VelCommander(object):
             - self._robot_est_pose.y) * self.feedback_gain
             + self._cmd_twist.linear.y)
 
-
-
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
         '''
@@ -154,6 +161,44 @@ class VelCommander(object):
             self._robot_est_pose = get_pose_est(cmd_twist)
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
+
+    def __publish_marker(self, x_traj, y_traj, position):
+        '''Publish planned x and y trajectory to topic for visualisation in rviz.
+        '''
+        for i in range(0, 2):
+            traj_marker.markers[i] = MarkerArray()
+            traj_marker.markers[i].header.frame_id = '/map'
+            traj_marker.markers[i].header.stamp = rospy.get_rostime()
+            traj_marker.markers[i].ns = "trajectory"
+            traj_marker.markers[i].id = i
+            traj_marker.markers[i].type = 4  # Line List.
+            traj_marker.markers[i].action = 0
+            traj_marker.markers[i].pose.position.z = 0.
+            traj_marker.markers[i].pose.orientation.x = 0
+            traj_marker.markers[i].pose.orientation.y = 0
+            traj_marker.markers[i].pose.orientation.z = 0
+            traj_marker.markers[i].scale.x = 0.2
+            traj_marker.markers[i].scale.y = 0.2
+            traj_marker.markers[i].scale.z = 1.0
+            traj_marker.markers[i].color.r = 0.0
+            traj_marker.markers[i].color.g = 0.0
+            traj_marker.markers[i].color.b = 0.0
+            traj_marker.markers[i].color.a = 1.0
+            traj_marker.markers[i].lifetime = rospy.Duration(0)
+
+            traj_marker.markers[0].color.r = 1.0
+            traj_marker.markers[1].color.b = 1.0
+
+        for k in range(len(x_traj)):
+
+            point = Point()
+            point.x = x_traj[k]
+            point.y = y_traj[k]
+            traj_marker.markers[0].points.append(point)
+
+        traj_marker.markers[1].points.append(point)
+
+        self.trajectory_marker.publish(traj_marker)
 
     def load_trajectories(self):
         self._traj['v'] = self._traj_strg['v'][:]
