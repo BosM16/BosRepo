@@ -26,7 +26,7 @@ class Demo(object):
         rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_pos_predict)
         rospy.Subscriber('twist1_pub_', Twist, self.kalman_pos_correct)
         rospy.Service("get_pose", GetPoseEst,
-                      self.DO_KALMAN_SHIZZLE)
+                      self.kalman_pos)
 
     def start(self):
         '''
@@ -34,9 +34,10 @@ class Demo(object):
         '''
         rospy.spin()
 
-    def DO_KALMAN_SHIZZLE(self, vel_cmd):
+    def kalman_pos(self, vel_cmd):
         '''
         '''
+        vel_cmd.header.stamp
         vel_cmd.linear.x
         vel_cmd.linear.y
         pose_est = Pose2D()
