@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, Pose, Pose2D
+from geometry_msgs.msg import Twist, TwistStamped, Pose, Pose2D
 from std_msgs.msg import Bool, Empty, UInt8
+from ???.srv import GetPoseEst
+
 import rospy
 
 
@@ -125,6 +127,18 @@ class VelCommander(object):
 
         self._index += 1
 
+        cmd_twist = TwistStamped()
+        cmd_twist.header.stamp = rospy.Time.now()
+        cmd_twist.twist = self._cmd_twist
+
+        rospy.wait_for_service("get_pose")
+        try:
+            get_pose_est = rospy.ServiceProxy(
+                "get_pose", GetPoseEst)
+            self._robot_est_pose = get_pose_est(cmd_twist)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+
     def load_trajectories(self):
         self._traj['v'] = self._traj_strg['v'][:]
         self._traj['w'] = self._traj_strg['w'][:]
@@ -236,7 +250,6 @@ class VelCommander(object):
         Args:
             waypoints : list of all waypoints coming from the global planner.
         """
-        ## Hardcoded goal! Rather read from topic?
         self._goal = goal
         # RobotPose([0.5, 0.5])
         self.set_goal()
