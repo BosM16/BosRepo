@@ -45,7 +45,7 @@ class VelCommander(object):
             'mp_trigger', Trigger, queue_size=1)
         self._mp_configure_topic = rospy.Publisher(
             'mp_configure', Settings, queue_size=1)
-        rospy.Subscriber('demo', Empty, self.flying)
+        rospy.Subscriber('demo', Robotpose, self.planning)
         rospy.Subscriber('mp_result', RobotTrajectory, self.get_mp_result)
         rospy.Subscriber('mp_feedback', Bool, self.get_mp_feedback)
         rospy.Subscriber('pose_est', Pose2D, self.update_pose)
@@ -229,7 +229,7 @@ class VelCommander(object):
         while (not self._mp_status):
             self.rate.sleep()
 
-    def planning(self):
+    def planning(self, goal):
         """Send initial position and first waypoint for the Point2point problem
         to the motionplanner.
 
@@ -237,11 +237,9 @@ class VelCommander(object):
             waypoints : list of all waypoints coming from the global planner.
         """
         ## Hardcoded goal! Rather read from topic?
-        self._goal = RobotPose([0.5, 0.5])
-
-        return True
-
-    def flying(self):
+        self._goal = goal
+        # RobotPose([0.5, 0.5])
+        self.set_goal()
         self.progress = True
         print 'flying'
 
@@ -250,5 +248,3 @@ if __name__ == '__main__':
     vel_command = VelCommander()
     vel_command.start()
     vel_command.configure()
-    vel_command.planning()
-    vel_command.set_goal()
