@@ -39,8 +39,8 @@ class VelCommander(object):
         self._robobst_est_pose = [[0., 0.] for k in range(len(self._robobst))]
         self._robobst_est_velocity = [[0., 0.] for k in range(
             len(self._robobst))]
-        self._traj = {'v': [], 'w': [], 'x': [], 'y': []}
-        self._traj_strg = {'v': [], 'w': [], 'x': [], 'y': []}
+        self._traj = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
+        self._traj_strg = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
         self._vel_traj_applied = {'v': [], 'w': []}
 
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
