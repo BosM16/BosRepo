@@ -81,6 +81,17 @@ class VelCommander(object):
         - Sends out new velocity command.
         - Retrieves new pose estimate.
         """
+        # Send velocity sample.
+        self.cmd_vel.publish(self._cmd_twist)
+        self._vel_traj_applied['v'].append(self._cmd_twist.linear.x)
+        self._vel_traj_applied['w'].append(self._cmd_twist.linear.y)
+
+        # Retrieve new pose estimate from World Model.
+        self.get_pose_est()  # opgelet: dit is een predictie voor het volgende
+        # tijdstip.
+
+        # Check for new trajectories. Trigger Motionplanner or raise
+        # 'overtime'
         pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
         if self._init:
             if not self._new_trajectories:
@@ -94,7 +105,7 @@ class VelCommander(object):
                 self.load_trajectories()
                 self._new_trajectories = False
                 self._time += self._index*self._sample_time
-                self._index = 0
+                self._index = 1
                 # Trigger motion planner.
                 self.fire_motionplanner(self._time, pose0)
             else:
@@ -102,19 +113,14 @@ class VelCommander(object):
                 print 'overtime!'
                 self._cmd_twist.linear.x = 0.
                 self._cmd_twist.linear.y = 0.
-                self.cmd_vel.publish(self._cmd_twist)  # BOS aan RIAN: dit
-                # stond hier niet. Maar als dat hier niet staat wordt het
-                # commando gewoon niet uitgestuurd doordat er return staat?
+                self.cmd_vel.publish(self._cmd_twist)
                 return
 
-        self.send_vel_cmd()
-        self.get_pose_est()  # BOS aan RIAN: In deze volgorde stond het.
-        # Maar moet ge niet net in het begin van deze functie de pose opvragen?
-        # We willen op tijdstip k
+        self.calc_vel_cmd()
 
         self._index += 1
 
-    def send_vel_cmd(self):
+    def calc_vel_cmd(self):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
@@ -131,10 +137,7 @@ class VelCommander(object):
             - self._robot_est_pose.y) * self.feedback_gain
             + self._cmd_twist.linear.y)
 
-        # send velocity sample
-        self.cmd_vel.publish(self._cmd_twist)
-        self._vel_traj_applied['v'].append(self._cmd_twist.linear.x)
-        self._vel_traj_applied['w'].append(self._cmd_twist.linear.y)
+
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
