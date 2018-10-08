@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Twist, TwistStamped
 from nav_msgs.msg import Odometry
 import rospy
 
@@ -15,7 +15,7 @@ class Perception(object):
         """
         Initialization of Perception object.
         """
-        self.pose_vive = Twist()
+        self.pose_vive = TwistStamped()
         self.pose_bebop = Twist()
         self.twist_bebop = Twist()
 

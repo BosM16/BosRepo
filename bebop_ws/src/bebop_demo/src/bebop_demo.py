@@ -6,12 +6,11 @@ import rospy
 
 from perception import *
 from world_model import *
-from vel_cmd_contr import *
 
 
 class Demo(object):
     '''
-    Switches to the desired state depending on task at hand.
+    Acts as hub for the Perception and WorldModel.
     '''
     # make buffer containing all velocity commands up to timestamp of last
     # kalman correction step
@@ -22,11 +21,11 @@ class Demo(object):
         '''
         rospy.init_node('bebop_demo')
 
-        self.pos_update = rospy.Publisher('pose_est', Pose2D, queue_size=1)
-        rospy.Subscriber('bebop/cmd_vel', Twist, self.kalman_pos_predict)
-        rospy.Subscriber('twist1_pub_', Twist, self.kalman_pos_correct)
-        rospy.Service("get_pose", GetPoseEst,
-                      self.kalman_pos)
+        # Would make more sense if it were a PoseStamped, but let's wait what
+        # comes out of the Vive.
+        rospy.Subscriber('twist1_pub_', TwistStamped, self.kalman_pos_correct)
+
+        rospy.Service("get_pose", GetPoseEst, self.get_kalman_pos_est)
 
     def start(self):
         '''
@@ -34,35 +33,50 @@ class Demo(object):
         '''
         rospy.spin()
 
-    def kalman_pos(self, vel_cmd):
+    def get_kalman_pos_est(self, vel_cmd):
         '''
         '''
-        vel_cmd.header.stamp
-        vel_cmd.linear.x
-        vel_cmd.linear.y
-        pose_est = Pose2D()
+        self.latest_vel_cmd = vel_cmd
+        # vel_cmd.header.stamp
+        # vel_cmd.linear.x
+        # vel_cmd.linear.y
+        pose_est = self.kalman_pos_predict(self.latest_vel_cmd)
+
         return GetPoseEstResponse(pose_est)
 
-    def kalman_pos_predict(self, data):
+    def kalman_pos_predict(self, vel_cmd):
         '''
         Based on the velocity commands send out by the velocity controller,
         calculate a prediction of the position in the future.
         '''
-        self.wm.predict_pos_update(data)
+        self.wm.predict_pos_update(vel_cmd, self.wm.B)
 
-        pose_est = Pose2D()
-        pose_est.x = self.wm.xhat.x
-        pose_est.y = self.wm.xhat.y
-        self.pos_update.publish(pose_est)
+        pose_est = Pose()
+        pose_est.position.x = self.wm.xhat.position.x
+        pose_est.position.y = self.wm.xhat.position.y
+        pose_est.position.z = self.wm.xhat.position.z
 
-    def kalman_pos_correct(self, data):
+        return pose_est
+
+    def kalman_pos_correct(self, measurement):
         # timing data to know length of preceding prediction step necessary
         '''
         Whenever a new position measurement is available, sends this
         information to the perception and then triggers the kalman filter
         to apply a correction step.
         '''
-        self.pc.pose_vive = data  # data moet nog verwerkt worden naar gewenste formaat
+        # data moet nog verwerkt worden naar gewenste formaat
+        self.pc.pose_vive = measurement
+
+        # Calculate variable B (time between latest prediction and new t0).
+        new_t0 = wm.get_timestamp(measurement)
+        t_last_update = wm.get_timestamp(self.latest_vel_cmd)
+        # not sure how to make time/duration instance --> float
+        B = float(new_t0 - t_last_update)
+
+        # Make prediction up to new t0.
+        self.wm.predict_pos_update(self.latest_vel_cmd, B)
+        # Correct the estimate at new t0 with the measurement.
         self.wm.correct_pos_update(self.pc.pose_vive)
         self.pc.new_val = False
 
