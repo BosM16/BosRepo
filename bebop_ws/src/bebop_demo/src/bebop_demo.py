@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, Pose2D
+from geometry_msgs.msg import Pose
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import rospy
 
@@ -21,10 +21,13 @@ class Demo(object):
         '''
         rospy.init_node('bebop_demo')
 
+        self.vel_cmd_list = []
+
         # Would make more sense if it were a PoseStamped, but let's wait what
         # comes out of the Vive.
-        rospy.Subscriber('twist1_pub_', TwistStamped, self.kalman_pos_correct)
-
+        rospy.Subscriber('Pose_pub', PoseStamped, self.kalman_pos_correct)
+        self.publish_pos_est = rospy.Publisher(
+            'xhat', Pose, queue_size=1)
         rospy.Service("get_pose", GetPoseEst, self.get_kalman_pos_est)
 
     def start(self):
@@ -35,12 +38,12 @@ class Demo(object):
 
     def get_kalman_pos_est(self, vel_cmd):
         '''
+        Receives a time-stamped twist and returns an estimate of the position
         '''
+        self.vel_cmd_list.append(vel_cmd)
         self.latest_vel_cmd = vel_cmd
-        # vel_cmd.header.stamp
-        # vel_cmd.linear.x
-        # vel_cmd.linear.y
         pose_est = self.kalman_pos_predict(self.latest_vel_cmd)
+        self.publish_pos_est.publish(get_pose_est)
 
         return GetPoseEstResponse(pose_est)
 
@@ -51,12 +54,7 @@ class Demo(object):
         '''
         self.wm.predict_pos_update(vel_cmd, self.wm.B)
 
-        pose_est = Pose()
-        pose_est.position.x = self.wm.xhat.position.x
-        pose_est.position.y = self.wm.xhat.position.y
-        pose_est.position.z = self.wm.xhat.position.z
-
-        return pose_est
+        return self.wm.xhat
 
     def kalman_pos_correct(self, measurement):
         # timing data to know length of preceding prediction step necessary
@@ -69,16 +67,32 @@ class Demo(object):
         self.pc.pose_vive = measurement
 
         # Calculate variable B (time between latest prediction and new t0).
-        new_t0 = wm.get_timestamp(measurement)
-        t_last_update = wm.get_timestamp(self.latest_vel_cmd)
-        # not sure how to make time/duration instance --> float
-        B = float(new_t0 - t_last_update)
+        new_t0 = self.wm.get_timestamp(measurement)
+        t_last_update = self.wm.get_timestamp(self.latest_vel_cmd)
+        B = new_t0 - t_last_update
 
-        # Make prediction up to new t0.
+        # First make prediction from old point t0 to point t before new
+        # measurement.
+        index = 1
+        vel_cmd_tstamp = self.wm.get_timestamp(self.vel_cmd_list[index])
+        self.wm.xhat = self.wm.xhat_t0
+        self.wm.predict_pos_update(
+                self.vel_cmd_list[index], vel_cmd_tstamp - self.wm.t0)
+
+        while vel_cmd_tstamp < new_t0:
+            self.wm.predict_pos_update(self.vel_cmd_list[index], self.B)
+            index += 1
+            vel_cmd_tstamp = self.wm.get_timestamp(self.vel_cmd_list[index])
+
+        # Now make prediction up to new t0.
         self.wm.predict_pos_update(self.latest_vel_cmd, B)
         # Correct the estimate at new t0 with the measurement.
         self.wm.correct_pos_update(self.pc.pose_vive)
-        self.pc.new_val = False
+        # Now predict till next point t that coincides with next timepoint for
+        # the controller.
+        self.wm.predict_pos_update(self.latest_vel_cmd, self.B - B)
+
+        self.vel_cmd_list = [self.latest_vel_cmd]
 
 
 if __name__ == '__main__':

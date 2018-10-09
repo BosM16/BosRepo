@@ -26,7 +26,7 @@ class WorldModel(object):
         self.Q = np.array([[1e-2], [1e-2], [1e-2]])  # process noise covariance
 
         # Variables.
-        self.pose_bebop = TwistStamped()
+        # self.pose_bebop = TwistStamped()
         self.xhat_t0 = Pose()  # In case you would want to hold estimate of t0.
         self.Phat_t0 = np.zeros(3)  # Idem.
         self.xhat = Pose()
@@ -67,10 +67,11 @@ class WorldModel(object):
         y = np.array([[pos_meas.linear.x],
                       [pos_meas.linear.y],
                       [pos_meas.linear.z]])
-        nu = y - self.C*self.X
 
+        nu = y - self.C*self.X
         S = self.C*self.Phat*self.C + self.R
         L = self.Phat*self.C*S**(-1)
+
         self.X = self.X + L*nu
         self.Phat = (np.identity(3) - L*self.C)*self.Phat
 
@@ -78,9 +79,7 @@ class WorldModel(object):
         self.xhat.position.y = self.X[2, 1]
         self.xhat.position.z = self.X[3, 1]
 
-        self.xhat_t0.position.x = self.X[1, 1]
-        self.xhat_t0.position.y = self.X[2, 1]
-        self.xhat_t0.position.z = self.X[3, 1]
+        self.xhat_t0 = self.xhat
 
         # Time of last measurement is new t0.
         self.t0 = self.get_timestamp(pos_meas)
