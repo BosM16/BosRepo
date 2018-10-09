@@ -43,9 +43,9 @@ class Demo(object):
         self.vel_cmd_list.append(vel_cmd)
         self.latest_vel_cmd = vel_cmd
         pose_est = self.kalman_pos_predict(self.latest_vel_cmd)
-        self.publish_pos_est.publish(get_pose_est)
+        self.publish_pos_est.publish(pose_est)
 
-        return GetPoseEstResponse(pose_est)
+        return GetPoseEstResponse(pose_est.position)
 
     def kalman_pos_predict(self, vel_cmd):
         '''
