@@ -18,7 +18,8 @@ class Try_out(object):
         # rospy.Subscriber('demo', Empty, self.flying)
 
         # use this for bebop_vel_ctrl + bebop_autonomy
-        self.cmd_vel = rospy.Publisher('/vel_ctrl/cmd_vel', Twist, queue_size=1)
+        self.cmd_vel = rospy.Publisher(
+            '/vel_ctrl/cmd_vel', Twist, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
