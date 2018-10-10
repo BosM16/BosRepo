@@ -11,22 +11,22 @@ class Try_out(object):
         """
         """
         # uncomment for bebop_autonomy
-        # self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
-        # self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
-        # self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
-        # self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
-        # rospy.Subscriber('demo', Empty, self.flying)
-
-        # use this for bebop_vel_ctrl + bebop_autonomy
-        self.cmd_vel = rospy.Publisher(
-            '/vel_ctrl/cmd_vel', Twist, queue_size=1)
+        self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
 
+        # use this for bebop_vel_ctrl + bebop_autonomy
+        # self.cmd_vel = rospy.Publisher(
+        #     '/vel_ctrl/cmd_vel', Twist, queue_size=1)
+        # self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
+        # self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
+        # self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
+        # rospy.Subscriber('demo', Empty, self.flying)
+
     def start(self):
-        rospy.init_node('try_out')
+        rospy.init_node('square_flying')
         print 'started'
         rospy.spin()
 
@@ -106,35 +106,6 @@ class Try_out(object):
         self.cmd_vel.publish(cmd_vel)
         rospy.sleep(1.5)
 
-        # do the same without braking
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = -0.4
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        cmd_vel.linear.x = 0.4
-        cmd_vel.linear.y = 0.0
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.4
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        cmd_vel.linear.x = -0.4
-        cmd_vel.linear.y = 0.0
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = 0.0
         cmd_vel.linear.z = 0.0
@@ -145,53 +116,6 @@ class Try_out(object):
 
         print 'stop', cmd_vel
         self.cmd_vel.publish(cmd_vel)
-
-        # cmd_vel.linear.y = 0.0
-        # for x in range(0, rate):
-        #     self.cmd_vel.publish(cmd_vel)
-        #     rospy.sleep(1/rate)
-        #
-        # rospy.sleep(1)
-        #
-        # cmd_vel.linear.y = 0.4
-        # for x in range(0, rate):
-        #     self.cmd_vel.publish(cmd_vel)
-        #     rospy.sleep(1/rate)
-        #
-        # rospy.sleep(1)
-        #
-        # cmd_vel.linear.y = 0.0
-        # for x in range(0, rate):
-        #     self.cmd_vel.publish(cmd_vel)
-        #     rospy.sleep(1/rate)
-        #
-        # rospy.sleep(1)
-        #
-        # cmd_vel.linear.y = -0.4
-        # for x in range(0, rate):
-        #     self.cmd_vel.publish(cmd_vel)
-        #     rospy.sleep(1/rate)
-        #
-        # rospy.sleep(1)
-        #
-        # cmd_vel.linear.y = 0.0
-        # for x in range(0, rate):
-        #     self.cmd_vel.publish(cmd_vel)
-        #     rospy.sleep(1/rate)
-        #
-        # rospy.sleep(1)
-        #
-        # cmd_vel.linear.y = 0.4
-        # for x in range(0, rate):
-        #     self.cmd_vel.publish(cmd_vel)
-        #     rospy.sleep(1/rate)
-        #
-        # rospy.sleep(1)
-        #
-        # cmd_vel.linear.y = 0.0
-        # for x in range(0, rate):
-        #     self.cmd_vel.publish(cmd_vel)
-        #     rospy.sleep(1/rate)
 
         rospy.sleep(1)
 
