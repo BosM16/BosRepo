@@ -4,10 +4,6 @@ from std_msgs.msg import Empty, UInt8
 from geometry_msgs.msg import Twist
 import rospy
 
-import scipy.io as io
-import numpy as np
-
-
 class Try_out(object):
 
     def __init__(self):
@@ -32,9 +28,6 @@ class Try_out(object):
         rospy.spin()
 
     def flying(self, empty):
-
-        meas_input = np.array([])
-        meas_output = np.array([])
 
         cmd_vel = Twist()
         rate = 14

@@ -1,5 +1,0 @@
-<launch>
-
-  <node name="try_out" pkg="bebop_demo" type="square_flying.py" output="screen"/>
-
-</launch>

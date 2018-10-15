@@ -3,6 +3,7 @@
 from geometry_msgs.msg import Twist
 from std_msgs.msg import Empty
 import numpy as np
+import scipy.io as io
 import rospy
 import sys
 import triad_openvr
@@ -28,6 +29,11 @@ class LocalizationTest(object):
 
         rospy.Subscriber('publish_poses', Empty, self.publish_pose_est)
         rospy.Subscriber('calibrate', Empty, self.calibrate)
+
+        rospy.Subscriber('/vel_ctrl/cmd_vel', Twist, self.read_velocity)
+        rospy.Subscriber('demo', Empty, self.flying)
+        meas_input = np.array([])
+        meas_output = np.array([])
 
     def start(self):
         '''
@@ -128,6 +134,12 @@ class LocalizationTest(object):
 
         # print 'pose rad \n', pose
         return (pose_est, pose)
+
+    def read_velocity(self, data):
+        self.vel_cmd = data
+
+    def flying(self, *_):
+
 
 
 if __name__ == '__main__':
