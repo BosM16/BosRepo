@@ -4,6 +4,9 @@ from std_msgs.msg import Empty, UInt8
 from geometry_msgs.msg import Twist
 import rospy
 
+import scipy.io as io
+import numpy as np
+
 
 class Try_out(object):
 
@@ -19,9 +22,8 @@ class Try_out(object):
 
         ## use this for bebop_vel_ctrl + bebop_autonomy
         self.cmd_vel = rospy.Publisher('/vel_ctrl/cmd_vel', Twist, queue_size=1)
-        # self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
+        # do manual take off beforehand
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
-        self.flip = rospy.Publisher('bebop/flip', UInt8, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
 
     def start(self):
@@ -31,114 +33,40 @@ class Try_out(object):
 
     def flying(self, empty):
 
+        meas_input = np.array([])
+        meas_output = np.array([])
+
         cmd_vel = Twist()
-        rate = 10
+        rate = 14
 
-        k = 0.0
-
-        # move to the right
+        # move back and forth with a pause in between
         cmd_vel.linear.x = 0.0
         cmd_vel.linear.y = -0.4
         cmd_vel.linear.z = 0.0
 
-        # cmd_vel.angular.x = 0.0
-        # cmd_vel.angular.y = 0.0
-        cmd_vel.angular.z = 0.0
+        for k in range(0, 5):
 
+            cmd_vel.linear.y = -0.4
 
-        for x in range(0, rate):
+            for x in range(0, rate):
+                self.cmd_vel.publish(cmd_vel)
+                rospy.sleep(0.1)
+
+            # brake
+            cmd_vel.linear.y = 0.0
             self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
+            rospy.sleep(1.0)
 
-        # brake
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.0
-        self.cmd_vel.publish(cmd_vel)
-        rospy.sleep(0.6)
+            cmd_vel.linear.y = 0.4
 
-        # move forward
-        cmd_vel.linear.x = 0.4
-        cmd_vel.linear.y = 0.0
+            for x in range(0, rate):
+                self.cmd_vel.publish(cmd_vel)
+                rospy.sleep(0.1)
 
-        for x in range(0, rate):
+            # brake
+            cmd_vel.linear.y = 0.0
             self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        # brake
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.0
-        self.cmd_vel.publish(cmd_vel)
-        rospy.sleep(0.6)
-
-        # move left
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.4
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        # brake
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.0
-        self.cmd_vel.publish(cmd_vel)
-        rospy.sleep(0.6)
-
-        # move backward
-        cmd_vel.linear.x = -0.4
-        cmd_vel.linear.y = 0.0
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        # brake
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.0
-        cmd_vel.linear.z = 0.0
-
-        # cmd_vel.angular.x = 0.0
-        # cmd_vel.angular.y = 0.0
-        cmd_vel.angular.z = 0.0
-        self.cmd_vel.publish(cmd_vel)
-        rospy.sleep(1.5)
-
-        # do the same without braking
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = -0.4
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        cmd_vel.linear.x = 0.4
-        cmd_vel.linear.y = 0.0
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.4
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        cmd_vel.linear.x = -0.4
-        cmd_vel.linear.y = 0.0
-
-        for x in range(0, rate):
-            self.cmd_vel.publish(cmd_vel)
-            rospy.sleep(0.1)
-
-        cmd_vel.linear.x = 0.0
-        cmd_vel.linear.y = 0.0
-        cmd_vel.linear.z = 0.0
-
-        # cmd_vel.angular.x = 0.0
-        # cmd_vel.angular.y = 0.0
-        cmd_vel.angular.z = 0.0
+            rospy.sleep(1.0)
 
         print 'stop', cmd_vel
         self.cmd_vel.publish(cmd_vel)
