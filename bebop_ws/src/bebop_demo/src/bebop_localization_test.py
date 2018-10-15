@@ -34,7 +34,7 @@ class LocalizationTest(object):
         Starts running of bebop_demo node.
         '''
         rospy.init_node('bebop_demo')
-        print 'Lcalization test is ON'
+        print 'Localization test is ON'
         self.v = triad_openvr.triad_openvr()
         self.v.print_discovered_objects()
         rospy.spin()
