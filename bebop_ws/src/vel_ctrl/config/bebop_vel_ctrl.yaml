@@ -1,0 +1,38 @@
+abs_yaw_ctrl: false
+abs_alt_ctrl: false
+model_delay_s: 0.262137
+model_cx: -0.576335778073963
+model_cy: -0.584975281133000
+update_freq: 30.0
+max_linear_vel: 2.0
+min_alt: 0.5
+max_alt: 2.5
+
+# Determines how much of the predicted feedback signal can happen in 1/fps seconds
+feedback_pred_factor: 0.2
+# Compensate for integerator's over-estimation of the system response
+delay_compensation_factor: 0.7
+
+safety_send_zero: true
+zero_xy_hover: false
+
+pid_forward:
+  p: 0.2
+  i: 0.5
+  d: 0.0
+  i_clamp: 0.01
+pid_lateral:
+  p: 0.2
+  i: 0.5
+  d: 0.0
+  i_clamp: 0.01
+pid_yaw:
+  p: 0.9
+  i: 0
+  d: 0
+  i_clamp: 0
+pid_alt:
+  p: 0.6
+  i: 0
+  d: 0
+  i_clamp: 0
