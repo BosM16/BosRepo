@@ -54,11 +54,12 @@ class MotionPlanner(object):
         print 'configure motionplanner'
         self._sample_time = st.sample_time
         self._update_time = st.update_time
-        self.safety_margin = rospy.get_param('safety_margin', 0.3)
-
+        self.safety_margin = rospy.get_param('vel_cmd/safety_margin', 0.3)
+        vmax = rospy.get_param('vel_cmd/max_vel', 0.3)
+        amax = rospy.get_param('vel_cmd/max_accel', 0.3)
         self._vehicle = omg.Holonomic(
             shapes=omg.Circle(0.5),
-            bounds={'vmax': 0.2, 'vmin': -0.2, 'amax': 0.3, 'amin': -0.3})
+            bounds={'vmax': vmax, 'vmin': -vmax, 'amax': amax, 'amin': -amax})
         self._vehicle.define_knots(knot_intervals=10)
         self._vehicle.set_options({'safety_distance': self.safety_margin})
         self._robot = omg.Fleet(self._vehicle)

@@ -1,0 +1,7 @@
+<launch>
+
+  <node name="bebop_demo" pkg="bebop_demo" type="bebop_demo.py" output="screen"/>
+  <param name="vel_cmd/update_time" value="0.5" />
+  <param name="vel_cmd/sample_time" value="0.01" />
+
+</launch>

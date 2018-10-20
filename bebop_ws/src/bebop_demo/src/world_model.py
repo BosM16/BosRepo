@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import TwistStamped, Pose
+from geometry_msgs.msg import TwistStamped, Pose, Point
 import numpy as np
 import rospy
 
@@ -16,26 +16,25 @@ class WorldModel(object):
         Initialization of WorldModel object.
         """
         # Parameters.
-        self.Ts = rospy.get_param('sample_time', 0.01)  # s
+        self.vel_cmd_Ts = rospy.get_param('vel_cmd/sample_time', 0.01)  # s
         self.max_vel = 0.4  # m/s
         self.max_accel = 0.2  # m/s²
-        rospy.set_param_raw('max_vel', self.max_vel)
-        rospy.set_param_raw('max_accel', self.max_accel)
+        rospy.set_param_raw('vel_cmd/max_vel', self.max_vel)
+        rospy.set_param_raw('vel_cmd/max_accel', self.max_accel)
 
         self.R = np.identity(3)  # measurement noise covariance
         self.Q = np.array([[1e-2], [1e-2], [1e-2]])  # process noise covariance
 
         # Variables.
-        self.pose_bebop = TwistStamped()
-        self.xhat_t0 = Pose()  # In case you would want to hold estimate of t0.
-        self.Phat_t0 = np.zeros(3)  # Idem.
-        self.xhat = Pose()
+        self.xhat_t0 = Point()
+        self.Phat_t0 = np.zeros(3)
+        self.xhat = Point()
         self.Phat = np.zeros(3)
         self.X = np.zeros((3, 1))
 
         # State space model matrices for position Kalman filter
         self.A = np.identity(3)
-        self.B = self.Ts*np.identity(3)
+        self.B = self.vel_cmd_Ts*np.identity(3)
         self.C = np.identity(3)
         self.D = np.zeros(3)
         # self.pose_obst = Pose2D
@@ -52,9 +51,9 @@ class WorldModel(object):
 
         self.X = self.A*self.X + B*u
 
-        self.xhat.position.x = self.X[1, 1]
-        self.xhat.position.y = self.X[2, 1]
-        self.xhat.position.z = self.X[3, 1]
+        self.xhat.x = self.X[1, 1]
+        self.xhat.y = self.X[2, 1]
+        self.xhat.z = self.X[3, 1]
 
         self.Phat = self.A*self.Phat*self.A + self.Q
 
@@ -64,23 +63,21 @@ class WorldModel(object):
         using the measurements.
         """
 
-        y = np.array([[pos_meas.linear.x],
-                      [pos_meas.linear.y],
-                      [pos_meas.linear.z]])
+        y = np.array([[pos_meas.pose.position.x],
+                      [pos_meas.pose.position.y],
+                      [pos_meas.pose.position.z]])
         nu = y - self.C*self.X
 
         S = self.C*self.Phat*self.C + self.R
-        L = self.Phat*self.C*S**(-1)
+        L = self.Phat*self.C*np.linalg.inv(S)
         self.X = self.X + L*nu
         self.Phat = (np.identity(3) - L*self.C)*self.Phat
 
-        self.xhat.position.x = self.X[1, 1]
-        self.xhat.position.y = self.X[2, 1]
-        self.xhat.position.z = self.X[3, 1]
+        self.xhat.x = self.X[1, 1]
+        self.xhat.y = self.X[2, 1]
+        self.xhat.z = self.X[3, 1]
 
-        self.xhat_t0.position.x = self.X[1, 1]
-        self.xhat_t0.position.y = self.X[2, 1]
-        self.xhat_t0.position.z = self.X[3, 1]
+        self.xhat_t0 = self.xhat
 
         # Time of last measurement is new t0.
         self.t0 = self.get_timestamp(pos_meas)

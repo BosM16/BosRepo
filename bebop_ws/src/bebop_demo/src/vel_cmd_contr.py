@@ -27,8 +27,8 @@ class VelCommander(object):
         self.stop_linear = False
         self._mp_status = False
         self.feedback_gain = 0.3
-        self._sample_time = rospy.get_param('sample_time', 0.01)
-        self._update_time = rospy.get_param('update_time', 0.5)
+        self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
+        self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
         self.pos_nrm = np.inf
         self._robobst = []
@@ -163,7 +163,8 @@ class VelCommander(object):
             print "Service call failed: %s" % e
 
     def __publish_marker(self, x_traj, y_traj, position):
-        '''Publish planned x and y trajectory to topic for visualisation in rviz.
+        '''Publish planned x and y trajectory to topic for visualisation in
+        rviz.
         '''
         for i in range(0, 2):
             traj_marker.markers[i] = MarkerArray()
@@ -230,6 +231,7 @@ class VelCommander(object):
         if len(self._vel_traj_applied['v']) == 0:
             return True
         stop = True
+
         self.pos_nrm = np.linalg.norm(np.array(
             [self._robot_est_pose.x, self._robot_est_pose.y])
             - np.array(self._goal.pose))
@@ -237,11 +239,14 @@ class VelCommander(object):
             [self._vel_traj_applied['v'][-1],
                 self._vel_traj_applied['w'][-1]])
         self.angle_nrm = np.abs(self.desired_angle - self.current_angle)
+
         self.stop_linear = self.pos_nrm < 0.1 and self.vel_nrm < 0.1
+
         if (self.stop_linear):
             self._cmd_twist.linear.x = 0.
             self._cmd_twist.linear.y = 0.
         stop *= (self.stop_linear and self.angle_nrm < 0.05)
+
         return not stop
 
     def set_goal(self):
@@ -288,7 +293,8 @@ class VelCommander(object):
             rate.sleep()
 
     def configure(self):
-        """Configures the controller by loading in the room and static obstacles.
+        """Configures the controller by loading in the room and static
+        obstacles.
         """
         print 'configure controller'
         self.st = Settings()

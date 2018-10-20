@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, Pose2D
+from geometry_msgs.msg import Twist, Pose2D, PoseStamped
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import rospy
 
@@ -12,8 +12,6 @@ class Demo(object):
     '''
     Acts as hub for the Perception and WorldModel.
     '''
-    # make buffer containing all velocity commands up to timestamp of last
-    # kalman correction step
 
     def __init__(self):
         '''
@@ -21,9 +19,8 @@ class Demo(object):
         '''
         rospy.init_node('bebop_demo')
 
-        # Would make more sense if it were a PoseStamped, but let's wait what
-        # comes out of the Vive.
-        rospy.Subscriber('twist1_pub_', TwistStamped, self.kalman_pos_correct)
+        rospy.Subscriber(
+            'vive_localization/pose', PoseStamped, self.kalman_pos_correct)
 
         rospy.Service("get_pose", GetPoseEst, self.get_kalman_pos_est)
 
@@ -37,9 +34,6 @@ class Demo(object):
         '''
         '''
         self.latest_vel_cmd = vel_cmd
-        # vel_cmd.header.stamp
-        # vel_cmd.linear.x
-        # vel_cmd.linear.y
         pose_est = self.kalman_pos_predict(self.latest_vel_cmd)
 
         return GetPoseEstResponse(pose_est)
@@ -51,12 +45,7 @@ class Demo(object):
         '''
         self.wm.predict_pos_update(vel_cmd, self.wm.B)
 
-        pose_est = Pose()
-        pose_est.position.x = self.wm.xhat.position.x
-        pose_est.position.y = self.wm.xhat.position.y
-        pose_est.position.z = self.wm.xhat.position.z
-
-        return pose_est
+        return self.wm.xhat
 
     def kalman_pos_correct(self, measurement):
         # timing data to know length of preceding prediction step necessary
@@ -78,7 +67,6 @@ class Demo(object):
         self.wm.predict_pos_update(self.latest_vel_cmd, B)
         # Correct the estimate at new t0 with the measurement.
         self.wm.correct_pos_update(self.pc.pose_vive)
-        self.pc.new_val = False
 
 
 if __name__ == '__main__':
