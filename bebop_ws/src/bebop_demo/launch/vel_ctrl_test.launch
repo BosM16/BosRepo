@@ -6,6 +6,6 @@
   <!-- <include file="$(find bebop_vel_ctrl)/launch/bebop_vel_ctrl.launch" /> -->
   <!--- Manual flight - Also safety measure -->
   <include file="$(find bebop_vel_ctrl)/launch/bebop_teleop.launch" />
-
+  <include file="$(find bebop_driver)/launch/bebop_node.launch" />
 
 </launch>
