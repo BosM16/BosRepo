@@ -37,7 +37,6 @@ class WorldModel(object):
         self.B = self.vel_cmd_Ts*np.identity(3)
         self.C = np.identity(3)
         self.D = np.zeros(3)
-        # self.pose_obst = Pose2D
 
     def predict_pos_update(self, vel_cmd, B):
         """

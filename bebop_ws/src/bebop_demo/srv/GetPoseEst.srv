@@ -1,3 +1,3 @@
 geometry_msgs/TwistStamped vel_cmd
 ---
-geometry_msgs/Pose2D pose_est
+geometry_msgs/Point pose_est

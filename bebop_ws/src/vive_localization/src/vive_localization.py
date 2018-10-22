@@ -180,7 +180,7 @@ class LocalizationTest(object):
         '''
         '''
         pose = PoseStamped()
-        pose.header.stamp = rospy.Time.now()
+        pose.header.stamp = transf.header.stamp
         pose.header.frame_id = transf.header.frame_id
         pose.pose.position = transf.transform.translation
         pose.pose.orientation = transf.transform.rotation
