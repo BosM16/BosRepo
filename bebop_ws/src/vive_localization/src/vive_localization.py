@@ -46,6 +46,10 @@ class LocalizationTest(object):
             self.tf_w_in_v.header.frame_id = "vive"
             self.tf_w_in_v.child_frame_id = "world"
 
+            self.tf_w_in_r = TransformStamped()
+            self.tf_w_in_r.header.frame_id = "world_rot"
+            self.tf_w_in_r.child_frame_id = "world"
+
             self.tf_t_in_v = TransformStamped()
             self.tf_w_in_v.header.frame_id = "vive"
             self.tf_w_in_v.child_frame_id = "tracker"
@@ -125,6 +129,12 @@ class LocalizationTest(object):
             tf_d_in_w = self.get_transform("drone", "world")
             pose_world = self.tf_to_pose(tf_d_in_w)
             self.pos_update.publish(pose_world)
+
+            # Calculate and broadcast the rotating world frame.
+            # ADD HERE CALCULATION OF FRAME THAT ROTATES ALONG WITH YAW OF
+            # DRONE, BUT FURTHER IS FIXED TO WORLD.
+
+            self.broadc.sendTransform(self.tf_w_in_r)
 
             self.rate.sleep()
 
