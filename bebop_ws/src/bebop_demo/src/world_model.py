@@ -68,6 +68,7 @@ class WorldModel(object):
                       [pos_meas.pose.position.z]])
         nu = y - self.C*self.X
 
+        nu = y - self.C*self.X
         S = self.C*self.Phat*self.C + self.R
         L = self.Phat*self.C*np.linalg.inv(S)
         self.X = self.X + L*nu

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, TwistStamped, Pose, Pose2D
+from geometry_msgs.msg import Twist, TwistStamped, Pose, Pose2D, Point
 from std_msgs.msg import Bool, Empty, UInt8
 from bebop_demo.srv import GetPoseEst
 from visualization_msgs.msg import MarkerArray
@@ -61,9 +61,9 @@ class VelCommander(object):
 
         rospy.wait_for_service("get_pose")
         try:
-            get_pose_est = rospy.ServiceProxy(
+            pose_est = rospy.ServiceProxy(
                 "get_pose", GetPoseEst)
-            self._robot_est_pose = get_pose_est(cmd_twist)
+            self._robot_est_pose = pose_est(cmd_twist)
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
