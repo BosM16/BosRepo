@@ -1,6 +1,6 @@
 <launch>
 
-  <node name="bebop_demo" pkg="bebop_demo" type="vive_localization.py" output="screen"/>
+  <node name="vive_localization" pkg="vive_localization" type="vive_localization.py" output="screen"/>
   <param name="vive_localization/sample_time" value="0.02" />
 
 </launch>
