@@ -7,7 +7,7 @@ import numpy as np
 import scipy.io as io
 
 
-class Try_out(object):
+class Ident(object):
 
     def __init__(self):
         """
@@ -17,16 +17,17 @@ class Try_out(object):
         self.output_y = np.array([])
         self.output_z = np.array([])
         self.vel = Twist()
+        # self.max_vel = rospy.get_param('max_linear_vel', 1.5)
 
-        # use this for bebop_vel_ctrl + bebop_autonomy
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
-        rospy.Subscriber('vive/pose', Pose, self.update_pose)
+        rospy.Subscriber(
+            'vive_localization/pose', PoseStamped, self.update_pose)
 
     def start(self):
-        rospy.init_node('try_out')
+        rospy.init_node('identification')
         print 'started'
         rospy.spin()
 
@@ -36,8 +37,9 @@ class Try_out(object):
         print 'eagle is flying'
 
         rospy.sleep(4)
+        velocity = 0.8
 
-        rate = 14
+        rate = 20
 
         # move back and forth with a pause in between
         self.vel.linear.x = 0.0
@@ -46,7 +48,7 @@ class Try_out(object):
         self.measuring = True
 
         for k in range(0, 5):
-            self.vel.linear.y = -0.4
+            self.vel.linear.y = -velocity
 
             for x in range(0, rate):
                 self.cmd_vel.publish(cmd_vel)
@@ -57,7 +59,7 @@ class Try_out(object):
             self.cmd_vel.publish(cmd_vel)
             rospy.sleep(1.0)
 
-            self.vel.linear.y = 0.4
+            self.vel.linear.y = velocity
 
             for x in range(0, rate):
                 self.cmd_vel.publish(cmd_vel)
@@ -87,11 +89,11 @@ class Try_out(object):
     def update_pose(self, pose):
         if self.measuring:
             self.input = np.append(self.input, self.vel.linear.y)
-            self.output_x = np.append(self.output_x, pose.position.x)
-            self.output_y = np.append(self.output_y, pose.position.y)
-            self.output_z = np.append(self.output_z, pose.position.z)
+            self.output_x = np.append(self.output_x, pose.pose.position.x)
+            self.output_y = np.append(self.output_y, pose.pose.position.y)
+            self.output_z = np.append(self.output_z, pose.pose.position.z)
 
 
 if __name__ == '__main__':
-    Billy = Try_out()
+    Billy = Ident()
     Billy.start()

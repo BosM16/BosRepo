@@ -1,5 +1,0 @@
-<launch>
-
-  <node name="bebop_demo" pkg="bebop_demo" type="bebop_localization_test.py" output="screen"/>
-
-</launch>

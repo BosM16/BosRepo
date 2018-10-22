@@ -1,11 +1,12 @@
 <launch>
 
-  <node name="try_out" pkg="bebop_demo" type="square_flying.py" output="screen"/>
+  <node name="identification" pkg="bebop_demo" type="identification_flying.py" output="screen"/>
 
-  <!--- Automatic flight -->
-  <!-- <include file="$(find bebop_vel_ctrl)/launch/bebop_vel_ctrl.launch" /> -->
   <!--- Manual flight - Also safety measure -->
+  <include file="$(find vive_localization)/launch/localization.launch" />
   <include file="$(find bebop_vel_ctrl)/launch/bebop_teleop.launch" />
   <include file="$(find bebop_driver)/launch/bebop_node.launch" />
+
+  <param name="max_linear_vel" value="1.5" />
 
 </launch>
