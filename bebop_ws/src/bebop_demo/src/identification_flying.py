@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from std_msgs.msg import Empty, UInt8
-from geometry_msgs.msg import Twist, Pose
+from geometry_msgs.msg import Twist, Pose, PoseStamped
 import rospy
 import numpy as np
 import scipy.io as io

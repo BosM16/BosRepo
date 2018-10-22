@@ -187,4 +187,5 @@ class LocalizationTest(object):
 if __name__ == '__main__':
     test = LocalizationTest()
     test.start()
+    rospy.sleep(5)
     test.publish_pose_est()
