@@ -17,6 +17,7 @@ class Ident(object):
         self.output_y = np.array([])
         self.output_z = np.array([])
         self.vel = Twist()
+        self.measuring = False
         # self.max_vel = rospy.get_param('max_linear_vel', 1.5)
 
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
@@ -37,7 +38,7 @@ class Ident(object):
         print 'eagle is flying'
 
         rospy.sleep(4)
-        velocity = 0.8
+        velocity = 2.0
 
         rate = 20
 
@@ -45,33 +46,32 @@ class Ident(object):
         self.vel.linear.x = 0.0
         self.vel.linear.y = 0.0
         self.vel.linear.z = 0.0
-        self.measuring = True
 
         for k in range(0, 5):
             self.vel.linear.y = -velocity
 
             for x in range(0, rate):
-                self.cmd_vel.publish(cmd_vel)
+                self.cmd_vel.publish(self.vel)
                 rospy.sleep(0.1)
 
             # brake
             self.vel.linear.y = 0.0
-            self.cmd_vel.publish(cmd_vel)
+            self.cmd_vel.publish(self.vel)
             rospy.sleep(1.0)
 
             self.vel.linear.y = velocity
 
             for x in range(0, rate):
-                self.cmd_vel.publish(cmd_vel)
+                self.cmd_vel.publish(self.vel)
                 rospy.sleep(0.1)
 
             # brake
             self.vel.linear.y = 0.0
-            self.cmd_vel.publish(cmd_vel)
+            self.cmd_vel.publish(self.vel)
             rospy.sleep(1.0)
 
         self.measuring = False
-        print 'stop', cmd_vel
+        print 'stop'
         self.cmd_vel.publish(self.vel)
 
         rospy.sleep(1)

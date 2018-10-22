@@ -79,6 +79,7 @@ class LocalizationTest(object):
         self.v.print_discovered_objects()
 
         self.init_transforms()
+        rospy.sleep(5)
         self.calibrate()
 
     def calibrate(self, *_):
