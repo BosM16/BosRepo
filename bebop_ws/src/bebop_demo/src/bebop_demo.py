@@ -3,6 +3,7 @@
 from geometry_msgs.msg import Twist, Pose2D, PoseStamped, Point
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import rospy
+import tf2_ros
 
 from perception import *
 from world_model import *
@@ -25,6 +26,11 @@ class Demo(object):
         rospy.Service("get_pose", GetPoseEst, self.get_kalman_pos_est)
 
         self.pose_pub = rospy.Publisher("/wm/position_estimate", Point)
+
+        self.broadc = tf2_ros.TransformBroadcaster()
+        self.tf_kp_in_w = TransformStamped()
+        self.tf_kp_in_w.header.frame_id = "world"
+        self.tf_kp_in_w.child_frame_id = "kalman_pos"
 
     def start(self):
         '''
@@ -72,6 +78,10 @@ class Demo(object):
 
         # Publish latest estimate to read out Kalman result.
         self.pose_pub.publish(self.wm.xhat)
+        self.tf_kp_in_w.transform.translation.x = self.wm.xhat.x
+        self.tf_kp_in_w.transform.translation.y = self.wm.xhat.y
+        self.tf_kp_in_w.transform.translation.z = self.wm.xhat.z
+        self.stbroadc.sendTransform(self.tf_kp_in_w)
 
 
 if __name__ == '__main__':

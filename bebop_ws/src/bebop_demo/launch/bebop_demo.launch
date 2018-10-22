@@ -1,7 +1,7 @@
 <launch>
 
   <node name="bebop_demo" pkg="bebop_demo" type="bebop_demo.py" output="screen"/>
-  <include file="vel_commander.launch" />
+  <include file="$(find bebop_demo)/launch/vel_commander.launch" />
   <include file="$(find vive_localization)/launch/localization.launch" />
   <include file="$(find bebop_vel_ctrl)/launch/bebop_teleop.launch" />
   <include file="$(find bebop_driver)/launch/bebop_node.launch" />

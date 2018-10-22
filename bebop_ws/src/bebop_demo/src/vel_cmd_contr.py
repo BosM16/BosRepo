@@ -81,4 +81,3 @@ class VelCommander(object):
 if __name__ == '__main__':
     vel_command = VelCommander()
     vel_command.start()
-    vel_command.configure()
