@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, Pose2D, PoseStamped
+from geometry_msgs.msg import Twist, Pose2D, PoseStamped, Point
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import rospy
 
@@ -23,6 +23,8 @@ class Demo(object):
             'vive_localization/pose', PoseStamped, self.kalman_pos_correct)
 
         rospy.Service("get_pose", GetPoseEst, self.get_kalman_pos_est)
+
+        self.pose_pub = rospy.Publisher("/wm/position_estimate", Point)
 
     def start(self):
         '''
@@ -67,6 +69,9 @@ class Demo(object):
         self.wm.predict_pos_update(self.latest_vel_cmd, B)
         # Correct the estimate at new t0 with the measurement.
         self.wm.correct_pos_update(self.pc.pose_vive)
+
+        # Publish latest estimate to read out Kalman result.
+        self.pose_pub.publish(self.wm.xhat)
 
 
 if __name__ == '__main__':

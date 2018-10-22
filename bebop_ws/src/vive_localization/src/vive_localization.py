@@ -124,6 +124,7 @@ class LocalizationTest(object):
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
             pose_world = self.tf_to_pose(tf_d_in_w)
+            self.pos_update.publish(pose_world)
 
             self.rate.sleep()
 
