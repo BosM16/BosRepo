@@ -46,9 +46,9 @@ class LocalizationTest(object):
             self.tf_w_in_v.header.frame_id = "vive"
             self.tf_w_in_v.child_frame_id = "world"
 
-            self.tf_w_in_r = TransformStamped()
-            self.tf_w_in_r.header.frame_id = "world_rot"
-            self.tf_w_in_r.child_frame_id = "world"
+            self.tf_r_in_w = TransformStamped()
+            self.tf_r_in_w.header.frame_id = "world"
+            self.tf_r_in_w.child_frame_id = "world_rot"
 
             self.tf_t_in_v = TransformStamped()
             self.tf_w_in_v.header.frame_id = "vive"
@@ -124,19 +124,37 @@ class LocalizationTest(object):
             self.broadc.sendTransform(self.tf_t_in_v)
             self.stbroadc.sendTransform(self.tf_d_in_t)
 
-            # Calculate pose of drone in world frame.
+            # Calculate and publish pose of drone in world frame.
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
             pose_world = self.tf_to_pose(tf_d_in_w)
             self.pos_update.publish(pose_world)
 
             # Calculate and broadcast the rotating world frame.
-            # ADD HERE CALCULATION OF FRAME THAT ROTATES ALONG WITH YAW OF
-            # DRONE, BUT FURTHER IS FIXED TO WORLD.
-
-            self.broadc.sendTransform(self.tf_w_in_r)
+            # - Tf drone in world to euler angles.
+            euler = self.get_euler_angles(self.tf_d_in_w)
+            # - Get yaw.
+            yaw = euler[2]
+            # - Yaw only (roll and pitch 0.0) to quaternions.
+            quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
+            self.tf_r_in_w.transform.rotation.x = quat[0]
+            self.tf_r_in_w.transform.rotation.y = quat[1]
+            self.tf_r_in_w.transform.rotation.z = quat[2]
+            self.tf_r_in_w.transform.rotation.w = quat[3]
+            self.broadc.sendTransform(self.tf_r_in_w)
 
             self.rate.sleep()
+
+    def get_euler_angles(self, transf):
+        '''
+        '''
+        quat = (transf.transformation.rotation.x,
+                transf.transformation.rotation.y,
+                transf.transformation.rotation.z,
+                transf.transformation.rotation.w)
+        euler = tf.transformations.euler_from_quaternion(quat)
+
+        return euler
 
     def get_transform(self, _from, _to):
         '''
