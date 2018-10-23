@@ -20,7 +20,7 @@ class Ident(object):
         self.measuring = False
         # self.max_vel = rospy.get_param('max_linear_vel', 1.5)
 
-        self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
+        self.cmd_vel = rospy.Publisher('/vservo/cmd_vel', Twist, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
@@ -35,10 +35,10 @@ class Ident(object):
     def flying(self, empty):
 
         self.take_off.publish(Empty())
-        print 'eagle is flying'
+        print 'Billie is flying'
 
         rospy.sleep(4)
-        velocity = 2.0
+        velocity = 0.8
 
         rate = 20
 
@@ -71,20 +71,19 @@ class Ident(object):
             rospy.sleep(1.0)
 
         self.measuring = False
-        print 'stop'
         self.cmd_vel.publish(self.vel)
 
         rospy.sleep(1)
 
         self.land.publish(Empty())
-        print 'eagle has landed'
+        print 'Billie has landed'
 
         meas = {}
         meas['inputs'] = self.input
         meas['output_x'] = self.output_x
         meas['output_y'] = self.output_y
         meas['output_z'] = self.output_z
-        io.savemat('identification', meas)
+        io.savemat('../identification_y.mat', meas)
 
     def update_pose(self, pose):
         if self.measuring:
