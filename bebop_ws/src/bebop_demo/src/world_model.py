@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from geometry_msgs.msg import TwistStamped, Pose, Point
+from vive_localization import get_transform
 import numpy as np
 import rospy
 
@@ -26,17 +27,30 @@ class WorldModel(object):
         self.Q = np.array([[1e-2], [1e-2], [1e-2]])  # process noise covariance
 
         # Variables.
-        self.xhat_t0 = Point()
+        self.xhat_t0 = PointStamped()
+        self.xhat_t0.header.frame_id = "world"
+        self.xhat = PointStamped()
+        self.xhat.header.frame_id = "world"
+
+        self.xhat_r_t0 = PointStamped()
+        self.xhat_r_t0.header.frame_id = "world_rot"
+
+        self.xhat_r = PointStamped()
+        self.xhat_r.header.frame_id = "world_rot"
+
         self.Phat_t0 = np.zeros(3)
-        self.xhat = Point()
         self.Phat = np.zeros(3)
         self.X = np.zeros((3, 1))
 
-        # State space model matrices for position Kalman filter
+        # State space model matrices for position Kalman filter.
         self.A = np.identity(3)
         self.B = self.vel_cmd_Ts*np.identity(3)
         self.C = np.identity(3)
         self.D = np.zeros(3)
+
+        # Transformations.
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
     def predict_pos_update(self, vel_cmd, B):
         """
@@ -50,9 +64,9 @@ class WorldModel(object):
 
         self.X = self.A*self.X + B*u
 
-        self.xhat.x = self.X[1, 1]
-        self.xhat.y = self.X[2, 1]
-        self.xhat.z = self.X[3, 1]
+        self.xhat_r.point.x = self.X[1, 1]
+        self.xhat_r.point.y = self.X[2, 1]
+        self.xhat_r.point.z = self.X[3, 1]
 
         self.Phat = self.A*self.Phat*self.A + self.Q
 
@@ -73,11 +87,11 @@ class WorldModel(object):
         self.X = self.X + L*nu
         self.Phat = (np.identity(3) - L*self.C)*self.Phat
 
-        self.xhat.x = self.X[1, 1]
-        self.xhat.y = self.X[2, 1]
-        self.xhat.z = self.X[3, 1]
+        self.xhat_r.point.x = self.X[1, 1]
+        self.xhat_r.point.y = self.X[2, 1]
+        self.xhat_r.point.z = self.X[3, 1]
 
-        self.xhat_t0 = self.xhat
+        self.xhat_r_t0 = self.xhat_r
 
         # Time of last measurement is new t0.
         self.t0 = self.get_timestamp(pos_meas)
@@ -86,6 +100,8 @@ class WorldModel(object):
         time = (float(stamped_var.header.stamp.sec)
                 + stamped_var.header.stamp.nsec*1e-9)
         return time
+
+
 
 
 if __name__ == '__main__':

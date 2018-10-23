@@ -4,6 +4,7 @@ from geometry_msgs.msg import Twist, PoseStamped, Point, PointStamped
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import rospy
 import tf2_ros
+import tf2_geometry_msgs as tf2_geom
 
 from perception import *
 from world_model import *
@@ -29,12 +30,10 @@ class Demo(object):
         self.point_pub = PointStamped()
 
         self.pose_pub = rospy.Publisher(
-            "/world_model/xhat", Point, queue_size=1)
-        self.pose_pub_stamped = rospy.Publisher(
-            "/world_model/xhat_stamped", PointStamped, queue_size=1)
+            "/world_model/xhat_r", PointStamped, queue_size=1)
 
         rospy.Service(
-            "/world_model/get_pose", GetPoseEst, self.get_kalman_pos_est)
+            "/world_model/get_pos", GetPoseEst, self.get_kalman_pos_est)
 
     def start(self):
         '''
@@ -53,11 +52,8 @@ class Demo(object):
         self.kalman_pos_predict(self.latest_vel_cmd)
 
         # Publish latest estimate to read out Kalman result.
+        self.wm.xhat = transform_point(self.wm.xhat, "world_rot", "world")
         self.pose_pub.publish(self.wm.xhat)
-        self.xhat_rviz.header.stamp = rospy.Time.now()
-        # Broadcast stamped position for visualization in rviz.
-        self.xhat_stamped.point = self.xhat
-        self.pose_pub_stamped.publish(self.xhat_stamped)
 
         return GetPoseEstResponse(self.wm.xhat)
 
@@ -71,9 +67,9 @@ class Demo(object):
         '''
         if not self.init:
             self.wm.predict_pos_update(vel_cmd, self.wm.B)
-        # Results in an updated xhat.
+        # Results in an updated xhat_r.
 
-    def kalman_pos_correct(self, measurement):
+    def kalman_pos_correct(self, measurement_world):
         '''
         Whenever a new position measurement is available, sends this
         information to the perception and then triggers the kalman filter
@@ -83,9 +79,10 @@ class Demo(object):
             measurement: PoseStamped
         '''
         # TODO: transform measurement to "world_rot" frame.
-
+        measurement = self.transform_pose(
+                                    measurement_world, "world", "world_rot")
         if self.init:
-            self.wm.xhat_t0 = measurement.pose.position
+            self.wm.xhat_r_t0.point = measurement.pose.position
         else:
             # data moet nog verwerkt worden naar gewenste formaat
             self.pc.pose_vive = measurement
@@ -94,7 +91,7 @@ class Demo(object):
             # new measurement.
             index = 1
             vel_cmd_tstamp = self.wm.get_timestamp(self.vel_cmd_list[index])
-            self.wm.xhat = self.wm.xhat_t0
+            self.wm.xhat_r = self.wm.xhat_r_t0
             self.wm.predict_pos_update(
                     self.vel_cmd_list[index], vel_cmd_tstamp - self.wm.t0)
 
@@ -117,6 +114,33 @@ class Demo(object):
             self.wm.predict_pos_update(self.latest_vel_cmd, self.B - B)
 
             self.vel_cmd_list = [self.latest_vel_cmd]
+
+    def transform_point(self, point, _from, _to):
+        '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to
+        frame "_to".
+        '''
+        transform = self.get_transform(_from, _to)
+        point_tf = tf2_geom.do_transform_point(point, transform)
+
+        return point_tf
+
+    def transform_pose(self, pose, _from, _to):
+        '''Transforms pose (geometry_msgs/PoseStamped) from frame "_from" to
+        frame "_to".
+        '''
+        transform = self.get_transform(_from, _to)
+        # Only works with transformstamped.
+        pose_tf = tf2_geom.do_transform_pose(pose, transform)
+
+        return pose_tf
+
+    def get_transform(self, _from, _to):
+        '''
+        '''
+        tf_f_in_t = self.tfBuffer.lookup_transform(
+            _to, _from, rospy.Time(0), rospy.Duration(0.1))
+
+        return tf_f_in_t
 
 
 if __name__ == '__main__':

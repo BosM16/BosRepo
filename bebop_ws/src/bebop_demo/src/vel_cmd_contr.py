@@ -59,11 +59,11 @@ class VelCommander(object):
         cmd_twist.header.stamp = rospy.Time.now()
         cmd_twist.twist = self._cmd_twist
 
-        rospy.wait_for_service("/world_model/get_pose")
+        rospy.wait_for_service("/world_model/get_pos")
         try:
-            pose_est = rospy.ServiceProxy(
+            pos_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
-            self.xhat = pose_est
+            self.xhat = pos_est
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
