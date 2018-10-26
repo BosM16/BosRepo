@@ -10,7 +10,6 @@ import rospy
 
 class VelCommander(object):
     _cmd_twist = Twist()
-    _trigger = Trigger()
 
     def __init__(self):
         """Initialization of Controller object.
@@ -20,6 +19,8 @@ class VelCommander(object):
             update_time : Period of problem solving.
         """
         rospy.init_node("vel_commander_node")
+
+        self._cmd_twist = TwistStamped()
 
         self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
         self.rate = rospy.Rate(1./self._sample_time)
@@ -38,34 +39,26 @@ class VelCommander(object):
         # IMPORTANT NOTE: only in this order because cmd_vel is published by
         # joy_teleop, and not calculated in this node.
 
-        # Read cmd_vel
-        self.get_vel_cmd()
-
         # Retrieve new pose estimate from World Model.
         self.get_pose_est()  # opgelet: dit is een predictie voor het volgende
         # tijdstip.
 
-    def store_vel_cmd(self, cmd_vel):
+    def store_cmd_vel(self, cmd_vel):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
-        self._cmd_twist = cmd_vel
+        self._cmd_twist.twist = cmd_vel
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
         '''
-
-        cmd_twist = TwistStamped()
-        cmd_twist.header.stamp = rospy.Time.now()
-        cmd_twist.twist = self._cmd_twist
-
         rospy.wait_for_service("/world_model/get_pos")
         try:
             pos_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
-            self.xhat = pos_est
+            self.xhat = pos_est(self._cmd_twist)
         except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
+            pass  # print "Service call failed: %s" % e
 
     def start(self):
         """Starts the controller's periodical loop.

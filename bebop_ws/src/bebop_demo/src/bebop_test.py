@@ -29,7 +29,12 @@ class Demo(object):
         self.vel_cmd_list = []
         self.point_pub = PointStamped()
 
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
+
         self.pose_pub = rospy.Publisher(
+            "/world_model/xhat", PointStamped, queue_size=1)
+        self.pose_r_pub = rospy.Publisher(
             "/world_model/xhat_r", PointStamped, queue_size=1)
 
         rospy.Service(
@@ -52,7 +57,8 @@ class Demo(object):
         self.kalman_pos_predict(self.latest_vel_cmd)
 
         # Publish latest estimate to read out Kalman result.
-        self.wm.xhat = transform_point(self.wm.xhat, "world_rot", "world")
+        self.wm.xhat = transform_point(self.wm.xhat_r, "world_rot", "world")
+        self.pose_r_pub.publish(self.wm.xhat_r)
         self.pose_pub.publish(self.wm.xhat)
 
         return GetPoseEstResponse(self.wm.xhat)
@@ -79,12 +85,12 @@ class Demo(object):
             measurement: PoseStamped
         '''
         # TODO: transform measurement to "world_rot" frame.
-        measurement = self.transform_pose(
-                                    measurement_world, "world", "world_rot")
+
         if self.init:
-            self.wm.xhat_r_t0.point = measurement.pose.position
+            self.wm.xhat_r_t0.point = measurement_world.pose.position
         else:
-            # data moet nog verwerkt worden naar gewenste formaat
+            measurement = self.transform_pose(
+                                    measurement_world, "world", "world_rot")
             self.pc.pose_vive = measurement
 
             # First make prediction from old point t0 to last point t before

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import TwistStamped, Pose, Point
-from vive_localization import get_transform
+from geometry_msgs.msg import TwistStamped, Pose, Point, PointStamped
 import numpy as np
 import rospy
+import tf2_ros
 
 
 class WorldModel(object):
@@ -19,9 +19,9 @@ class WorldModel(object):
         # Parameters.
         self.vel_cmd_Ts = rospy.get_param('vel_cmd/sample_time', 0.01)  # s
         self.max_vel = 0.4  # m/s
-        self.max_accel = 0.2  # m/s²
-        rospy.set_param_raw('vel_cmd/max_vel', self.max_vel)
-        rospy.set_param_raw('vel_cmd/max_accel', self.max_accel)
+        self.max_accel = 0.2  # m/s**2
+        rospy.set_param('vel_cmd/max_vel', self.max_vel)
+        rospy.set_param('vel_cmd/max_accel', self.max_accel)
 
         self.R = np.identity(3)  # measurement noise covariance
         self.Q = np.array([[1e-2], [1e-2], [1e-2]])  # process noise covariance
@@ -100,8 +100,6 @@ class WorldModel(object):
         time = (float(stamped_var.header.stamp.sec)
                 + stamped_var.header.stamp.nsec*1e-9)
         return time
-
-
 
 
 if __name__ == '__main__':
