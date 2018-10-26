@@ -114,7 +114,6 @@ class Demo(object):
             late_cmd_vel = []
             # Check for case 4.
             if time_diff_check < 0:
-                print '---\ncase 4'
                 t_last_update = self.wm.get_timestamp(self.vel_cmd_list[-2])
                 late_cmd_vel = [self.vel_cmd_list[-1]]
                 self.vel_cmd_list = self.vel_cmd_list[0:-1]
@@ -134,17 +133,13 @@ class Demo(object):
             # If not case 2 or 3 -> need to predict up to
             # last vel cmd before new_t0
             if vel_len > 2:
-                print '---\ncase 1'
                 for i in range(vel_len - 2):
                     self.wm.predict_pos_update(self.vel_cmd_list[i], self.wm.B)
 
             # Now make prediction up to new t0 if not case 3.
             B = (new_t0 - t_last_update)*np.identity(3)
             if not tstamp == new_t0:
-                print '---\ncase 2'
                 self.wm.predict_pos_update(self.latest_vel_cmd, B)
-            if vel_len == 1:
-                print '---\ncase 3'
             # Correct the estimate at new t0 with the measurement.
             self.wm.correct_pos_update(self.pc.pose_vive)
             # Now predict until next point t that coincides with next timepoint
