@@ -28,6 +28,16 @@ class VelCommander(object):
         # TOPIC where reference velocity in m/s is published!
         rospy.Subscriber('bebop/cmd_vel', Twist, self.store_cmd_vel)
 
+    def start(self):
+        """Starts the controller's periodical loop.
+        """
+        rate = self.rate
+        print '------------------- \ncontroller started!\n-------------------'
+
+        while not rospy.is_shutdown():
+            self.update()
+            rate.sleep()
+
     def update(self):
         """
         - Updates the controller with newly calculated trajectories and
@@ -35,6 +45,7 @@ class VelCommander(object):
         - Sends out new velocity command.
         - Retrieves new pose estimate.
         """
+        print 'Vel cmd update'
         # Send velocity sample to WorldModel, receive position estimate.
         # IMPORTANT NOTE: only in this order because cmd_vel is published by
         # joy_teleop, and not calculated in this node.
@@ -47,28 +58,25 @@ class VelCommander(object):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
+        self._cmd_twist.header.stamp = rospy.Time.now()
+        self._cmd_twist.header.frame_id = "world_rot"
         self._cmd_twist.twist = cmd_vel
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
         '''
-        rospy.wait_for_service("/world_model/get_pos")
+        print 'Vel cmd get_pose_est, wait for service'
+        rospy.wait_for_service("/world_model/get_pose")
         try:
+            print 'Vel Cmder calls service'
             pos_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
             self.xhat = pos_est(self._cmd_twist)
+            print 'service is called', self.xhat
         except rospy.ServiceException, e:
-            pass  # print "Service call failed: %s" % e
+            print "Service call failed: %s" % e
 
-    def start(self):
-        """Starts the controller's periodical loop.
-        """
-        rate = self.rate
-        print 'controller started!'
 
-        while not rospy.is_shutdown():
-            self.update()
-            rate.sleep()
 
 
 if __name__ == '__main__':

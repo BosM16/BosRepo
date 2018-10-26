@@ -29,6 +29,8 @@ class LocalizationTest(object):
 
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseStamped, queue_size=1)
+        self.ready = rospy.Publisher(
+            'vive_localization/ready', Empty, queue_size=1)
 
         rospy.Subscriber('vive_localization/calibrate', Empty, self.calibrate)
         rospy.Subscriber(
@@ -117,6 +119,7 @@ class LocalizationTest(object):
 
     def publish_pose_est(self, *_):
 
+        self.ready.publish(Empty())
         while not rospy.is_shutdown():
             pose_vive = self.get_pose_vive()
             self.tf_t_in_v = self.pose_to_tf(pose_vive, "tracker")

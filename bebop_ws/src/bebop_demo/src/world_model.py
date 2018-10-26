@@ -20,6 +20,7 @@ class WorldModel(object):
         self.vel_cmd_Ts = rospy.get_param('vel_cmd/sample_time', 0.01)  # s
         self.max_vel = 0.4  # m/s
         self.max_accel = 0.2  # m/s**2
+        self.t0 = rospy.get_time()
         rospy.set_param('vel_cmd/max_vel', self.max_vel)
         rospy.set_param('vel_cmd/max_accel', self.max_accel)
 
@@ -52,11 +53,13 @@ class WorldModel(object):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-    def predict_pos_update(self, vel_cmd, B):
+    def predict_pos_update(self, vel_cmd_stamped, B):
         """
         Prediction step of the kalman filter. Update the position of the drone
         using the reference velocity commands.
+        vel_cmd_stamped = TwistStamped
         """
+        vel_cmd = vel_cmd_stamped.twist
 
         u = np.array([[vel_cmd.linear.x],
                       [vel_cmd.linear.y],
@@ -64,9 +67,9 @@ class WorldModel(object):
 
         self.X = self.A*self.X + B*u
 
-        self.xhat_r.point.x = self.X[1, 1]
-        self.xhat_r.point.y = self.X[2, 1]
-        self.xhat_r.point.z = self.X[3, 1]
+        self.xhat_r.point.x = self.X[0, 0]
+        self.xhat_r.point.y = self.X[1, 0]
+        self.xhat_r.point.z = self.X[2, 0]
 
         self.Phat = self.A*self.Phat*self.A + self.Q
 
@@ -87,9 +90,9 @@ class WorldModel(object):
         self.X = self.X + L*nu
         self.Phat = (np.identity(3) - L*self.C)*self.Phat
 
-        self.xhat_r.point.x = self.X[1, 1]
-        self.xhat_r.point.y = self.X[2, 1]
-        self.xhat_r.point.z = self.X[3, 1]
+        self.xhat_r.point.x = self.X[0, 0]
+        self.xhat_r.point.y = self.X[1, 0]
+        self.xhat_r.point.z = self.X[2, 0]
 
         self.xhat_r_t0 = self.xhat_r
 
@@ -97,8 +100,7 @@ class WorldModel(object):
         self.t0 = self.get_timestamp(pos_meas)
 
     def get_timestamp(self, stamped_var):
-        time = (float(stamped_var.header.stamp.sec)
-                + stamped_var.header.stamp.nsec*1e-9)
+        time = stamped_var.header.stamp.to_sec()
         return time
 
 
