@@ -45,7 +45,6 @@ class VelCommander(object):
         - Sends out new velocity command.
         - Retrieves new pose estimate.
         """
-        print 'Vel cmd update'
         # Send velocity sample to WorldModel, receive position estimate.
         # IMPORTANT NOTE: only in this order because cmd_vel is published by
         # joy_teleop, and not calculated in this node.
@@ -65,14 +64,11 @@ class VelCommander(object):
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
         '''
-        print 'Vel cmd get_pose_est, wait for service'
         rospy.wait_for_service("/world_model/get_pose")
         try:
-            print 'Vel Cmder calls service'
             pos_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
             self.xhat = pos_est(self._cmd_twist)
-            print 'service is called', self.xhat
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
