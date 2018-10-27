@@ -100,6 +100,10 @@ class Demo(object):
         '''
         if self.init:
             self.wm.xhat_r_t0.point = measurement_world.pose.position
+            self.wm.X[0, 0] = self.wm.xhat_r_t0.point.x
+            self.wm.X[1, 0] = self.wm.xhat_r_t0.point.y
+            self.wm.X[2, 0] = self.wm.xhat_r_t0.point.z
+            
         else:
             measurement = self.transform_pose(
                                     measurement_world, "world", "world_rot")
