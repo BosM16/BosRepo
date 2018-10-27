@@ -53,15 +53,15 @@ class LocalizationTest(object):
             self.tf_d_in_t.header.stamp = rospy.Time.now()
             self.tf_d_in_t.header.frame_id = "tracker"
             self.tf_d_in_t.child_frame_id = "init_drone"
-            roll_d_in_w = np.pi/2.
-            pitch_d_in_w = 0.
-            yaw_d_in_w = 0.
+            roll_d_in_w = -np.pi/2.
+            pitch_d_in_w = np.pi/2
+            yaw_d_in_w = np.pi/2
             quat = tf.transformations.quaternion_from_euler(roll_d_in_w,
                                                             pitch_d_in_w,
                                                             yaw_d_in_w)
-            self.tf_d_in_t.transform.translation.x = 0.
+            self.tf_d_in_t.transform.translation.x = 0.025
             self.tf_d_in_t.transform.translation.y = 0.
-            self.tf_d_in_t.transform.translation.z = 0.4
+            self.tf_d_in_t.transform.translation.z = -0.1
             self.tf_d_in_t.transform.rotation.x = quat[0]
             self.tf_d_in_t.transform.rotation.y = quat[1]
             self.tf_d_in_t.transform.rotation.z = quat[2]

@@ -18,9 +18,8 @@ class Ident(object):
         self.output_z = np.array([])
         self.vel = Twist()
         self.measuring = False
-        # self.max_vel = rospy.get_param('max_linear_vel', 1.5)
 
-        self.cmd_vel = rospy.Publisher('/vservo/cmd_vel', Twist, queue_size=1)
+        self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
@@ -38,7 +37,7 @@ class Ident(object):
         print 'Billie is flying'
 
         rospy.sleep(4)
-        velocity = 0.8
+        velocity_max = 0.6
 
         rate = 20
 
@@ -46,31 +45,50 @@ class Ident(object):
         self.vel.linear.x = 0.0
         self.vel.linear.y = 0.0
         self.vel.linear.z = 0.0
+        self.measuring = True
 
-        for k in range(0, 5):
-            self.vel.linear.y = -velocity
-
-            for x in range(0, rate):
-                self.cmd_vel.publish(self.vel)
-                rospy.sleep(0.1)
-
-            # brake
-            self.vel.linear.y = 0.0
-            self.cmd_vel.publish(self.vel)
-            rospy.sleep(1.0)
-
-            self.vel.linear.y = velocity
+        for k in range(0, 3):
+            self.vel.linear.y = -velocity_max/3.
 
             for x in range(0, rate):
                 self.cmd_vel.publish(self.vel)
                 rospy.sleep(0.1)
 
-            # brake
-            self.vel.linear.y = 0.0
-            self.cmd_vel.publish(self.vel)
-            rospy.sleep(1.0)
+            self.vel.linear.y = velocity_max/3.
+
+            for x in range(0, rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(0.1)
+
+            self.vel.linear.y = -velocity_max/3.*2.
+
+            for x in range(0, rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(0.1)
+
+            self.vel.linear.y = velocity_max/3.*2.
+
+            for x in range(0, rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(0.1)
+
+            self.vel.linear.y = -velocity_max
+
+            for x in range(0, rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(0.1)
+
+            self.vel.linear.y = velocity_max
+
+            for x in range(0, rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(0.1)
 
         self.measuring = False
+
+        self.vel.linear.x = 0.0
+        self.vel.linear.y = 0.0
+        self.vel.linear.z = 0.0
         self.cmd_vel.publish(self.vel)
 
         rospy.sleep(1)
@@ -79,11 +97,11 @@ class Ident(object):
         print 'Billie has landed'
 
         meas = {}
-        meas['inputs'] = self.input
+        meas['input'] = self.input
         meas['output_x'] = self.output_x
         meas['output_y'] = self.output_y
         meas['output_z'] = self.output_z
-        io.savemat('../identification_y.mat', meas)
+        io.savemat('../angle_identification_y.mat', meas)
 
     def update_pose(self, pose):
         if self.measuring:

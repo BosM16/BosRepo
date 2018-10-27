@@ -4,9 +4,7 @@
 
   <!--- Manual flight - Also safety measure -->
   <include file="$(find vive_localization)/launch/localization.launch" />
-  <include file="$(find bebop_vel_ctrl)/launch/bebop_teleop.launch" />
+  <include file="$(find bebop_tools)/launch/joy_teleop.launch" />
   <include file="$(find bebop_driver)/launch/bebop_node.launch" />
-
-  <param name="max_linear_vel" value="1.5" />
 
 </launch>
