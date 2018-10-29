@@ -12,10 +12,10 @@ class Ident(object):
     def __init__(self):
         """
         """
-        self.input = np.array([])
-        self.output_x = np.array([])
-        self.output_y = np.array([])
-        self.output_z = np.array([])
+        self.input = []
+        self.output_x = []
+        self.output_y = []
+        self.output_z = []
         self.vel = Twist()
         self.measuring = False
 
@@ -97,18 +97,18 @@ class Ident(object):
         print 'Billie has landed'
 
         meas = {}
-        meas['input'] = self.input
-        meas['output_x'] = self.output_x
-        meas['output_y'] = self.output_y
-        meas['output_z'] = self.output_z
+        meas['input'] = np.array(self.input)
+        meas['output_x'] = np.array(self.output_x)
+        meas['output_y'] = np.array(self.output_y)
+        meas['output_z'] = np.array(self.output_z)
         io.savemat('../angle_identification_y.mat', meas)
 
     def update_pose(self, pose):
         if self.measuring:
-            self.input = np.append(self.input, self.vel.linear.y)
-            self.output_x = np.append(self.output_x, pose.pose.position.x)
-            self.output_y = np.append(self.output_y, pose.pose.position.y)
-            self.output_z = np.append(self.output_z, pose.pose.position.z)
+            self.input = self.input + self.vel.linear.y
+            self.output_x = self.output_x + pose.pose.position.x
+            self.output_y = self.output_y + pose.pose.position.y
+            self.output_z = self.output_z + pose.pose.position.z
 
 
 if __name__ == '__main__':
