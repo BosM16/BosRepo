@@ -40,8 +40,6 @@ class VelCommander(object):
 
     def update(self):
         """
-        - Updates the controller with newly calculated trajectories and
-        velocity commands.
         - Sends out new velocity command.
         - Retrieves new pose estimate.
         """
@@ -71,8 +69,6 @@ class VelCommander(object):
             self.xhat = pos_est(self._cmd_twist)
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
-
-
 
 
 if __name__ == '__main__':

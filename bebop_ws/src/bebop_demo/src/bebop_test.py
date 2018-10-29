@@ -72,6 +72,8 @@ class Demo(object):
 
         # Publish latest estimate to read out Kalman result.
         self.transform_point("world_rot", "world")
+        print "xhat\n", self.wm.xhat
+        print "xhat_r\n", self.wm.xhat_r
         self.pose_r_pub.publish(self.wm.xhat_r)
         self.pose_pub.publish(self.wm.xhat)
 
@@ -96,14 +98,17 @@ class Demo(object):
         to apply a correction step.
 
         Arguments:
-            measurement: PoseStamped
+            measurement_world: PoseStamped expressed in "world" frame.
         '''
         if self.init:
             self.wm.xhat_r_t0.point = measurement_world.pose.position
         else:
+            self.pc.pose_vive = measurement_world
+
             measurement = self.transform_pose(
                                     measurement_world, "world", "world_rot")
-            self.pc.pose_vive = measurement_world
+            print "measurement_world\n", measurement_world
+            print "measurement\n", measurement
 
             # First make prediction from old point t0 to last point t before
             # new measurement.
@@ -112,6 +117,7 @@ class Demo(object):
             new_t0 = self.wm.get_timestamp(self.pc.pose_vive)
             time_diff_check = new_t0 - t_last_update
             late_cmd_vel = []
+
             # Check for case 4.
             if time_diff_check < 0:
                 t_last_update = self.wm.get_timestamp(self.vel_cmd_list[-2])
@@ -147,7 +153,7 @@ class Demo(object):
             self.wm.predict_pos_update(self.vel_cmd_list[-1], self.wm.B - B)
 
             self.vel_cmd_list = [self.vel_cmd_list[-1]]
-            self.vel_cmd_list + late_cmd_vel
+            self.vel_cmd_list += late_cmd_vel
 
     def transform_point(self, _from, _to):
         '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to
@@ -161,7 +167,6 @@ class Demo(object):
         frame "_to".
         '''
         transform = self.get_transform(_from, _to)
-        # Only works with transformstamped.
         pose_tf = tf2_geom.do_transform_pose(pose, transform)
 
         return pose_tf
