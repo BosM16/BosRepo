@@ -105,10 +105,10 @@ class Ident(object):
 
     def update_pose(self, pose):
         if self.measuring:
-            self.input = self.input + self.vel.linear.y
-            self.output_x = self.output_x + pose.pose.position.x
-            self.output_y = self.output_y + pose.pose.position.y
-            self.output_z = self.output_z + pose.pose.position.z
+            self.input = self.input + [self.vel.linear.y]
+            self.output_x = self.output_x + [pose.pose.position.x]
+            self.output_y = self.output_y + [pose.pose.position.y]
+            self.output_z = self.output_z + [pose.pose.position.z]
 
 
 if __name__ == '__main__':
