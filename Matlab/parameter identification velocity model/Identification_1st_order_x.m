@@ -33,7 +33,7 @@ velocity_z = gradient(output_z)/dt;
 
 % Do some plotting of the measurement data 
 figure('Name','Output Measurements')
-subplot(321), plot(time, output_x), title('Position x'), xlabel('time [s]'), ylabel('position [m]')
+subplot(321), plot(time, output_x, time, input), title('Position x'), xlabel('time [s]'), ylabel('position [m]')
 subplot(322), plot(time, velocity_x), title('Velocity x'), xlabel('time [s]'), ylabel('speed [m/s]')
 
 subplot(323), plot(time, output_y), title('Position y'), xlabel('time [s]'), ylabel('position [m]')

@@ -16,10 +16,10 @@ set(0, 'DefaultLineLineWidth', 1);
 
 % Cutoff useful data
 first_index = find(input~=0, 1);
-input = input(first_index:750)';
-output_x = output_x(first_index:750)';
-output_y = output_y(first_index:750)';
-output_z = output_z(first_index:750)';
+input = input(1:end-10)';
+output_x = output_x(1:length(input))';
+output_y = output_y(1:length(input))';
+output_z = output_z(1:length(input))';
 
 dt = 0.02;
 time = 0:dt:(length(input)-1)*dt;
@@ -36,8 +36,8 @@ figure('Name','Output Measurements')
 subplot(321), plot(time, output_x), title('Position x'), xlabel('time [s]'), ylabel('position [m]')
 subplot(322), plot(time, velocity_x), title('Velocity x'), xlabel('time [s]'), ylabel('speed [m/s]')
 
-subplot(323), plot(time, output_y), title('Position y'), xlabel('time [s]'), ylabel('position [m]')
-subplot(324), plot(time, velocity_y), title('Velocity y'), xlabel('time [s]'), ylabel('speed [m/s]')
+subplot(323), plot(time, output_y, time, input), title('Position y'), xlabel('time [s]'), ylabel('position [m]')
+subplot(324), plot(time, velocity_y, time, input), title('Velocity y'), xlabel('time [s]'), ylabel('speed [m/s]')
 
 subplot(325), plot(time, output_z), title('Position z'), xlabel('time [s]'), ylabel('position [m]')
 subplot(326), plot(time, velocity_z), title('Velocity z'), xlabel('time [s]'), ylabel('speed [m/s]')

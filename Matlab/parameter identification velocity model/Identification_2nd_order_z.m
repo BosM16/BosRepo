@@ -5,7 +5,7 @@ close all
 
 %% Load data from .mat-file
 
-load angle_identification_x
+load vel_identification_z
 
 
 %% Extract some signals from the data
@@ -21,7 +21,7 @@ output_y = output_y(1:end-10)';
 output_z = output_z(1:end-10)';
 
 dt = 0.02;
-time = (0:dt:(length(input)-1)*dt)';
+time = 0:dt:(length(input)-1)*dt;
 
 % Differentiation of x-, y-, z-position
 % dt = sample time (gradient assumes timestep 1)
@@ -37,8 +37,8 @@ subplot(322), plot(time, velocity_x), title('Velocity x'), xlabel('time [s]'), y
 subplot(323), plot(time, output_y), title('Position y'), xlabel('time [s]'), ylabel('position [m]')
 subplot(324), plot(time, velocity_y), title('Velocity y'), xlabel('time [s]'), ylabel('speed [m/s]')
 
-subplot(325), plot(time, output_z), title('Position z'), xlabel('time [s]'), ylabel('position [m]')
-subplot(326), plot(time, velocity_z), title('Velocity z'), xlabel('time [s]'), ylabel('speed [m/s]')
+subplot(325), plot(time, output_z, time, input), title('Position z'), xlabel('time [s]'), ylabel('position [m]')
+subplot(326), plot(time, velocity_z, time, input), title('Velocity z'), xlabel('time [s]'), ylabel('speed [m/s]')
 
 % Input signal
 figure('Name', 'Input signal')
@@ -57,18 +57,10 @@ N = numel(input);
 f = [0:N-1]'*(fs/N);
 
 input_f = fft(input);
-output_x_f = fft(output_x);
-output_y_f = fft(output_y);
-velocity_x_f = fft(velocity_x);
-velocity_y_f = fft(velocity_y);
+output_z_f = fft(output_z);
+velocity_z_f = fft(velocity_z);
 
-%indices = (nop+1):nop:(numel(f)/2); % alle 0 waarden er uit halen zodat niet delen door 0?
-%f = f(indices);
-%input_f = input_f(indices);
-%velocity_x_f = velocity_x_f(indices);
-%velocity_y_f = velocity_y_f(indices);
-
-FRF = velocity_x_f./input_f;
+FRF = velocity_z_f./input_f;
 
 figure('Name', 'Empirical transfer function freq response'),subplot(2,1,1),semilogx(f, 20*log10(abs(FRF)), 'LineWidth', 1)
 axis tight
@@ -91,21 +83,20 @@ xlim([f(1) f(end)])
 % input filtering                           
 input_filt = filter(B,A,input);
 % output filtering
-velocity_x_filt = filter(B,A,velocity_x);
-velocity_y_filt = filter(B,A,velocity_y);
+velocity_z_filt = filter(B,A,velocity_z);
 
 figure('Name','filtered input input')
 plot(t,input,t,input_filt),title('Input input filtered')
 
 figure('Name','filtered output measurement')
-subplot(211), plot(time, velocity_x, time, velocity_x_filt),title('v_{x,filt}')
-subplot(212), plot(time, velocity_y, time, velocity_y_filt),title('v_{y,filt}')
+subplot(211), plot(time, velocity_z, time, velocity_z_filt),title('v_{z,filt}')
+
 
 %% Least squares solution for approximation of the parameters in the system
 % Without filtering
 % y[k] = -a1*y[k-1]-a0*y[k-2]+b2*u[k]+b1*u[k-1]+b0*u[k-2]
-y = velocity_x(3:end);
-Phi = [-velocity_x(2:end-1), -velocity_x(1:end-2), input(3:end), input(2:end-1), input(1:end-2)];
+y = velocity_z(3:end);
+Phi = [-velocity_z(2:end-1), -velocity_z(1:end-2), input(3:end), input(2:end-1), input(1:end-2)];
 theta = Phi\y;
 
 B1 = [theta(3), theta(4), theta(5)];
@@ -132,17 +123,17 @@ x1 = lsim(sys_d1,input,t);
 figure('Name','lsim NOT filtered Identified transfer function')
 subplot(211)
 hold on
-plot(t, velocity_x,'g')
+plot(t, velocity_z,'g')
 plot(t, x1)
 title('Non filtered identified transfer function vs measurement')
-legend('v_{x,meas}','v_{x,sim}')
+legend('v_{z,meas}','v_{z,sim}')
 xlabel('Time [s]')
 ylabel('Displacement [m]')
 axis tight
 subplot(212)
-plot(t,velocity_x - x1)
+plot(t,velocity_z - x1)
 title('Difference between simulation and measurement')
-legend('v_{x,meas}-v_{x,sim}')
+legend('v_{z,meas}-v_{z,sim}')
 xlabel('Time [s]')
 ylabel('Displacement [m]')
 axis tight
@@ -152,8 +143,8 @@ figure('Name','NOT  filtered pole zero map'),pzmap(sys_d1)
 
 %% With Butterworth filtering of in and output
 
-y2 = velocity_x_filt(3:end);
-Phi2 = [-velocity_x_filt(2:end-1), -velocity_x_filt(1:end-2), input_filt(3:end), input_filt(2:end-1), input_filt(1:end-2)];
+y2 = velocity_z_filt(3:end);
+Phi2 = [-velocity_z_filt(2:end-1), -velocity_z_filt(1:end-2), input_filt(3:end), input_filt(2:end-1), input_filt(1:end-2)];
 theta_filt = Phi2\y2;
 
 B2 = [theta_filt(3),theta_filt(4),theta_filt(5)];
@@ -181,18 +172,18 @@ x2 = lsim(sys_d2,input,t);
 figure('Name','Butterworth filtered lsim time response')
 subplot(211)
 hold on
-plot(t, velocity_x,'g')
-plot(t, velocity_x_filt)
+plot(t, velocity_z,'g')
+plot(t, velocity_z_filt)
 plot(t,x2)
-legend('v_{x,meas}', 'v_{x,filt}', 'v_{x,sim}')
+legend('v_{z,meas}', 'v_{z,filt}', 'v_{z,sim}')
 title('Butterworth filtered identified transfer function vs measurement')
 xlabel('Time [s]')
 axis tight
 ylabel('Velocity [m/s]')
 subplot(212)
-plot(t,velocity_x - x2)
+plot(t,velocity_z - x2)
 title('Difference between simulation and measurement')
-legend('v_{x,meas}-v_{x,sim}')
+legend('v_{z,meas}-v_{z,sim}')
 xlabel('Time [s]')
 ylabel('Velocity [m/s]')
 axis tight
@@ -204,9 +195,9 @@ figure('Name','Butterworth filtered Identified tf pole-zero map'),pzmap(sys_d2)
 % (from physical insight) that they are EXACTLY 0!
 % pk ~ partially known
 % y[k] = -a1*y[k-1] - a0*y[k-2] + b2*u[k]
-y_pk = velocity_x_filt(3:end);
+y_pk = velocity_z_filt(3:end);
 
-Phi_pk = [-velocity_x_filt(2:end-1), -velocity_x_filt(1:end-2), input_filt(3:end)];
+Phi_pk = [-velocity_z_filt(2:end-1), -velocity_z_filt(1:end-2), input_filt(3:end)];
 theta_pk = Phi_pk\y_pk;
 
 % known part = z^2/1
@@ -240,18 +231,18 @@ x_pk = lsim(sys_dpk,input,t);
 figure('Name','Butter. filtered + partially known lsim time response')
 subplot(211)
 hold on
-plot(t,velocity_x, 'g')
-plot(t,velocity_x_filt)
+plot(t,velocity_z, 'g')
+plot(t,velocity_z_filt)
 plot(t,x_pk)
-legend('v_{x,meas}','v_{x,filt}','v_{x,sim}')
+legend('v_{z,meas}','v_{z,filt}','v_{z,sim}')
 xlabel('Time [s]')
 title('Butterworth filtered + partially known identified transfer function vs measurement')
 axis tight
 ylabel('Velocity [m/s]')
 subplot(212)
-plot(t,velocity_x - x_pk)
+plot(t,velocity_z - x_pk)
 title('Difference between simulation and measurement')
-legend('v_{x,meas}-v_{x,sim}')
+legend('v_{z,meas}-v_{z,sim}')
 xlabel('Time [s]')
 ylabel('Velocity [m/s]')
 axis tight
@@ -269,7 +260,7 @@ bode(sys_dpk)
 legend('not filtered', 'filtered', 'partially known')
 
 figure
-plot(t,[velocity_x x1 x2 x_pk])
+plot(t,[velocity_z x1 x2 x_pk])
 %% continuous equivalent of tf (pk)
 a1 = theta_pk(1);
 a0 = theta_pk(2);

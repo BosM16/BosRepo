@@ -14,15 +14,14 @@ set(0, 'DefaultLineLineWidth', 1);
 
 
 % Cutoff useful data
-first_index = find(input~=0, 1);
-input = input(first_index:750)';
-output_x = output_x(first_index:750)';
-output_y = output_y(first_index:750)';
-output_z = output_z(first_index:750)';
+% first_index = find(input~=0, 1);
+input = input(1:end-10)';
+output_x = output_x(1:end-10)';
+output_y = output_y(1:end-10)';
+output_z = output_z(1:end-10)';
 
 dt = 0.02;
-time = 0:dt:(length(input)-1)*dt;
-time = time(first_index:end) - time(first_index);
+time = (0:dt:(length(input)-1)*dt)';
 
 % Differentiation of x-, y-, z-position
 % dt = sample time (gradient assumes timestep 1)
@@ -270,7 +269,8 @@ bode(sys_dpk)
 legend('not filtered', 'filtered', 'partially known')
 
 figure
-plot(t,[velocity_y x1 x2 x_pk])
+plot(t,[velocity_y velocity_y_filt x1 x2 x_pk])
+legend('measured', 'filtered measurement', 'simulated no filter', 'simulated filter', 'simulated partially known')
 %% continuous equivalent of tf (pk)
 a1 = theta_pk(1);
 a0 = theta_pk(2);
