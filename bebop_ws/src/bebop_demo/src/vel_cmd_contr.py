@@ -20,6 +20,8 @@ class VelCommander(object):
         """
         rospy.init_node("vel_commander_node")
 
+        self.cmd_vel_received = False
+
         self._cmd_twist = TwistStamped()
 
         self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
@@ -35,7 +37,8 @@ class VelCommander(object):
         print '------------------- \ncontroller started!\n-------------------'
 
         while not rospy.is_shutdown():
-            self.update()
+            if self.cmd_vel_received:
+                self.update()
             rate.sleep()
 
     def update(self):
@@ -59,13 +62,18 @@ class VelCommander(object):
         self._cmd_twist.header.frame_id = "world_rot"
         self._cmd_twist.twist = cmd_vel
 
+        self.cmd_vel_received = True
+
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
         '''
+        # print '-- VelCmd wait for service'
         rospy.wait_for_service("/world_model/get_pose")
+        # print '-- Velcmd service found'
         try:
             pos_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
+            # print '-- VelCmd Service call --'
             self.xhat = pos_est(self._cmd_twist)
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e

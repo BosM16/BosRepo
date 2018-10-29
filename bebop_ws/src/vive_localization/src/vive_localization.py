@@ -13,7 +13,6 @@ import triad_openvr
 
 class LocalizationTest(object):
     '''
-    Switches to the desired state depending on task at hand.
     '''
 
     def __init__(self):
@@ -118,8 +117,12 @@ class LocalizationTest(object):
         print 'CALIBRATED \n'
 
     def publish_pose_est(self, *_):
-
+        '''Publishes message that calibration is completed. Starts publishing
+        pose measurements.
+        '''
         self.ready.publish(Empty())
+        print '** Vive localization READY **'
+
         while not rospy.is_shutdown():
             pose_vive = self.get_pose_vive()
             self.tf_t_in_v = self.pose_to_tf(pose_vive, "tracker")

@@ -25,9 +25,6 @@ class Demo(object):
 
         rospy.init_node('bebop_demo')
 
-        rospy.Subscriber(
-            'vive_localization/pose', PoseStamped, self.kalman_pos_correct)
-
         self.vel_cmd_list = []
         self.point_pub = PointStamped()
 
@@ -41,6 +38,8 @@ class Demo(object):
 
         rospy.Subscriber(
             'vive_localization/ready', Empty, self.vive_ready)
+        rospy.Subscriber(
+            'vive_localization/pose', PoseStamped, self.kalman_pos_correct)
 
         self._get_pose_service = None
 
@@ -53,7 +52,7 @@ class Demo(object):
 
     def vive_ready(self, *_):
         '''
-        Set variable to True when vive is calibrated
+        Provide service when vive is calibrated.
         '''
         self._get_pose_service = rospy.Service(
             "/world_model/get_pose", GetPoseEst, self.get_kalman_pos_est)
@@ -72,8 +71,8 @@ class Demo(object):
 
         # Publish latest estimate to read out Kalman result.
         self.transform_point("world_rot", "world")
-        print "xhat\n", self.wm.xhat
-        print "xhat_r\n", self.wm.xhat_r
+        # print "xhat\n", self.wm.xhat
+        # print "xhat_r\n", self.wm.xhat_r
         self.pose_r_pub.publish(self.wm.xhat_r)
         self.pose_pub.publish(self.wm.xhat)
 
@@ -89,6 +88,7 @@ class Demo(object):
         '''
         if not self.init:
             self.wm.predict_pos_update(vel_cmd, self.wm.B)
+            print 'Kalman predict step'
         # Results in an updated xhat_r.
 
     def kalman_pos_correct(self, measurement_world):
@@ -102,18 +102,18 @@ class Demo(object):
         '''
         if self.init:
             self.wm.xhat_r_t0.point = measurement_world.pose.position
-            
+
         self.wm.X[0, 0] = self.wm.xhat_r_t0.point.x
         self.wm.X[1, 0] = self.wm.xhat_r_t0.point.y
         self.wm.X[2, 0] = self.wm.xhat_r_t0.point.z
-            
-        else:
-            self.pc.pose_vive = measurement_world
 
+        if not self.init:
+            self.pc.pose_vive = measurement_world
+            print "Applying Kalman correction step"
             measurement = self.transform_pose(
                                     measurement_world, "world", "world_rot")
-            print "measurement_world\n", measurement_world
-            print "measurement\n", measurement
+            # print "measurement_world\n", measurement_world
+            # print "measurement\n", measurement
 
             # First make prediction from old point t0 to last point t before
             # new measurement.
@@ -122,7 +122,6 @@ class Demo(object):
             new_t0 = self.wm.get_timestamp(self.pc.pose_vive)
             time_diff_check = new_t0 - t_last_update
             late_cmd_vel = []
-
             # Check for case 4.
             if time_diff_check < 0:
                 t_last_update = self.wm.get_timestamp(self.vel_cmd_list[-2])
@@ -138,9 +137,8 @@ class Demo(object):
                 tstamp = self.wm.get_timestamp(self.vel_cmd_list[1])
             else:
                 tstamp = new_t0
-
             self.wm.predict_pos_update(
-                    self.vel_cmd_list[0], tstamp - self.wm.t0)
+                    self.vel_cmd_list[0], (tstamp - self.wm.t0)*np.identity(3))
             # If not case 2 or 3 -> need to predict up to
             # last vel cmd before new_t0
             if vel_len > 2:
