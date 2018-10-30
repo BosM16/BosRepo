@@ -25,7 +25,7 @@ class WorldModel(object):
         rospy.set_param('vel_cmd/max_accel', self.max_accel)
 
         self.R = np.identity(3)  # measurement noise covariance
-        self.Q = np.array([[1e-2], [1e-2], [1e-2]])  # process noise covariance
+        self.Q = 1e-2*np.identity(3)  # process noise covariance
 
         # Variables.
         self.xhat_t0 = PointStamped()
@@ -64,14 +64,17 @@ class WorldModel(object):
         u = np.array([[vel_cmd.linear.x],
                       [vel_cmd.linear.y],
                       [vel_cmd.linear.z]])
-
-        self.X = self.A*self.X + B*u
+        # print '--- WM --- \n', self.X
+        # print 'A\n', self.A
+        # print 'B\n', B
+        # print 'u\n', u
+        self.X = np.matmul(self.A, self.X) + np.matmul(B, u)
 
         self.xhat_r.point.x = self.X[0, 0]
         self.xhat_r.point.y = self.X[1, 0]
         self.xhat_r.point.z = self.X[2, 0]
 
-        self.Phat = self.A*self.Phat*self.A + self.Q
+        self.Phat = np.matmul(self.A, np.matmul(self.Phat, self.A)) + self.Q
 
     def correct_pos_update(self, pos_meas):
         """
@@ -82,13 +85,13 @@ class WorldModel(object):
         y = np.array([[pos_meas.pose.position.x],
                       [pos_meas.pose.position.y],
                       [pos_meas.pose.position.z]])
-        nu = y - self.C*self.X
+        nu = y - np.matmul(self.C, self.X)
 
-        nu = y - self.C*self.X
-        S = self.C*self.Phat*self.C + self.R
-        L = self.Phat*self.C*np.linalg.inv(S)
-        self.X = self.X + L*nu
-        self.Phat = (np.identity(3) - L*self.C)*self.Phat
+        S = np.matmul(self.C, np.matmul(self.Phat, self.C)) + self.R
+        L = np.matmul(self.Phat, np.matmul(self.C, np.linalg.inv(S)))
+        self.X = self.X + np.matmul(L, nu)
+        self.Phat = np.matmul(
+            (np.identity(3) - np.matmul(L, self.C)), self.Phat)
 
         self.xhat_r.point.x = self.X[0, 0]
         self.xhat_r.point.y = self.X[1, 0]
