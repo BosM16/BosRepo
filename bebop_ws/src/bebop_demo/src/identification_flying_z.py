@@ -14,11 +14,11 @@ class Ident(object):
         """
         self.ident_length = 3
         self.index = 0
-        self.rate = 12
-        self.wait1 = 0.1
-        self.wait2 = 0.12
+        self.rate = 10
+        self.wait1 = 0.062
+        self.wait2 = 0.06
         self.wait3 = 0.11
-        span = int(3*(self.wait1*4 + self.wait2+self.wait3)*self.rate*50 + 10)
+        span = int(3*(self.wait1*5 + self.wait2*5)*self.rate*50 + 10)
         self.input = np.zeros(span)
         self.output_x = np.zeros(span)
         self.output_y = np.zeros(span)
@@ -54,28 +54,16 @@ class Ident(object):
 
         for k in range(0, self.ident_length):
             self.vel.linear.z = velocity_max/3.
-
+            # Le rise
             for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
                 rospy.sleep(self.wait1)
 
-            self.vel.linear.z = -velocity_max/3.
-
-            for x in range(0, self.rate):
-                self.cmd_vel.publish(self.vel)
-                rospy.sleep(self.wait2)
-
-            self.vel.linear.z = velocity_max/3.*2.
+            self.vel.linear.z = velocity_max/3.*2
 
             for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
                 rospy.sleep(self.wait1)
-
-            self.vel.linear.z = -velocity_max/3.*2.
-
-            for x in range(0, self.rate):
-                self.cmd_vel.publish(self.vel)
-                rospy.sleep(self.wait3)
 
             self.vel.linear.z = velocity_max
 
@@ -83,11 +71,48 @@ class Ident(object):
                 self.cmd_vel.publish(self.vel)
                 rospy.sleep(self.wait1)
 
-            self.vel.linear.z = -velocity_max
+            self.vel.linear.z = velocity_max/3.*2
 
             for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
                 rospy.sleep(self.wait1)
+
+            self.vel.linear.z = velocity_max/3.
+
+            for x in range(0, self.rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(self.wait1)
+
+            # Le fall
+            self.vel.linear.z = -velocity_max/3.
+
+            for x in range(0, self.rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(self.wait2)
+
+            self.vel.linear.z = -velocity_max/3.*2
+
+            for x in range(0, self.rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(self.wait2)
+
+            self.vel.linear.z = -velocity_max
+
+            for x in range(0, self.rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(self.wait2)
+
+            self.vel.linear.z = -velocity_max/3.*2
+
+            for x in range(0, self.rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(self.wait2)
+
+            self.vel.linear.z = -velocity_max/3.
+
+            for x in range(0, self.rate):
+                self.cmd_vel.publish(self.vel)
+                rospy.sleep(self.wait2)
 
         self.measuring = False
 
