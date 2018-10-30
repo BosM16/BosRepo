@@ -8,6 +8,7 @@ import rospy
 import sys
 import tf
 import tf2_ros
+import tf2_geometry_msgs as tf2_geom
 import triad_openvr
 
 
@@ -29,6 +30,12 @@ class LocalizationTest(object):
 
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseStamped, queue_size=1)
+        self.ready = rospy.Publisher(
+            'vive_localization/ready', Empty, queue_size=1)
+
+        # rospy.Subscriber('vive_localization/calibrate', Empty, self.calibrate)
+        # rospy.Subscriber(
+        #     'vive_localization/publish_poses', Empty, self.publish_pose_est)
 
     def init_transforms(self):
 
@@ -42,6 +49,10 @@ class LocalizationTest(object):
             self.tf_w_in_v.header.frame_id = "vive"
             self.tf_w_in_v.child_frame_id = "world"
 
+            self.tf_r_in_w = TransformStamped()
+            self.tf_r_in_w.header.frame_id = "world"
+            self.tf_r_in_w.child_frame_id = "world_rot"
+
             self.tf_t_in_v = TransformStamped()
             self.tf_w_in_v.header.frame_id = "vive"
             self.tf_w_in_v.child_frame_id = "tracker"
@@ -53,15 +64,15 @@ class LocalizationTest(object):
             self.tf_d_in_t.header.stamp = rospy.Time.now()
             self.tf_d_in_t.header.frame_id = "tracker"
             self.tf_d_in_t.child_frame_id = "init_drone"
-            roll_d_in_w = -np.pi/2.
-            pitch_d_in_w = np.pi/2
-            yaw_d_in_w = np.pi/2
-            quat = tf.transformations.quaternion_from_euler(roll_d_in_w,
-                                                            pitch_d_in_w,
-                                                            yaw_d_in_w)
-            self.tf_d_in_t.transform.translation.x = 0.025
-            self.tf_d_in_t.transform.translation.y = 0.
-            self.tf_d_in_t.transform.translation.z = -0.1
+            roll_d_in_t = np.pi/2
+            pitch_d_in_t = -np.pi/2
+            yaw_d_in_t = 0.
+            quat = tf.transformations.quaternion_from_euler(roll_d_in_t,
+                                                            pitch_d_in_t,
+                                                            yaw_d_in_t)
+            self.tf_d_in_t.transform.translation.x = 0.
+            self.tf_d_in_t.transform.translation.y = 0.025
+            self.tf_d_in_t.transform.translation.z = 0.1
             self.tf_d_in_t.transform.rotation.x = quat[0]
             self.tf_d_in_t.transform.rotation.y = quat[1]
             self.tf_d_in_t.transform.rotation.z = quat[2]
@@ -107,7 +118,12 @@ class LocalizationTest(object):
         print '--------------------------- \n'
         print 'CALIBRATED \n'
 
-    def publish_pose_est(self):
+    def publish_pose_est(self, *_):
+        '''Publishes message that calibration is completed. Starts publishing
+        pose measurements.
+        '''
+        self.ready.publish(Empty())
+        print '** Vive localization READY **'
 
         while not rospy.is_shutdown():
             pose_vive = self.get_pose_vive()
@@ -116,13 +132,57 @@ class LocalizationTest(object):
             self.broadc.sendTransform(self.tf_t_in_v)
             self.stbroadc.sendTransform(self.tf_d_in_t)
 
-            # Calculate pose of drone in world frame.
+            # Calculate and publish pose of drone in world frame.
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
             pose_world = self.tf_to_pose(tf_d_in_w)
+
+            # Calculate and broadcast the rotating world frame.
+            # - Tf drone in world to euler angles.
+            euler = self.get_euler_angles(tf_d_in_w)
+            # - Get yaw.
+            yaw = euler[2]
+            # - Yaw only (roll and pitch 0.0) to quaternions.
+            quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
+            self.tf_r_in_w.transform.rotation.x = quat[0]
+            self.tf_r_in_w.transform.rotation.y = quat[1]
+            self.tf_r_in_w.transform.rotation.z = quat[2]
+            self.tf_r_in_w.transform.rotation.w = quat[3]
+            self.broadc.sendTransform(self.tf_r_in_w)
+
+            pose_world_rot = self.transform_pose(
+                pose_world, "world", "world_rot")
             self.pos_update.publish(pose_world)
 
             self.rate.sleep()
+
+    def transform_pose(self, pose, _from, _to):
+        '''Transforms pose (geometry_msgs/PoseStamped) from frame "_from" to
+        frame "_to".
+        '''
+        transform = self.get_transform(_from, _to)
+        pose_tf = tf2_geom.do_transform_pose(pose, transform)
+
+        return pose_tf
+
+    def get_transform(self, _from, _to):
+        '''
+        '''
+        tf_f_in_t = self.tfBuffer.lookup_transform(
+            _to, _from, rospy.Time(0), rospy.Duration(0.1))
+
+        return tf_f_in_t
+
+    def get_euler_angles(self, transf):
+        '''
+        '''
+        quat = (transf.transform.rotation.x,
+                transf.transform.rotation.y,
+                transf.transform.rotation.z,
+                transf.transform.rotation.w)
+        euler = tf.transformations.euler_from_quaternion(quat)
+
+        return euler
 
     def get_transform(self, _from, _to):
         '''
@@ -148,7 +208,7 @@ class LocalizationTest(object):
         '''
         '''
         pose = PoseStamped()
-        pose.header.stamp = rospy.Time.now()
+        pose.header.stamp = transf.header.stamp
         pose.header.frame_id = transf.header.frame_id
         pose.pose.position = transf.transform.translation
         pose.pose.orientation = transf.transform.rotation

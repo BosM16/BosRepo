@@ -12,10 +12,17 @@ class Ident(object):
     def __init__(self):
         """
         """
-        self.input = []
-        self.output_x = []
-        self.output_y = []
-        self.output_z = []
+        self.ident_length = 3
+        self.index = 0
+        self.rate = 12
+        self.wait1 = 0.1
+        self.wait2 = 0.12
+        self.wait3 = 0.11
+        span = int(3*(self.wait1*4 + self.wait2+self.wait3)*self.rate*50 + 10)
+        self.input = np.zeros(span)
+        self.output_x = np.zeros(span)
+        self.output_y = np.zeros(span)
+        self.output_z = np.zeros(span)
         self.vel = Twist()
         self.measuring = False
 
@@ -39,50 +46,48 @@ class Ident(object):
         rospy.sleep(4)
         velocity_max = 0.6
 
-        rate = 20
-
         # move back and forth with a pause in between
         self.vel.linear.x = 0.0
         self.vel.linear.y = 0.0
         self.vel.linear.z = 0.0
         self.measuring = True
 
-        for k in range(0, 3):
-            self.vel.linear.y = -velocity_max/3.
+        for k in range(0, self.ident_length):
+            self.vel.linear.x = velocity_max/3.
 
-            for x in range(0, rate):
+            for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
-                rospy.sleep(0.1)
+                rospy.sleep(self.wait1)
 
-            self.vel.linear.y = velocity_max/3.
+            self.vel.linear.x = -velocity_max/3.
 
-            for x in range(0, rate):
+            for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
-                rospy.sleep(0.1)
+                rospy.sleep(self.wait2)
 
-            self.vel.linear.y = -velocity_max/3.*2.
+            self.vel.linear.x = velocity_max/3.*2.
 
-            for x in range(0, rate):
+            for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
-                rospy.sleep(0.1)
+                rospy.sleep(self.wait1)
 
-            self.vel.linear.y = velocity_max/3.*2.
+            self.vel.linear.x = -velocity_max/3.*2.
 
-            for x in range(0, rate):
+            for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
-                rospy.sleep(0.1)
+                rospy.sleep(self.wait3)
 
-            self.vel.linear.y = -velocity_max
+            self.vel.linear.x = velocity_max
 
-            for x in range(0, rate):
+            for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
-                rospy.sleep(0.1)
+                rospy.sleep(self.wait1)
 
-            self.vel.linear.y = velocity_max
+            self.vel.linear.x = -velocity_max
 
-            for x in range(0, rate):
+            for x in range(0, self.rate):
                 self.cmd_vel.publish(self.vel)
-                rospy.sleep(0.1)
+                rospy.sleep(self.wait1)
 
         self.measuring = False
 
@@ -97,18 +102,19 @@ class Ident(object):
         print 'Billie has landed'
 
         meas = {}
-        meas['input'] = np.array(self.input)
-        meas['output_x'] = np.array(self.output_x)
-        meas['output_y'] = np.array(self.output_y)
-        meas['output_z'] = np.array(self.output_z)
-        io.savemat('../angle_identification_y.mat', meas)
+        meas['input'] = self.input
+        meas['output_x'] = self.output_x
+        meas['output_y'] = self.output_y
+        meas['output_z'] = self.output_z
+        io.savemat('../angle_identification_x.mat', meas)
 
     def update_pose(self, pose):
         if self.measuring:
-            self.input = self.input + [self.vel.linear.y]
-            self.output_x = self.output_x + [pose.pose.position.x]
-            self.output_y = self.output_y + [pose.pose.position.y]
-            self.output_z = self.output_z + [pose.pose.position.z]
+            self.input[self.index] = self.vel.linear.x
+            self.output_x[self.index] = pose.pose.position.x
+            self.output_y[self.index] = pose.pose.position.y
+            self.output_z[self.index] = pose.pose.position.z
+            self.index += 1
 
 
 if __name__ == '__main__':
