@@ -287,7 +287,7 @@ legend('cont','discr')
 sys_2nd = sys_dpk;
 sys_2nd_f = sys_d2;
 sys_c2nd = sys_cpk;
-save('Hv_speed','sys_2nd')
-save('Hv_speed_filtered', 'sys_2nd_f')
-save('Hv_speed_c','sys_c2nd')
+save('HVJ_y','sys_2nd')
+save('HVJ_y_filtered', 'sys_2nd_f')
+save('HVJ_y_cont','sys_c2nd')
 

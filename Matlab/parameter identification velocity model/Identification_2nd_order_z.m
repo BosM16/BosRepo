@@ -15,10 +15,14 @@ set(0, 'DefaultLineLineWidth', 1);
 
 % Cutoff useful data
 % first_index = find(input~=0, 1);
-input = input(1:end-10)';
-output_x = output_x(1:end-10)';
-output_y = output_y(1:end-10)';
-output_z = output_z(1:end-10)';
+% input = input(1:end-10)';
+% output_x = output_x(1:end-10)';
+% output_y = output_y(1:end-10)';
+% output_z = output_z(1:end-10)';
+input = input(1:600)';
+output_x = output_x(1:600)';
+output_y = output_y(1:600)';
+output_z = output_z(1:600)';
 
 dt = 0.02;
 time = 0:dt:(length(input)-1)*dt;
@@ -89,7 +93,7 @@ figure('Name','filtered input input')
 plot(t,input,t,input_filt),title('Input input filtered')
 
 figure('Name','filtered output measurement')
-subplot(211), plot(time, velocity_z, time, velocity_z_filt),title('v_{z,filt}')
+plot(time, velocity_z, time, velocity_z_filt),title('v_{z,filt}')
 
 
 %% Least squares solution for approximation of the parameters in the system
@@ -260,7 +264,8 @@ bode(sys_dpk)
 legend('not filtered', 'filtered', 'partially known')
 
 figure
-plot(t,[velocity_z x1 x2 x_pk])
+plot(t,[velocity_z velocity_z_filt x1 x2 x_pk])
+legend('measured velocity', 'filtered measurement', 'simulated not filtered', 'simulated filtered', 'simulated partially known')
 %% continuous equivalent of tf (pk)
 a1 = theta_pk(1);
 a0 = theta_pk(2);
@@ -277,7 +282,7 @@ legend('cont','discr')
 sys_2nd = sys_dpk;
 sys_2nd_f = sys_d2;
 sys_c2nd = sys_cpk;
-save('Hv_speed','sys_2nd')
-save('Hv_speed_filtered', 'sys_2nd_f')
-save('Hv_speed_c','sys_c2nd')
+save('HVJ_z','sys_2nd')
+save('HVJ_z_filtered', 'sys_2nd_f')
+save('HVJ_z_cont','sys_c2nd')
 

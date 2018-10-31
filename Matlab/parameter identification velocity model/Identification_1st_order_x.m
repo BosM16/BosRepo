@@ -6,7 +6,7 @@ close all
 
 %% Load data from .mat-file
 
-load angle_identification_y
+load angle_identification_x
 
 
 %% Extract some signals from the data

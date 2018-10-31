@@ -31,7 +31,7 @@ velocity_z = gradient(output_z)/dt;
 
 % Do some plotting of the measurement data 
 figure('Name','Output Measurements')
-subplot(321), plot(time, output_x), title('Position x'), xlabel('time [s]'), ylabel('position [m]')
+subplot(321), plot(time, output_x, time, input), title('Position x'), xlabel('time [s]'), ylabel('position [m]'), legend('output','input')
 subplot(322), plot(time, velocity_x), title('Velocity x'), xlabel('time [s]'), ylabel('speed [m/s]')
 
 subplot(323), plot(time, output_y), title('Position y'), xlabel('time [s]'), ylabel('position [m]')
@@ -270,23 +270,28 @@ legend('not filtered', 'filtered', 'partially known')
 
 figure
 plot(t,[velocity_x x1 x2 x_pk])
-%% continuous equivalent of tf (pk)
-a1 = theta_pk(1);
-a0 = theta_pk(2);
-b2 = theta_pk(3);
 
-s = tf('s');
-sys_cpk = (b2/(a0*Ts^2))/(s^2+(-a0*2*Ts-Ts*a1)/(a0*Ts^2)*s+(1+a1+a0)/(a0*Ts^2));
-figure('Name','Continuous tf 2nd order')
-bode(sys_cpk)
-hold on
-bode(sys_dpk)
-legend('cont','discr')
+%% continuous time transfer function
+sys_x_cont = d2c(sys_d2);
+[b, a] = tfdata(sys_x_cont);
+[Axc, Bxc, Cxc, Dxc] = tf2ss(b{1},a{1});
+
+
 %% Save result (transfer function)
 sys_2nd = sys_dpk;
 sys_2nd_f = sys_d2;
 sys_c2nd = sys_cpk;
-save('Hv_speed','sys_2nd')
-save('Hv_speed_filtered', 'sys_2nd_f')
-save('Hv_speed_c','sys_c2nd')
+save('HVJ_x','sys_2nd')
+save('HvVJ_x_filtered', 'sys_2nd_f')
+save('HVJ_x_cont','sys_c2nd')
+
+
+%% Probeersel: integreer deze en kijk of fit op positie goed is.
+z = tf('z', dt);
+int_d = z*dt/(z-1);
+sys_x = int_d * sys_d2;
+x_sim = lsim(sys_x,input,t);
+
+figure
+plot(time, output_x, time, x_sim);
 
