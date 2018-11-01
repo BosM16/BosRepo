@@ -52,7 +52,7 @@ class Demo(object):
 
     def vive_ready(self, *_):
         '''
-        Provide service when vive is calibrated.
+        Provide get pose service when vive is calibrated.
         '''
         self._get_pose_service = rospy.Service(
             "/world_model/get_pose", GetPoseEst, self.get_kalman_pos_est)

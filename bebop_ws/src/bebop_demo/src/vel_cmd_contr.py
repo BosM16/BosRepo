@@ -9,7 +9,6 @@ import rospy
 
 
 class VelCommander(object):
-    _cmd_twist = Twist()
 
     def __init__(self):
         """Initialization of Controller object.
@@ -18,28 +17,28 @@ class VelCommander(object):
             sample_time : Period between computed velocity samples.
             update_time : Period of problem solving.
         """
-        rospy.init_node("vel_commander_node")
+        # rospy.init_node("vel_commander_node")
 
-        self.cmd_vel_received = False
+        # self.cmd_vel_received = False
 
-        self._cmd_twist = TwistStamped()
+        # self.cmd_twist_st = TwistStamped()
 
-        self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
-        self.rate = rospy.Rate(1./self._sample_time)
+        # self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
+        # self.rate = rospy.Rate(1./self._sample_time)
 
         # TOPIC where reference velocity in m/s is published!
-        rospy.Subscriber('bebop/cmd_vel', Twist, self.store_cmd_vel)
+        # rospy.Subscriber('bebop/cmd_vel', Twist, self.store_cmd_vel)
 
-    def start(self):
-        """Starts the controller's periodical loop.
-        """
-        rate = self.rate
-        print '------------------- \ncontroller started!\n-------------------'
-
-        while not rospy.is_shutdown():
-            if self.cmd_vel_received:
-                self.update()
-            rate.sleep()
+    # def start(self):
+    #     """Starts the controller's periodical loop.
+    #     """
+    #     rate = self.rate
+    #     print '------------------- \ncontroller started!\n-------------------'
+    #
+    #     while not rospy.is_shutdown():
+    #         if self.cmd_vel_received:
+    #             self.update()
+    #         rate.sleep()
 
     def update(self):
         """
@@ -58,9 +57,9 @@ class VelCommander(object):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
-        self._cmd_twist.header.stamp = rospy.Time.now()
-        self._cmd_twist.header.frame_id = "world_rot"
-        self._cmd_twist.twist = cmd_vel
+        self.cmd_twist_st.header.stamp = rospy.Time.now()
+        self.cmd_twist_st.header.frame_id = "world_rot"
+        self.cmd_twist_st.twist = cmd_vel
 
         self.cmd_vel_received = True
 
@@ -74,7 +73,7 @@ class VelCommander(object):
             pos_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
             # print '-- VelCmd Service call --'
-            self.xhat = pos_est(self._cmd_twist)
+            self.xhat = pos_est(self.cmd_twist_st)
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
 
