@@ -25,7 +25,7 @@ class WorldModel(object):
         rospy.set_param('vel_cmd/max_accel', self.max_accel)
 
         self.R = np.identity(3)  # measurement noise covariance
-        self.Q = 1e-2*np.identity(3)  # process noise covariance
+        self.Q = 1e-2*np.identity(9)  # process noise covariance
 
         # Variables.
         self.xhat_t0 = PointStamped()
@@ -39,21 +39,25 @@ class WorldModel(object):
         self.xhat_r = PointStamped()
         self.xhat_r.header.frame_id = "world_rot"
 
-        self.Phat_t0 = np.zeros(3)
-        self.Phat = np.zeros(3)
-        self.X = np.zeros((3, 1))
+        self.Phat_t0 = np.zeros(9)
+        self.Phat = np.zeros(9)
+        self.X = np.zeros((9, 1))
 
-        # State space model matrices for position Kalman filter.
-        self.A = np.identity(3)
-        self.B = self.vel_cmd_Ts*np.identity(3)
-        self.C = np.identity(3)
-        self.D = np.zeros(3)
+        # State space model matrices for position Kalman filter in
+        # continuous time!! Are then converted to discrete time further on
+        # depending on Ts
+        self.A = np.identity(9)  # continuous A matrix
+        self.B = np.zeros([9, 3])  # continuous B matrix
+        self.C = np.zeros([3, 9])
+        self.C[0, 0] = 1
+        self.C[1, 3] = 1
+        self.C[2, 6] = 1
 
         # Transformations.
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-    def predict_pos_update(self, vel_cmd_stamped, B):
+    def predict_pos_update(self, vel_cmd_stamped, Ts):
         """
         Prediction step of the kalman filter. Update the position of the drone
         using the reference velocity commands.
@@ -64,17 +68,15 @@ class WorldModel(object):
         u = np.array([[vel_cmd.linear.x],
                       [vel_cmd.linear.y],
                       [vel_cmd.linear.z]])
-        # print '--- WM --- \n', self.X
-        # print 'A\n', self.A
-        # print 'B\n', B
-        # print 'u\n', u
-        self.X = np.matmul(self.A, self.X) + np.matmul(B, u)
+
+        self.X = np.matmul(Ts*self.A + np.identity(9), self.X) +
+            np.matmul(Ts*self.B, u)
 
         self.xhat_r.point.x = self.X[0, 0]
-        self.xhat_r.point.y = self.X[1, 0]
-        self.xhat_r.point.z = self.X[2, 0]
+        self.xhat_r.point.y = self.X[3, 0]
+        self.xhat_r.point.z = self.X[6, 0]
 
-        self.Phat = np.matmul(self.A, np.matmul(self.Phat, self.A)) + self.Q
+        self.Phat = np.matmul(self.A, np.matmul(self.Phat, np.transpose(self.A))) + self.Q
 
     def correct_pos_update(self, pos_meas):
         """
@@ -85,17 +87,17 @@ class WorldModel(object):
         y = np.array([[pos_meas.pose.position.x],
                       [pos_meas.pose.position.y],
                       [pos_meas.pose.position.z]])
-        nu = y - np.matmul(self.C, self.X)
 
-        S = np.matmul(self.C, np.matmul(self.Phat, self.C)) + self.R
-        L = np.matmul(self.Phat, np.matmul(self.C, np.linalg.inv(S)))
+        nu = y - np.matmul(self.C, self.X)
+        S = np.matmul(self.C, np.matmul(self.Phat, np.transpose(self.C))) + self.R
+        L = np.matmul(self.Phat, np.matmul(np.transpose(self.C), np.linalg.inv(S)))
         self.X = self.X + np.matmul(L, nu)
         self.Phat = np.matmul(
             (np.identity(3) - np.matmul(L, self.C)), self.Phat)
 
         self.xhat_r.point.x = self.X[0, 0]
-        self.xhat_r.point.y = self.X[1, 0]
-        self.xhat_r.point.z = self.X[2, 0]
+        self.xhat_r.point.y = self.X[3, 0]
+        self.xhat_r.point.z = self.X[6, 0]
 
         self.xhat_r_t0 = self.xhat_r
 

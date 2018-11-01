@@ -87,7 +87,7 @@ class Demo(object):
             vel_cmd: TwistStamped
         '''
         if not self.init:
-            self.wm.predict_pos_update(vel_cmd, self.wm.B)
+            self.wm.predict_pos_update(vel_cmd, self.wm.vel_cmd_Ts)
             print 'Kalman predict step'
         # Results in an updated xhat_r.
 
@@ -104,8 +104,8 @@ class Demo(object):
             self.wm.xhat_r_t0.point = measurement_world.pose.position
 
         self.wm.X[0, 0] = self.wm.xhat_r_t0.point.x
-        self.wm.X[1, 0] = self.wm.xhat_r_t0.point.y
-        self.wm.X[2, 0] = self.wm.xhat_r_t0.point.z
+        self.wm.X[3, 0] = self.wm.xhat_r_t0.point.y
+        self.wm.X[6, 0] = self.wm.xhat_r_t0.point.z
 
         if not self.init:
             self.pc.pose_vive = measurement_world
@@ -138,22 +138,24 @@ class Demo(object):
             else:
                 tstamp = new_t0
             self.wm.predict_pos_update(
-                    self.vel_cmd_list[0], (tstamp - self.wm.t0)*np.identity(3))
+                    self.vel_cmd_list[0], (tstamp - self.wm.t0))
             # If not case 2 or 3 -> need to predict up to
             # last vel cmd before new_t0
             if vel_len > 2:
                 for i in range(vel_len - 2):
-                    self.wm.predict_pos_update(self.vel_cmd_list[i], self.wm.B)
+                    self.wm.predict_pos_update(
+                        self.vel_cmd_list[i], self.wm.vel_cmd_Ts)
 
             # Now make prediction up to new t0 if not case 3.
-            B = (new_t0 - t_last_update)*np.identity(3)
+            B = new_t0 - t_last_update
             if not tstamp == new_t0:
                 self.wm.predict_pos_update(self.latest_vel_cmd, B)
             # Correct the estimate at new t0 with the measurement.
             self.wm.correct_pos_update(self.pc.pose_vive)
             # Now predict until next point t that coincides with next timepoint
             # for the controller.
-            self.wm.predict_pos_update(self.vel_cmd_list[-1], self.wm.B - B)
+            self.wm.predict_pos_update(
+                self.vel_cmd_list[-1], self.wm.vel_cmd_Ts - B)
 
             self.vel_cmd_list = [self.vel_cmd_list[-1]]
             self.vel_cmd_list += late_cmd_vel
