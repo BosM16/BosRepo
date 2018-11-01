@@ -1,4 +1,0 @@
-bebop_autonomy/bebop_tools
-/home/rian/Documents/BosRepo/bebop_ws/devel/.private/bebop_tools/lib/pkgconfig/bebop_tools.pc /home/rian/Documents/BosRepo/bebop_ws/devel/lib/pkgconfig/bebop_tools.pc
-/home/rian/Documents/BosRepo/bebop_ws/devel/.private/bebop_tools/share/bebop_tools/cmake/bebop_toolsConfig.cmake /home/rian/Documents/BosRepo/bebop_ws/devel/share/bebop_tools/cmake/bebop_toolsConfig.cmake
-/home/rian/Documents/BosRepo/bebop_ws/devel/.private/bebop_tools/share/bebop_tools/cmake/bebop_toolsConfig-version.cmake /home/rian/Documents/BosRepo/bebop_ws/devel/share/bebop_tools/cmake/bebop_toolsConfig-version.cmake
