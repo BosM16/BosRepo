@@ -46,21 +46,21 @@ class WorldModel(object):
         # State space model matrices for position Kalman filter in
         # continuous time!! Are then converted to discrete time further on
         # depending on Ts
-        Ax = np.array([[0, 0, 0.05182], [1, 0, -2.65], [0, 1, -5.208]])
-        Ay = np.array([[0, 0, 0.08711], [1, 0, -3.781], [0, 1, -6.557]])
-        Az = np.array([[0, 0, 0.5799], [1, 0, -32.17], [0, 1, -9.168]])
+        Ax = np.array([[0, 1, -5.208], [1, 0, -2.65], [0, 0, 0.05182]])
+        Ay = np.array([[0, 1, -6.557], [1, 0, -3.781], [0, 0, 0.08711]])
+        Az = np.array([[0, 1, -9.168], [1, 0, -32.17], [0, 0, 0.5799]])
         self.A = np.zeros([9, 9])  # continuous A matrix
         self.A[1:3, 1:3] = Ax
         self.A[4:6, 4:6] = Ay
         self.A[7:9, 7:9] = Az
 
-        Bx = np.array([[18.04], [-0.8863], [0.02308]])
-        By = np.array([[21.8], [-1.764], [0.02634]])
-        Bz = np.array([[30.68], [6.186], [-0.01141]])
+        Bx = np.array([[0.02308], [-0.8863], [18.04]])
+        By = np.array([[0.02634], [-1.764], [21.8]])
+        Bz = np.array([[-0.01141], [6.186], [30.68]])
         self.B = np.zeros([9, 3])  # continuous B matrix
-        self.B[1:3, 1] = np.transpose(Bx)
-        self.B[4:6, 2] = np.transpose(By)
-        self.B[7:9, 3] = np.transpose(Bz)
+        self.B[1:3, 1] = Bx
+        self.B[4:6, 2] = By
+        self.B[7:9, 3] = Bz
 
         self.C = np.zeros([3, 9])
         self.C[0, 0] = 1
@@ -104,11 +104,13 @@ class WorldModel(object):
                       [pos_meas.pose.position.z]])
 
         nu = y - np.matmul(self.C, self.X)
-        S = np.matmul(self.C, np.matmul(self.Phat, np.transpose(self.C))) + self.R
-        L = np.matmul(self.Phat, np.matmul(np.transpose(self.C), np.linalg.inv(S)))
+        S = np.matmul(self.C, np.matmul(
+            self.Phat, np.transpose(self.C))) + self.R
+        L = np.matmul(self.Phat, np.matmul(
+            np.transpose(self.C), np.linalg.inv(S)))
         self.X = self.X + np.matmul(L, nu)
         self.Phat = np.matmul(
-            (np.identity(3) - np.matmul(L, self.C)), self.Phat)
+            (np.identity(9) - np.matmul(L, self.C)), self.Phat)
 
         self.xhat_r.point.x = self.X[0, 0]
         self.xhat_r.point.y = self.X[3, 0]
