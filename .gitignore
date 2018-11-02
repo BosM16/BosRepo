@@ -42,7 +42,7 @@ logs/
 .catkin_tools
 
 #project specific
-src/external/*
+src/bebop_autonomy/bebop_tools/launch/joy_teleop.launch
 *~
 .metadata
 
