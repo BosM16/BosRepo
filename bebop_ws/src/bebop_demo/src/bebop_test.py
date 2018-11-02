@@ -70,6 +70,7 @@ class Demo(object):
         self.kalman_pos_predict(self.latest_vel_cmd)
 
         # Publish latest estimate to read out Kalman result.
+        # Transform xhat to world frame.
         self.transform_point("world_rot", "world")
         # print "xhat\n", self.wm.xhat
         # print "xhat_r\n", self.wm.xhat_r
@@ -100,18 +101,18 @@ class Demo(object):
         Arguments:
             measurement_world: PoseStamped expressed in "world" frame.
         '''
+        measurement = self.transform_pose(
+                                measurement_world, "world", "world_rot")
         if self.init:
-            self.wm.xhat_r_t0.point = measurement_world.pose.position
+            self.wm.xhat_r_t0.point = measurement.pose.position
 
-        self.wm.X[0, 0] = self.wm.xhat_r_t0.point.x
-        self.wm.X[3, 0] = self.wm.xhat_r_t0.point.y
-        self.wm.X[6, 0] = self.wm.xhat_r_t0.point.z
+        # set xhat equal to xhat at t0 to start prediction from here
+        self.wm.xhat_r = self.wm.xhat_r_t0
 
         if not self.init:
             self.pc.pose_vive = measurement_world
             print "Applying Kalman correction step"
-            measurement = self.transform_pose(
-                                    measurement_world, "world", "world_rot")
+
             # print "measurement_world\n", measurement_world
             # print "measurement\n", measurement
 
@@ -129,9 +130,6 @@ class Demo(object):
                 self.vel_cmd_list = self.vel_cmd_list[0:-1]
 
             vel_len = len(self.vel_cmd_list)
-
-            # set xhat equal to xhat at t0 to start prediction from here
-            self.wm.xhat_r = self.wm.xhat_r_t0
 
             if (vel_len > 1):
                 tstamp = self.wm.get_timestamp(self.vel_cmd_list[1])
@@ -151,7 +149,7 @@ class Demo(object):
             if not tstamp == new_t0:
                 self.wm.predict_pos_update(self.latest_vel_cmd, B)
             # Correct the estimate at new t0 with the measurement.
-            self.wm.correct_pos_update(self.pc.pose_vive)
+            self.wm.correct_pos_update(measurement)
             # Now predict until next point t that coincides with next timepoint
             # for the controller.
             self.wm.predict_pos_update(

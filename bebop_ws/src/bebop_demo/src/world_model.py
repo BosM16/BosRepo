@@ -28,14 +28,11 @@ class WorldModel(object):
         self.Q = 1e-2*np.identity(9)  # process noise covariance
 
         # Variables.
-        self.xhat_t0 = PointStamped()
-        self.xhat_t0.header.frame_id = "world"
         self.xhat = PointStamped()
         self.xhat.header.frame_id = "world"
 
         self.xhat_r_t0 = PointStamped()
         self.xhat_r_t0.header.frame_id = "world_rot"
-
         self.xhat_r = PointStamped()
         self.xhat_r.header.frame_id = "world_rot"
 
@@ -98,6 +95,9 @@ class WorldModel(object):
         Correction step of the kalman filter. Update the position of the drone
         using the measurements.
         """
+        self.X[0, 0] = self.xhat_r.point.x
+        self.X[3, 0] = self.xhat_r.point.y
+        self.X[6, 0] = self.xhat_r.point.z
 
         y = np.array([[pos_meas.pose.position.x],
                       [pos_meas.pose.position.y],
