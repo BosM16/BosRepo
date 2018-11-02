@@ -1,4 +1,4 @@
-omg_ros_nav_bridge/RobotPose goal
-omg_ros_nav_bridge/RobotPose state
-omg_ros_nav_bridge/Obstacle[] dyn_obstacles
+bebop_demo/RobotPose goal
+bebop_demo/RobotPose state
+bebop_demo/Obstacle[] dyn_obstacles
 float32 current_time
