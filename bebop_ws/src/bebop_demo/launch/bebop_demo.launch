@@ -3,9 +3,6 @@
   <node name="bebop_demo" pkg="bebop_demo" type="bebop_test.py" output="screen"/>
   <node pkg="bebop_demo" type="motionplanner.py"
     name="motionplanner" output="screen"/>
-  <node pkg="bebop_demo" type="vel_cmd_contr.py"
-      name="vel_commander" output="screen"/>
-
 
   <include file="$(find bebop_demo)/launch/vel_commander.launch" />
   <include file="$(find vive_localization)/launch/localization.launch" />

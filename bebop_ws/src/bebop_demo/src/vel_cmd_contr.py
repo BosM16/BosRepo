@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, TwistStamped, Point
+from geometry_msgs.msg import Twist, TwistStamped, Point, Pose2D
 from std_msgs.msg import Bool, Empty
 from bebop_demo.srv import GetPoseEst
 from visualization_msgs.msg import MarkerArray
@@ -27,6 +27,12 @@ class VelCommander(object):
         self.startup = False
         self.stop_linear = False
         self._mp_status = False
+
+        self.origin = Pose2D()
+        self.origin.x = 3.0
+        self.origin.y = 1.5
+        self.room.width = 6.0  # width volgens x-as
+        self.room.height = 3.0  # heigth volgens y-as
 
         self.feedback_gain = 0.3
 
@@ -112,9 +118,9 @@ class VelCommander(object):
         self.st.obstacles = []  # static TODO: service call to get obstacles.
         self.st.room = Room(
             position=[
-                self.map.origin.x, self.map.origin.y,
-                self.map.origin.theta],
-            shape=[self.map.width, self.map.height])
+                self.origin.x, self.origin.y,
+                self.origin.theta],
+            shape=[self.room.width, self.room.height])
 
         # REPLACE THIS BY SERVICE
         # set motionplanner
