@@ -43,8 +43,36 @@ class VelCommander(object):
         self.pos_nrm = np.inf
 
         self._cmd_twist = TwistStamped()
+        self.cmd_twist_convert = Twist()
         self._cmd_twist.header.frame_id = "world_rot"
         self._trigger = Trigger()
+
+        # Coefficients for inverted model of velocity to input angle
+        # X-direction
+        self.input_old_x = 0.
+
+        b0 = 0.009437
+        b1 = -0.007635
+        a0 = 0.9459
+        a1 = -1.946
+
+        self.coeffs_x = np.array([-b0, a0, a1, 1])/b1
+
+        # Y-direction
+        self.input_old_y = 0.
+
+        b0 = 0.0177
+        b1 = -0.01557
+        a0 = 0.9338
+        a1 = -1.933
+
+        self.coeffs_y = np.array([-b0, a0, a1, 1])/b1
+
+        # # Z-direction
+        # b0 = 0.05301
+        # a0 = -0.946
+        #
+        # self.coeffs_x = np.array([a0, 1])/b0
 
         self._robot_est_pose = Point()
         self._robot_est_pose.x = 0.
@@ -176,7 +204,8 @@ class VelCommander(object):
         """
         # Send velocity sample.
         self._cmd_twist.header.stamp = rospy.Time.now()
-        self.cmd_vel.publish(self._cmd_twist.twist)
+
+        self.cmd_vel.publish(self.cmd_twist_convert)
         self._vel_traj_applied['v'].append(self._cmd_twist.twist.linear.x)
         self._vel_traj_applied['w'].append(self._cmd_twist.twist.linear.y)
 
@@ -212,11 +241,12 @@ class VelCommander(object):
                 print '-- !! Overtime !! --'
                 self._cmd_twist.twist.linear.x = 0.
                 self._cmd_twist.twist.linear.y = 0.
+                self._cmd_twist.twist.linear.z = 0.
                 self.cmd_vel.publish(self._cmd_twist.twist)
                 return
 
         self.calc_vel_cmd()
-
+        self.convert_vel_cmd(self._index)
         self._index += 1
 
     def calc_vel_cmd(self):
@@ -235,6 +265,27 @@ class VelCommander(object):
             self._traj['y'][self._index]
             - self._robot_est_pose.y) * self.feedback_gain
             + self._cmd_twist.twist.linear.y)
+
+    def convert_vel_cmd(self, index):
+        '''Converts a velocity command to a desired input angle.
+        '''
+
+        self._cmd_twist.twist
+        self.cmd_twist_convert
+
+        # Convert velocity command in x-direction
+        phi = np.array([[self.input_old_x],
+                        [self._traj['v'][index]],
+                        [self._traj['v'][index + 1]],
+                        [self._traj['v'][index + 2]]])
+        self.cmd_twist_convert.linear.x = np.matmul(self.coeffs_x, phi)
+
+        # Convert velocity command in y-direction
+        phi = np.array([[self.input_old_x],
+                        [self._traj['w'][index]],
+                        [self._traj['w'][index + 1]],
+                        [self._traj['w'][index + 2]]])
+        self.cmd_twist_convert.linear.y = np.matmul(self.coeffs_y, phi)
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
