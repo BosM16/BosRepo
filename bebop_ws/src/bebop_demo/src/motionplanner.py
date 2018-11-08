@@ -5,7 +5,7 @@ import numpy as np
 import rospy
 
 from omg_ros_nav_bridge.msg import (
-    Trigger, RobotTrajectory, Settings)
+    Trigger, Trajectory, Settings)
 
 import omgtools as omg
 
@@ -19,7 +19,7 @@ class MotionPlanner(object):
         subscribes.
         """
         self._mp_result_topic = rospy.Publisher(
-            'mp_result', RobotTrajectory, queue_size=1)
+            'mp_result', Trajectory, queue_size=1)
         self._mp_feedback_topic = rospy.Publisher(
             'mp_feedback', Bool, queue_size=1)
         rospy.Subscriber('mp_configure', Settings, self.configure)
@@ -82,7 +82,9 @@ class MotionPlanner(object):
         """Starts the motionplanner by initializing the motionplanner ROS-node.
         """
         rospy.init_node('motionplanner')
-        self._goal = [np.inf, np.inf]
+        self._goal.x = np.inf
+        self._goal.y = np.inf
+        self._goal.z = np.inf
         print 'listening'
         rospy.spin()
 
@@ -94,15 +96,27 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         reset = False
-        if cmd.goal.pose != self._goal:
-            self._goal = cmd.goal.pose[:]
-            self._vehicle.set_initial_conditions(cmd.state.pose[:])
-            self._vehicle.set_terminal_conditions(cmd.goal.pose[:])
+
+        # In case goal has changed: set new goal.
+        if (
+                cmd.goal.x != self._goal.x) or (
+                cmd.goal.y != self._goal.y) or (
+                cmd.goal.theta != self._goal.theta):
+
+            self._goal = cmd.goal
+            self._vehicle.set_initial_conditions(
+                [cmd.state.x, cmd.state.y])
+            self._vehicle.set_terminal_conditions(
+                [cmd.goal.x, cmd.goal.y])
             reset = True
+
+        # reset can only be True when previous if is True, so why not put THIS
+        # in previous if as well??
         if reset:
             self._deployer.reset()
             print 'resetted deployer!'
-        state0 = [cmd.state.pose[:]]
+
+        state0 = [cmd.state.x, cmd.state.y, cmd.state.theta]
         for l, k in enumerate(self._robobst):
             pos = cmd.obstacles[l].pose[:2]
             vel = cmd.obstacles[l].velocity[:2]

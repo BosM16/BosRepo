@@ -6,7 +6,7 @@ from bebop_demo.srv import GetPoseEst
 from visualization_msgs.msg import MarkerArray
 
 from bebop_demo.msg import (
-    Trigger, RobotTrajectory, RobotPose, Obstacle, Room, Settings)
+    Trigger, Trajectory, Pose2D, Obstacle, Room, Settings)
 
 import rospy
 
@@ -25,16 +25,22 @@ class VelCommander(object):
         self.calc_succeeded = False
         self.progress = True
         self.startup = False
-        self.stop_linear = False
         self._mp_status = False
 
         self.origin = Pose2D()
         self.origin.x = 3.0
         self.origin.y = 1.5
-        self.room.width = 6.0  # width volgens x-as
-        self.room.height = 3.0  # heigth volgens y-as
+        self.room.width = 6.0  # width (x-axis)
+        self.room.height = 3.0  # heighth (y-axis)
 
-        self.feedback_gain = 0.3
+        self.feedback_gain = rospy.get_param('vel_cmd/feedback_gain', 0.3)
+
+        self.pos_nrm_tol = rospy.get_param(
+                                        'vel_cmd/goal_reached_pos_tol', 0.05)
+        self.angle_nrm_tol = rospy.get_param(
+                                        'vel_cmd/goal_reached_angle_tol', 0.05)
+        self.input_nrm_tol = rospy.get_param(
+                                        'vel_cmd/goal_reached_input_tol', 0.03)
 
         self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
@@ -86,7 +92,7 @@ class VelCommander(object):
 
         self._traj = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
         self._traj_strg = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
-        self._vel_traj_applied = {'v': [], 'w': []}
+        self._inputs_applied = {'jx': [], 'jy': []}
 
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
@@ -94,7 +100,7 @@ class VelCommander(object):
         self._mp_configure_topic = rospy.Publisher(
             'mp_configure', Settings, queue_size=1)
 
-        rospy.Subscriber('demo', Robotpose, self.planning)
+        rospy.Subscriber('demo', Pose2D, self.planning)
         rospy.Subscriber('mp_result', RobotTrajectory, self.get_mp_result)
         rospy.Subscriber('mp_feedback', Bool, self.get_mp_feedback)
 
@@ -164,13 +170,13 @@ class VelCommander(object):
         to the motionplanner.
 
         Args:
-            waypoints : list of all waypoints coming from the global planner.
+            goal : geometry_msgs/Pose2D - Terminal position of the p2p problem.
         """
         self._goal = goal
-        # RobotPose([0.5, 0.5])
+        # Pose2D(0.5, 0.5)
         self.set_goal()
         self.progress = True
-        print 'flying'
+        print 'GOAL SET'
 
     def get_mp_feedback(self, data):
         """Sets motionplanner status. If False, then controller.start() will
@@ -204,23 +210,28 @@ class VelCommander(object):
         """
         # Send velocity sample.
         self._cmd_twist.header.stamp = rospy.Time.now()
-
         self.cmd_vel.publish(self.cmd_twist_convert)
-        self._vel_traj_applied['v'].append(self._cmd_twist.twist.linear.x)
-        self._vel_traj_applied['w'].append(self._cmd_twist.twist.linear.y)
+        # Store applied commands.
+        self._inputs_applied['jx'].append(
+                                        self._cmd_twist_convert.twist.linear.x)
+        self._inputs_applied['jy'].append(
+                                        self._cmd_twist_convert.twist.linear.y)
 
         # Retrieve new pose estimate from World Model.
-        self.get_pose_est()  # opgelet: dit is een predictie voor het volgende
-        # tijdstip.
+        # This is a pose estimate for the first following time instance [k+1]
+        # if the velocity command sent above corresponds to time instance [k].
+        self._robot_est_pose = self.get_pose_est()
 
         # Check for new trajectories. Trigger Motionplanner or raise
         # 'overtime'
         pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
+
         if self._init:
             if not self._new_trajectories:
                 return
             self._index = int(self._update_time/self._sample_time)
             self._init = False
+
         if ((self._index >= int(self._update_time/self._sample_time))
                 or (self._index >= len(self._traj['v']))):
             if self._new_trajectories:
@@ -239,35 +250,36 @@ class VelCommander(object):
                 self.calc_succeeded = False
                 print '-- !! -------- !! --'
                 print '-- !! Overtime !! --'
+                # Brake as emergency measure: Bebop brakes automatically when
+                # /bebop/cmd_vel topic receives all zeros.
                 self._cmd_twist.twist.linear.x = 0.
                 self._cmd_twist.twist.linear.y = 0.
                 self._cmd_twist.twist.linear.z = 0.
                 self.cmd_vel.publish(self._cmd_twist.twist)
                 return
 
-        self.calc_vel_cmd()
-        self.convert_vel_cmd(self._index)
-        self._index += 1
-
-    def calc_vel_cmd(self):
-        '''Combines the feedforward and feedback commands to generate a
-        velocity command and publishes this command.
-        '''
-        # Feedforward velocity command.
+        # Convert feedforward velocity command to angle input.
         self._cmd_twist.twist.linear.x = self._traj['v'][self._index]
         self._cmd_twist.twist.linear.y = self._traj['w'][self._index]
-        # Summing feedforward and feedback part of the controller.
-        self._cmd_twist.twist.linear.x = ((
-            self._traj['x'][self._index]
-            - self._robot_est_pose.x) * self.feedback_gain
-            + self._cmd_twist.twist.linear.x)
-        self._cmd_twist.twist.linear.y = ((
-            self._traj['y'][self._index]
-            - self._robot_est_pose.y) * self.feedback_gain
-            + self._cmd_twist.twist.linear.y)
+        self.convert_vel_cmd(self._index)
+
+        # Combine feedback and feedforward commands.
+        self.calc_vel_cmd()
+
+        self._index += 1
 
     def convert_vel_cmd(self, index):
-        '''Converts a velocity command to a desired input angle.
+        '''Converts a velocity command to a desired input angle according to
+        the difference equations:
+
+        - for second order velocity/input relation (x and y):
+            j[k+1] = 1/b1*{ -b0*j[k] + a0*v[k] + a1*v[k+1] + v[k+2] }
+
+        (- for first order velocity/input relation (z):
+            j[k+1] = 1/b0*{ a0*v[k+1] + v[k+2] } (later, 3d flight))
+
+        where j is the input signal applied to the bebop and v the desired
+        velocity.
         '''
 
         self._cmd_twist.twist
@@ -287,6 +299,23 @@ class VelCommander(object):
                         [self._traj['w'][index + 2]]])
         self.cmd_twist_convert.linear.y = np.matmul(self.coeffs_y, phi)
 
+    def calc_vel_cmd(self):
+        '''Combines the feedforward and feedback commands to generate a
+        velocity command and publishes this command.
+        '''
+
+        # Summing feedforward and feedback part of the controller.
+        x_error = self._traj['x'][self._index] - self._robot_est_pose.x
+        y_error = self._traj['y'][self._index] - self._robot_est_pose.y
+
+        self._cmd_twist_convert.twist.linear.x = (
+            x_error * self.feedback_gain +
+            self._cmd_twist_convert.twist.linear.x)
+
+        self._cmd_twist_convert.twist.linear.y = (
+            y_error * self.feedback_gain +
+            self._cmd_twist_convert.twist.linear.y)
+
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
         '''
@@ -296,9 +325,10 @@ class VelCommander(object):
             pose_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
             xhat = pose_est(self._cmd_twist)
-            self._robot_est_pose = xhat.point
+            return xhat.point
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
+            return
 
     def __publish_marker(self, x_traj, y_traj, position):
         '''Publish planned x and y trajectory to topic for visualisation in
@@ -366,37 +396,43 @@ class VelCommander(object):
             not stop: boolean whether goal is reached. If not, controller
                       proceeds to goal.
         """
-        if len(self._vel_traj_applied['v']) == 0:
+        if len(self._inputs_applied['jx']) == 0:
             return True
+
+        stop_linear = True
         stop = True
-        self.pos_nrm = np.linalg.norm(np.array(
+
+        pos_nrm = np.linalg.norm(np.array(
             [self._robot_est_pose.x, self._robot_est_pose.y])
-            - np.array(self._goal.pose))
-        self.vel_nrm = np.linalg.norm(
-            [self._vel_traj_applied['v'][-1],
-                self._vel_traj_applied['w'][-1]])
-        self.angle_nrm = np.abs(self.desired_angle - self.current_angle)
-        self.stop_linear = self.pos_nrm < 0.1 and self.vel_nrm < 0.1
+            - np.array([self._goal.x, self._goal.y]))
+        input_nrm = np.linalg.norm(
+            [self._inputs_applied['jx'][-1],
+                self._inputs_applied['jy'][-1]])
+        angle_nrm = np.abs(self.desired_angle - self.current_angle)
+
+        stop_linear = (pos_nrm < self.pos_nrm_tol) and (
+                            input_nrm < self.input_nrm_tol)
+
         if (self.stop_linear):
             self._cmd_twist.twist.linear.x = 0.
             self._cmd_twist.twist.linear.y = 0.
-        stop *= (self.stop_linear and self.angle_nrm < 0.05)
+        stop *= (self.stop_linear and angle_nrm < self.angle_nrm_tol)
+
         return not stop
 
     def set_goal(self):
         self._time = 0.
-        pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
         self._new_trajectories = False
-        self.fire_motionplanner(self._time, pose0)
+        self.fire_motionplanner()
         self._init = True
         self.startup = True
 
-    def fire_motionplanner(self, time, pose0):
+    def fire_motionplanner(self):
         """Publishes inputs to motionplanner via Trigger topic.
         """
         self._trigger.goal = self._goal
-        self._trigger.state = RobotPose(pose0[:])
-        self._trigger.current_time = time
+        self._trigger.state = self._robot_est_pose
+        self._trigger.current_time = self.time
         self._mp_trigger_topic.publish(self._trigger)
 
 

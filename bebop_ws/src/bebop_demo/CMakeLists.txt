@@ -52,7 +52,7 @@ add_message_files(
  FILES
    Trigger.msg
    RobotPose.msg
-   RobotTrajectory.msg
+   Trajectory.msg
    Obstacle.msg
    Room.msg
    Settings.msg

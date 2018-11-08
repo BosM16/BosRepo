@@ -1,4 +1,4 @@
-bebop_demo/RobotPose goal
-bebop_demo/RobotPose state
+bebop_demo/Pose2D goal
+bebop_demo/Pose2D state
 bebop_demo/Obstacle[] dyn_obstacles
 float32 current_time
