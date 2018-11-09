@@ -1,6 +1,6 @@
 <launch>
 
-  <node name="identification" pkg="bebop_demo" type="identification_flying_z.py" output="screen"/>
+  <node name="identification" pkg="bebop_demo" type="identification_flying_y.py" output="screen"/>
 
   <!--- Manual flight - Also safety measure -->
   <include file="$(find vive_localization)/launch/localization.launch" />
