@@ -83,10 +83,7 @@ class MotionPlanner(object):
         """Starts the motionplanner by initializing the motionplanner ROS-node.
         """
         rospy.init_node('motionplanner')
-        self._goal = Pose2D()
-        self._goal.x = np.inf
-        self._goal.y = np.inf
-        self._goal.theta = np.inf
+        self._goal = Pose2D(x=np.inf, y=np.inf, theta=np.inf)
         print 'listening'
         rospy.spin()
 

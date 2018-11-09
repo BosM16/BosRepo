@@ -9,6 +9,7 @@ from bebop_demo.msg import (
     Trigger, Trajectory, Pose2D, Obstacle, Room, Settings)
 
 import rospy
+import numpy as np
 
 
 class VelCommander(object):
@@ -52,6 +53,9 @@ class VelCommander(object):
         self.cmd_twist_convert = Twist()
         self._cmd_twist.header.frame_id = "world_rot"
         self._trigger = Trigger()
+
+        # Marker setup
+        self.marker_setup()
 
         # Coefficients for inverted model of velocity to input angle
         # X-direction
@@ -99,6 +103,10 @@ class VelCommander(object):
             'mp_trigger', Trigger, queue_size=1)
         self._mp_configure_topic = rospy.Publisher(
             'mp_configure', Settings, queue_size=1)
+        self.trajectory_desired = rospy.Publisher(
+            'desired_path', Marker, queue_size=1)
+        self.trajectory_real = rospy.Publisher(
+            'real_path', Marker, queue_size=1)
 
         rospy.Subscriber('demo', Pose2D, self.planning)
         rospy.Subscriber('mp_result', RobotTrajectory, self.get_mp_result)
@@ -161,12 +169,12 @@ class VelCommander(object):
         print '----- Controller Configured -----'
 
     def planning(self, goal):
-        """Send initial position and first waypoint for the Point2point problem
+        '''Send initial position and first waypoint for the Point2point problem
         to the motionplanner.
 
         Args:
             goal : geometry_msgs/Pose2D - Terminal position of the p2p problem.
-        """
+        '''
         self._goal = goal
         # Pose2D(0.5, 0.5)
         self.set_goal()
@@ -174,22 +182,22 @@ class VelCommander(object):
         print 'GOAL SET'
 
     def get_mp_feedback(self, data):
-        """Sets motionplanner status. If False, then controller.start() will
+        '''Sets motionplanner status. If False, then controller.start() will
         wait with starting the controller until True.
 
         Args:
             data : boolean received from 'mp_feedback' topic, published by
                    motionplanner.
-        """
+        '''
         self._mp_status = data
 
     def get_mp_result(self, data):
-        """Store results of motionplanner calculations.
+        '''Store results of motionplanner calculations.
 
         Args:
             data : calculated trajectories received from 'mp_result' topic,
                    published by motionplanner.
-        """
+        '''
         v_traj = data.v_traj
         w_traj = data.w_traj
         x_traj = data.x_traj
@@ -197,12 +205,12 @@ class VelCommander(object):
         self.store_trajectories(v_traj, w_traj, x_traj, y_traj)
 
     def update(self):
-        """
+        '''
         - Updates the controller with newly calculated trajectories and
         velocity commands.
         - Sends out new velocity command.
         - Retrieves new pose estimate.
-        """
+        '''
         # Send velocity sample.
         self._cmd_twist.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert)
@@ -234,6 +242,7 @@ class VelCommander(object):
                 self.load_trajectories()
                 self._new_trajectories = False
                 self._time += self._index*self._sample_time
+                self.pos_index = self._index
                 self._index = 1
                 # Trigger motion planner.
                 self.fire_motionplanner(self._time, pose0)
@@ -303,6 +312,14 @@ class VelCommander(object):
         x_error = self._traj['x'][self._index] - self._robot_est_pose.x
         y_error = self._traj['y'][self._index] - self._robot_est_pose.y
 
+        # Safety feature, if position measurement stops working, set velocity
+        # command equal to zero
+        safety_treshold = 0.5
+        if (x_error > safety_treshold) or (y_error > safety_treshold):
+            self._cmd_twist_convert.twist = Twist()
+            return
+
+        # Combine feedforward and feedback part
         self._cmd_twist_convert.twist.linear.x = (
             x_error * self.feedback_gain +
             self._cmd_twist_convert.twist.linear.x)
@@ -320,49 +337,11 @@ class VelCommander(object):
             pose_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
             xhat = pose_est(self._cmd_twist)
+            self.__publish_real(xhat.point.x, xhat.point.y)
             return xhat.point
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
             return
-
-    def __publish_marker(self, x_traj, y_traj, position):
-        '''Publish planned x and y trajectory to topic for visualisation in
-        rviz.
-        '''
-        for i in range(0, 2):
-            traj_marker.markers[i] = MarkerArray()
-            traj_marker.markers[i].header.frame_id = '/map'
-            traj_marker.markers[i].header.stamp = rospy.get_rostime()
-            traj_marker.markers[i].ns = "trajectory"
-            traj_marker.markers[i].id = i
-            traj_marker.markers[i].type = 4  # Line List.
-            traj_marker.markers[i].action = 0
-            traj_marker.markers[i].pose.position.z = 0.
-            traj_marker.markers[i].pose.orientation.x = 0
-            traj_marker.markers[i].pose.orientation.y = 0
-            traj_marker.markers[i].pose.orientation.z = 0
-            traj_marker.markers[i].scale.x = 0.2
-            traj_marker.markers[i].scale.y = 0.2
-            traj_marker.markers[i].scale.z = 1.0
-            traj_marker.markers[i].color.r = 0.0
-            traj_marker.markers[i].color.g = 0.0
-            traj_marker.markers[i].color.b = 0.0
-            traj_marker.markers[i].color.a = 1.0
-            traj_marker.markers[i].lifetime = rospy.Duration(0)
-
-            traj_marker.markers[0].color.r = 1.0
-            traj_marker.markers[1].color.b = 1.0
-
-        for k in range(len(x_traj)):
-
-            point = Point()
-            point.x = x_traj[k]
-            point.y = y_traj[k]
-            traj_marker.markers[0].points.append(point)
-
-        traj_marker.markers[1].points.append(point)
-
-        self.trajectory_marker.publish(traj_marker)
 
     def load_trajectories(self):
         self._traj['v'] = self._traj_strg['v'][:]
@@ -371,7 +350,7 @@ class VelCommander(object):
         self._traj['y'] = self._traj_strg['y'][:]
 
     def store_trajectories(self, v_traj, w_traj, x_traj, y_traj):
-        """Stores the trajectories and indicate that new trajectories have
+        '''Stores the trajectories and indicate that new trajectories have
         been calculated.
 
         Args:
@@ -379,18 +358,22 @@ class VelCommander(object):
             w_traj : trajectory speed in y-direction
             x_traj : trajectory position in x-direction
             y_traj : trajectory position in y-direction
-        """
+        '''
         self._traj_strg = {}
         self._traj_strg = {
             'v': v_traj, 'w': w_traj, 'x': x_traj, 'y': y_traj}
         self._new_trajectories = True
 
+        x_traj = self._traj_strg['x'][:]
+        y_traj = self._traj_strg['y'][:]
+        self.__publish_desired(x_traj, y_traj)
+
     def proceed(self):
-        """Determines whether goal is reached.
+        '''Determines whether goal is reached.
         Returns:
             not stop: boolean whether goal is reached. If not, controller
                       proceeds to goal.
-        """
+        '''
         if len(self._inputs_applied['jx']) == 0:
             return True
 
@@ -423,12 +406,91 @@ class VelCommander(object):
         self.startup = True
 
     def fire_motionplanner(self):
-        """Publishes inputs to motionplanner via Trigger topic.
-        """
+        '''Publishes inputs to motionplanner via Trigger topic.
+        '''
         self._trigger.goal = self._goal
         self._trigger.state = self._robot_est_pose
         self._trigger.current_time = self.time
         self._mp_trigger_topic.publish(self._trigger)
+
+    def marker_setup(self):
+        '''Setup markers to display the desired and real path of the drone in
+        rviz.
+        '''
+        # Desired path
+        self._desired_path = Marker()
+        self._desired_path.header.frame_id = '/World'
+        self._desired_path.ns = "trajectory_desired"
+        self._desired_path.id = 0
+        self._desired_path.type = 4  # Line List.
+        self._desired_path.action = 0
+        # self._desired_path.pose.position.z = 0.
+        # self._desired_path.pose.orientation.x = 0
+        # self._desired_path.pose.orientation.y = 0
+        # self._desired_path.pose.orientation.z = 0
+        self._desired_path.scale.x = 0.2
+        self._desired_path.scale.y = 0.2
+        self._desired_path.scale.z = 1.0
+        self._desired_path.color.r = 1.0
+        self._desired_path.color.g = 0.0
+        self._desired_path.color.b = 0.0
+        self._desired_path.color.a = 1.0
+        self._desired_path.lifetime = rospy.Duration(0)
+
+        self.pos_index = 0
+        self.old_len = 0
+
+        # Real path
+        self._real_path = Marker()
+        self._real_path.header.frame_id = '/World'
+        self._real_path.ns = "trajectory_real"
+        self._real_path.id = 1
+        self._real_path.type = 4  # Line List.
+        self._real_path.action = 0
+        # self._real_path.pose.position.z = 0.
+        # self._real_path.pose.orientation.x = 0
+        # self._real_path.pose.orientation.y = 0
+        # self._real_path.pose.orientation.z = 0
+        self._real_path.scale.x = 0.2
+        self._real_path.scale.y = 0.2
+        self._real_path.scale.z = 1.0
+        self._real_path.color.r = 0.0
+        self._real_path.color.g = 1.0
+        self._real_path.color.b = 0.0
+        self._real_path.color.a = 1.0
+        self._real_path.lifetime = rospy.Duration(0)
+
+    def __publish_desired(self, x_traj, y_traj):
+        '''Publish planned x and y trajectory to topic for visualisation in
+        rviz.
+        '''
+        # Still has to be adapted to remove old path when new goal has been set.
+        self._desired_path.stamp = rospy.get_rostime()
+
+        # Delete points in path that have not been used before new list was
+        # calculated.
+        self._desired_path.points = self._desired_path.points[
+                                            0:(self.old_len + self.pos_index)]
+        self.old_len = len(self._desired_path.points)
+
+        # Add new calculated pos list to old one.
+        new_pos = np.zeros(len(x_traj))
+        for k in range(len(x_traj)):
+            new_pos[k] = Point(x=x_traj[k], y=y_traj[k])
+        self._desired_path.points + new_pos.tolist()
+
+        self.trajectory_desired.publish(self._desired_path)
+
+    def __publish_real(self, x_pos, y_pos):
+        '''Publish real x and y trajectory to topic for visualisation in
+        rviz.
+        '''
+        self._real_path.header.stamp = rospy.get_rostime()
+
+        point = Point(x=x_pos, y=y_pos)
+        self._real_path.points.append(point)
+
+        self.trajectory_real.publish(self._real_path)
 
 
 if __name__ == '__main__':
