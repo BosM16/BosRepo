@@ -42,7 +42,7 @@ class MotionPlanner(object):
         self._vehicle = omg.Holonomic(
             shapes=omg.Circle(0.5),
             bounds={'vmax': 0.2, 'vmin': -0.2, 'amax': 0.3, 'amin': -0.3})
-        self._vehicle.define_knots(knot_intervals=10)
+        self._vehicle.define_knots(knot_intervals=self.knots)
         self._vehicle.set_options({'safety_distance': self.safety_margin})
         self._robot = omg.Fleet(self._vehicle)
         self._robot.set_initial_conditions([[0., 0.]])
@@ -65,6 +65,7 @@ class MotionPlanner(object):
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
         self._robobst = st.robobst
+
         # Create problem.
         print 'creating problem'
         problem = omg.Point2point(self._robot, environment, freeT=True)
@@ -84,7 +85,7 @@ class MotionPlanner(object):
         """
         rospy.init_node('motionplanner')
         self._goal = Pose2D(x=np.inf, y=np.inf, theta=np.inf)
-        print 'listening'
+        print '** Motionplanner Listening **'
         rospy.spin()
 
     def update(self, cmd):
