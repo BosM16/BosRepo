@@ -135,8 +135,6 @@ class VelCommander(object):
         obstacles.
         Sends Settings to Motionplanner.
         Settings constists of
-            - sample time
-            - update time
             - environment
         Waits for Motionplanner to set mp_status to configured.
 
@@ -144,9 +142,6 @@ class VelCommander(object):
         """
 
         self.st = Settings()
-        # timing
-        self.st.sample_time = self._sample_time
-        self.st.update_time = self._update_time
         # environment
         self.st.robobst = self._robobst  # dynamic
         self.st.obstacles = []  # static TODO: service call to get obstacles.

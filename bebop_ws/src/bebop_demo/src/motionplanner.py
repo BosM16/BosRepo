@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from geometry_msgs.msg import Pose2D
 from std_msgs.msg import Bool
 import numpy as np
 import rospy
@@ -18,6 +19,8 @@ class MotionPlanner(object):
         controller. Sets self as publisher of topics to which controller
         subscribes.
         """
+        self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
+        self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
         self._mp_result_topic = rospy.Publisher(
             'mp_result', Trajectory, queue_size=1)
         self._mp_feedback_topic = rospy.Publisher(
@@ -33,8 +36,6 @@ class MotionPlanner(object):
             st : contains data sent over Settings topic.
         """
         print 'configure motionplanner'
-        self._sample_time = st.sample_time
-        self._update_time = st.update_time
         self.safety_margin = rospy.get_param(
             'motionplanner/safety_margin', 0.3)
 
@@ -83,10 +84,11 @@ class MotionPlanner(object):
         """Starts the motionplanner by initializing the motionplanner ROS-node.
         """
         rospy.init_node('motionplanner')
+        self._goal = Pose2D()
         self._goal.x = np.inf
         self._goal.y = np.inf
-        self._goal.z = np.inf
-        print '** Motionplanner listening **'
+        self._goal.theta = np.inf
+        print '** Motionplanner Listening **'
         rospy.spin()
 
     def update(self, cmd):
@@ -96,24 +98,13 @@ class MotionPlanner(object):
         Args:
             cmd : contains data sent over Trigger topic.
         """
-        reset = False
-
         # In case goal has changed: set new goal.
-        if (
-                cmd.goal.x != self._goal.x) or (
-                cmd.goal.y != self._goal.y) or (
-                cmd.goal.theta != self._goal.theta):
-
+        if cmd.goal != self._goal:
             self._goal = cmd.goal
             self._vehicle.set_initial_conditions(
                 [cmd.state.x, cmd.state.y])
             self._vehicle.set_terminal_conditions(
-                [cmd.goal.x, cmd.goal.y])
-            reset = True
-
-        # reset can only be True when previous if is True, so why not put THIS
-        # in previous if as well??
-        if reset:
+                [self._goal.x, self._goal.y])
             self._deployer.reset()
             print 'resetted deployer!'
 
