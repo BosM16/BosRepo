@@ -16,7 +16,7 @@ class Ident(object):
         self.index = 0
         self.rate = 12
         self.wait1 = 0.1
-        self.wait2 = 0.12
+        self.wait2 = 0.115
         self.wait3 = 0.10
         span = int(self.ident_length*(
                     self.wait1*4 + self.wait2+self.wait3)*self.rate*50 + 10)
