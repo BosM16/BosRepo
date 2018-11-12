@@ -127,25 +127,11 @@ class Demo(object):
         if not self.init:
             self.vel_list_corr = self.vel_list_corr + self.vel_cmd_list
             self.vel_cmd_list = []
-            # print 'CORRECT STEP,\n'
-            # print 'times of vel_cmds at start:\n'
-            # for vel in self.vel_list_corr:
-            #     t_vel = self.wm.get_timestamp(vel)
-            #     print '-  ', t_vel - m.floor(t_vel)
 
             if (len(self.vel_list_corr) > 1) and self.wm.get_time_diff(
                     self.pc.pose_vive, self.vel_list_corr[1]) < 0:
                 self.vel_list_corr = self.vel_list_corr[1:]
-            # print 'vel cmd _list length after mod', len(self.vel_list_corr)
             self.case5 = False
-            # tpose = self.wm.get_timestamp(self.pc.pose_vive)
-            # txhatr = self.wm.get_timestamp(self.wm.xhat_r_t0)
-            # print 'tpose', tpose - m.floor(tpose)
-            # print 'txhatr', txhatr - m.floor(txhatr)
-            # print "Applying Kalman correction step"
-            #
-            # print "measurement_world\n", measurement_world
-            # print "measurement\n", measurement
 
             # First make prediction from old point t0 to last point t before
             # new measurement.
@@ -155,46 +141,19 @@ class Demo(object):
                 self.pc.pose_vive, self.latest_vel_cmd)
             late_cmd_vel = []
             # Check for case 4.
-            # print 'len velocity list before shrinking', len(self.vel_list_corr)
             if time_diff_check < 0:
-                # print 'time diff check NOT ok, adjust t_last_update'
-                # t_last_update = self.wm.get_timestamp(self.vel_list_corr[-2])
                 late_cmd_vel = [self.vel_list_corr[-1]]
                 self.vel_list_corr = self.vel_list_corr[0:-1]
 
             vel_len = len(self.vel_list_corr)
-            # print 'len velocity list before check for case 3', vel_len
             if (vel_len > 1):
                 case3 = False
                 Ts = self.wm.get_time_diff(
                     self.vel_list_corr[1], self.wm.xhat_r_t0)
-                tstamp = self.wm.get_timestamp(self.vel_list_corr[1])  # For debugging only!
-                # print 'case 1 or 2'
             else:
                 case3 = True
                 Ts = self.wm.get_time_diff(
                     self.pc.pose_vive, self.wm.xhat_r_t0)
-                tstamp = self.wm.get_timestamp(self.pc.pose_vive)  # For debugging only!
-            # print 'Ts 151\n', Ts
-
-            # t_1st_velcmd = self.wm.get_timestamp(self.vel_list_corr[0])  # For debugging only!
-            # t_last_update = self.wm.get_timestamp(self.vel_list_corr[-1])
-
-            # old_t0 = self.wm.get_timestamp(self.wm.xhat_r_t0)
-            # new_t0 = self.wm.get_timestamp(self.pc.pose_vive)
-            # if old_t0 == new_t0:
-            #     print '--------------\n equal\n---------------\n'
-
-            # Print all times of vel cmds:
-            # print 'times of vel_cmds:\n'
-            # for vel in self.vel_list_corr:
-            #     t_vel = self.wm.get_timestamp(vel)
-            #     print '-  ', t_vel - m.floor(t_vel)
-            # print 'tstamp of first vel cmd', t_1st_velcmd - m.floor(t_1st_velcmd, -2)
-            # print 'tstamp of second vel cmd', tstamp - m.floor(tstamp, -2)
-            # print 'old t0', old_t0 - m.floor(old_t0)
-            # print 'new t0', new_t0 - m.floor(new_t0)
-            # print 't_last_update', t_last_update - m.floor(t_last_update, -2)
 
             (X, xhat_r) = self.wm.predict_pos_update(
                     self.vel_list_corr[0], Ts, self.wm.X_r_t0)  # Ts should be made variable depending on time between vel cmd's.
@@ -211,11 +170,8 @@ class Demo(object):
             # Now make prediction up to new t0 if not case 3.
             B = self.wm.get_time_diff(self.pc.pose_vive, self.vel_list_corr[-1])
             if B > self.wm.vel_cmd_Ts:
-                # print 'case 5'
                 self.case5 = True
-            # print 'Ts 164\n', B
             if not case3:
-                # print 'not case 3'
                 (X, xhat_r) = self.wm.predict_pos_update(
                     self.latest_vel_cmd, B, X)
 
@@ -228,7 +184,6 @@ class Demo(object):
 
             # Now predict until next point t that coincides with next timepoint
             # for the controller.
-            # print 'Ts 183\n', (1 + case5)*self.wm.vel_cmd_Ts - B, '\n'
 
             (X, xhat_r) = self.wm.predict_pos_update(
                                     self.vel_list_corr[-1],
@@ -238,20 +193,8 @@ class Demo(object):
             self.wm.xhat_r = xhat_r
             self.wm.X_r = X
 
-            # self.pose_r_pub.publish(self.wm.xhat_r)
-            # self.pose_pub.publish(self.wm.xhat)
-
             self.vel_list_corr = [self.vel_list_corr[-1]]
             self.vel_list_corr += late_cmd_vel
-            # tfinished = rospy.Time.now().to_sec()
-            # print 'tfinished', tfinished - m.floor(tfinished), '\n ---- \n'
-            # print 'times of vel_cmds at end:\n'
-            # for vel in self.vel_list_corr:
-            #     t_vel = self.wm.get_timestamp(vel)
-            #     print '-  ', t_vel - m.floor(t_vel)
-            # print '\n ---- \n'
-
-
 
     def transform_point(self, point, _from, _to):
         '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to
