@@ -69,14 +69,18 @@ xlabel('f  [Hz]')
 ylabel('\phi(FRF) [^\circ]')
 xlim([f(1) f(end)])
 
+%% Choose a cutoff frequency for Butterworth filtering
+f0 = 0.3; % crossover frequency (based on iteratively checking crossover of best fit)
+fc = 5*f0; % cutoff frequency (chosen)
+fcn = fc/(fs/2); % normalized cutoff frequency (as butter() accepts)
 
 
-% ---------------------
-%% SECOND ORDER FITTING 
-% ---------------------
+%% ---------------------
+%  SECOND ORDER FITTING 
+%  ---------------------
 
 %% Filtering of the in- and output data using Butterworth filter
-[B, A] = butter(3, 0.02*5); % order must be higher than order of system, 
+[B, A] = butter(3, fcn); % order must be higher than order of system, 
                             % adjust cut-off frquency to be higher than 
                             % highest eigenfrequency of the system
                              
@@ -211,12 +215,12 @@ figure('Name','2nd order, filtered, proper - Pole Zero Map'),pzmap(sys_d2)
 
 
 
-% ---------------------
-%% THIRD ORDER FITTING 
-% ---------------------
+%% ---------------------
+%   THIRD ORDER FITTING 
+%  ---------------------
 
 %% Filtering of the in- and output data using Butterworth filter
-[B, A] = butter(4, 0.02*5); % order must be higher than order of system, 
+[B, A] = butter(4, fcn); % order must be higher than order of system, 
                             % adjust cut-off frquency to be higher than 
                             % highest eigenfrequency of the system
                              
@@ -439,7 +443,7 @@ xlim([f(1) f(end)])
 xlabel('f  [Hz]')
 ylabel('\phi(FRF6)  [^\circ]')
 
-x6 = lsim(sys_d6,input,t);
+x6 = lsim(sys_d6,input*1.1,t);
 
 figure('Name','3d order, filtered, strictly proper - Simulation')
 subplot(211)
@@ -462,12 +466,12 @@ axis tight
 figure('Name','3d order, filtered, strictly proper - Pole Zero Map'),pzmap(sys_d6)
 
 
-% ---------------------
-%% FOURTH ORDER FITTING 
-% ---------------------
+%% ---------------------
+%   FOURTH ORDER FITTING 
+%  ---------------------
 
 %% Filtering of the in- and output data using Butterworth filter
-[B, A] = butter(5, 0.02*5); % order must be higher than order of system, 
+[B, A] = butter(5, fcn); % order must be higher than order of system, 
                             % adjust cut-off frquency to be higher than 
                             % highest eigenfrequency of the system
                              
@@ -560,10 +564,17 @@ legend('measurement',...
      %'2nd - filter - proper')  % unstable!
 
      
-%% continuous time transfer function
+%% Find crossover frequency of best fit
+[error, index] = min(abs(20*log10(abs(FRF6(1:end-100)))));
+f0 = f(index);
 
+fprintf('f0x: %d \n', f0)
+
+
+%% continuous time transfer function
+sys_c6 = d2c(sys_d6)
 
 
 %% Save result (transfer function)
-%save('HVJ_x_cont','sys_c2nd')
+save('XSignals_50Hz','input','output_x','x6')
 

@@ -100,6 +100,58 @@ legend('output','filtered output')
 
 
 %% Least squares solution for approximation of the parameters in the system
+% With Butterworth filtering of in and output
+% 1st order strictly proper
+
+y0 = velocity_z_filt(2:end);
+Phi0 = [-velocity_z_filt(1:end-1), input_filt(1:end-1)];
+theta_filt0 = Phi0\y0;
+
+B0 = [theta_filt0(2)];
+A0 = [1, theta_filt0(1)];
+
+sys_d0 = tf(B0, A0, Ts);
+
+FRF0 = squeeze(freqresp(sys_d0,2*pi*f));
+
+figure('Name','Butterworth filtered Identified tf freq response'),subplot(2,1,1),semilogx(f, 20*log10(abs(FRF0)))
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRF0|  [m]')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRF0)))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRF0)  [^\circ]')
+
+x0 = lsim(sys_d0,input,t);
+
+figure('Name','Butterworth filtered lsim time response')
+subplot(211)
+hold on
+plot(t, velocity_z,'g')
+plot(t, velocity_z_filt)
+plot(t,x0)
+legend('pos_{z,meas}', 'pos_{z,filt}', 'pos_{z,sim}')
+title('Butterworth filtered identified transfer function vs measurement')
+xlabel('Time [s]')
+axis tight
+ylabel('velocity [m/s]')
+subplot(212)
+plot(t,velocity_z - x0)
+title('Difference between simulation and measurement')
+legend('pos_{z,meas}-pos_{z,sim}')
+xlabel('Time [s]')
+ylabel('velocity [m/s]')
+axis tight
+
+figure('Name','Butterworth filtered Identified tf pole-zero map'),pzmap(sys_d0)
+
+
+%%
 % Without filtering
 % y[k] = -a1*y[k-1]-a0*y[k-2]+b2*u[k]+b1*u[k-1]+b0*u[k-2]
 y = velocity_z(3:end);
@@ -149,6 +201,7 @@ figure('Name','NOT  filtered pole zero map'),pzmap(sys_d1)
 
 
 %% With Butterworth filtering of in and output
+% Second order proper
 
 y2 = velocity_z_filt(3:end);
 Phi2 = [-velocity_z_filt(2:end-1), -velocity_z_filt(1:end-2), input_filt(3:end), input_filt(2:end-1), input_filt(1:end-2)];
@@ -197,9 +250,60 @@ axis tight
 
 figure('Name','Butterworth filtered Identified tf pole-zero map'),pzmap(sys_d2)
 
+%% With Butterworth filtering of in and output
+% 2nd order strictly proper
+
+y3 = velocity_z_filt(3:end);
+Phi3 = [-velocity_z_filt(2:end-1), -velocity_z_filt(1:end-2), input_filt(2:end-1), input_filt(1:end-2)];
+theta_filt3 = Phi3\y3;
+
+B3 = [theta_filt3(3),theta_filt3(4)];
+A3 = [1, theta_filt3(1) theta_filt3(2)];
+
+sys_d3 = tf(B3, A3, Ts);
+
+FRF3 = squeeze(freqresp(sys_d3,2*pi*f));
+
+figure('Name','Butterworth filtered Identified tf freq response'),subplot(2,1,1),semilogx(f, 20*log10(abs(FRF3)))
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRF3|  [m]')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRF3)))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRF3)  [^\circ]')
+
+x3 = lsim(sys_d3,input,t);
+
+figure('Name','Butterworth filtered lsim time response')
+subplot(211)
+hold on
+plot(t, velocity_z,'g')
+plot(t, velocity_z_filt)
+plot(t,x3)
+legend('pos_{z,meas}', 'pos_{z,filt}', 'pos_{z,sim}')
+title('Butterworth filtered identified transfer function vs measurement')
+xlabel('Time [s]')
+axis tight
+ylabel('velocity [m/s]')
+subplot(212)
+plot(t,velocity_z - x3)
+title('Difference between simulation and measurement')
+legend('pos_{z,meas}-pos_{z,sim}')
+xlabel('Time [s]')
+ylabel('velocity [m/s]')
+axis tight
+
+figure('Name','Butterworth filtered Identified tf pole-zero map'),pzmap(sys_d3)
+
+
 
 %% With Butterworth filtering of in and output
-% 3e orde proper
+% 3d order proper
 
 y2 = velocity_z_filt(4:end);
 Phi2 = [-velocity_z_filt(3:end-1), -velocity_z_filt(2:end-2), -velocity_z_filt(1:end-3), input_filt(4:end), input_filt(3:end-1), input_filt(2:end-2), input_filt(1:end-3)];
@@ -298,3 +402,8 @@ ylabel('velocity [m/s]')
 axis tight
 
 figure('Name','Butterworth filtered Identified tf pole-zero map'),pzmap(sys_d2)
+
+
+%% continuous
+sys_c0 = d2c(sys_d0);
+sys_0 = c2d(sys_c0, 0.01)

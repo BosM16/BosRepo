@@ -5,7 +5,7 @@ close all
 
 %% Load data from .mat-file
 
-load vel_identification_z
+load vel_identification_z_short
 
 
 %% Extract some signals from the data
@@ -70,13 +70,19 @@ ylabel('\phi(FRF) [^\circ]')
 xlim([f(1) f(end)])
 
 
+%% Choose a cutoff frequency for Butterworth filtering
+f0 = 0.2; % crossover frequency
+fc = 5*f0; % cutoff frequency
+fcn = fc/(fs/2); % normalized cutoff frequency
 
-% ---------------------
-%% SECOND ORDER FITTING 
-% ---------------------
+
+
+%% ---------------------
+%   SECOND ORDER FITTING 
+%  ---------------------
 
 %% Filtering of the in- and output data using Butterworth filter
-[B, A] = butter(3, 0.02*5); % order must be higher than order of system, 
+[B, A] = butter(3, fcn); % order must be higher than order of system, 
                             % adjust cut-off frquency to be higher than 
                             % highest eigenfrequency of the system
                              
@@ -273,7 +279,7 @@ figure('Name','2nd order, filtered, proper - Pole Zero Map'),pzmap(sys_d2)
 % ---------------------
 
 %% Filtering of the in- and output data using Butterworth filter
-[B, A] = butter(4, 0.02*5); % order must be higher than order of system, 
+[B, A] = butter(4, fcn); % order must be higher than order of system, 
                             % adjust cut-off frquency to be higher than 
                             % highest eigenfrequency of the system
                              
@@ -524,7 +530,7 @@ figure('Name','3d order, filtered, strictly proper - Pole Zero Map'),pzmap(sys_d
 % ---------------------
 
 %% Filtering of the in- and output data using Butterworth filter
-[B, A] = butter(5, 0.02*5); % order must be higher than order of system, 
+[B, A] = butter(5, fcn); % order must be higher than order of system, 
                             % adjust cut-off frquency to be higher than 
                             % highest eigenfrequency of the system
                              
@@ -617,9 +623,17 @@ legend('measurement',...
         '3d - filter - strictly proper',...
         '4th - filter - strictly proper')
 
+ 
+%% Find crossover frequency of best fit
+[error, index] = min(abs(20*log10(abs(FRF0(1:end-100)))));
+f0 = f(index);
+
+fprintf('f0z: %d \n', f0)
+
      
 %% continuous time transfer function
-
+sys_c0 = d2c(sys_d0);
+sys_c0
 
 
 %% Save result (transfer function)

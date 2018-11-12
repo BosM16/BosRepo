@@ -199,6 +199,55 @@ axis tight
 
 figure('Name','Butterworth filtered Identified tf pole-zero map'),pzmap(sys_d2)
 
+%% With Butterworth filtering of in and output
+
+y3 = velocity_y_filt(3:end);
+Phi3 = [-velocity_y_filt(2:end-1), -velocity_y_filt(1:end-2), input_filt(2:end-1), input_filt(1:end-2)];
+theta_filt3 = Phi3\y3;
+
+B3 = [theta_filt3(3),theta_filt3(4)];
+A3 = [1, theta_filt3(1) theta_filt3(2)];
+
+sys_d3 = tf(B3, A3, Ts);
+
+FRF3 = squeeze(freqresp(sys_d3,2*pi*f));
+
+figure('Name','Butterworth filtered Identified tf freq response'),subplot(2,1,1),semilogx(f, 20*log10(abs(FRF3)))
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRF3|  [m]')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRF3)))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRF3)  [^\circ]')
+
+x3 = lsim(sys_d3,input,t);
+
+figure('Name','Butterworth filtered lsim time response')
+subplot(211)
+hold on
+plot(t, velocity_y,'g')
+plot(t, velocity_y_filt)
+plot(t,x3)
+legend('v_{y,meas}', 'v_{y,filt}', 'v_{y,sim}')
+title('Butterworth filtered identified transfer function vs measurement')
+xlabel('Time [s]')
+axis tight
+ylabel('Velocity [m/s]')
+subplot(212)
+plot(t,velocity_y - x3)
+title('Difference between simulation and measurement')
+legend('v_{y,meas}-v_{y,sim}')
+xlabel('Time [s]')
+ylabel('Velocity [m/s]')
+axis tight
+
+figure('Name','Butterworth filtered Identified tf pole-zero map'),pzmap(sys_d3)
+
 %% Taking into account KNOWN PART of the system! (b1 & b0 = 0)
 % theta(4) & theta(5) (= b1 & b0) turn out to be very small. But we know
 % (from physical insight) that they are EXACTLY 0!
@@ -272,22 +321,16 @@ figure
 plot(t,[velocity_y velocity_y_filt x1 x2 x_pk])
 legend('measured', 'filtered measurement', 'simulated no filter', 'simulated filter', 'simulated partially known')
 %% continuous equivalent of tf (pk)
-a1 = theta_pk(1);
-a0 = theta_pk(2);
-b2 = theta_pk(3);
 
-s = tf('s');
-sys_cpk = (b2/(a0*Ts^2))/(s^2+(-a0*2*Ts-Ts*a1)/(a0*Ts^2)*s+(1+a1+a0)/(a0*Ts^2));
-figure('Name','Continuous tf 2nd order')
-bode(sys_cpk)
-hold on
-bode(sys_dpk)
-legend('cont','discr')
+sys_c3 = d2c(sys_d3);
+sys_3 = c2d(sys_c3, 0.01)
+
+
 %% Save result (transfer function)
-sys_2nd = sys_dpk;
-sys_2nd_f = sys_d2;
-sys_c2nd = sys_cpk;
-save('HVJ_y','sys_2nd')
-save('HVJ_y_filtered', 'sys_2nd_f')
-save('HVJ_y_cont','sys_c2nd')
+% sys_2nd = sys_dpk;
+% sys_2nd_f = sys_d2;
+% sys_c2nd = sys_cpk;
+% save('HVJ_y','sys_2nd')
+% save('HVJ_y_filtered', 'sys_2nd_f')
+% save('HVJ_y_cont','sys_c2nd')
 
