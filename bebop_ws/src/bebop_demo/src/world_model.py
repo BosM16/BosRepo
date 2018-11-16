@@ -51,13 +51,13 @@ class WorldModel(object):
         self.initialize_model()
 
     def initialize_model(self):
-        '''Initializes The model to be used in the Kalman filter.
+        '''Initializes the model to be used in the Kalman filter.
         State space model x'(t) = A*x(t) + B*u(t) in observable canonical
         form, corresponding to transfer function
 
-                  d1*s^2 + d2*s + d3
+                  b2*s^2 + b1*s + b0
         G(s) = --------------------------
-                s^3 + n1*s^2 + n2*s + n3
+                s^3 + a2*s^2 + a1*s + a0
 
         State space model matrices for position Kalman filter are in
         continuous time!! Are then converted to discrete time further on

@@ -58,31 +58,7 @@ class VelCommander(object):
         self.marker_setup()
 
         # Coefficients for inverted model of velocity to input angle
-        # X-direction
-        self.input_old_x = 0.
-
-        b0 = 0.009437
-        b1 = -0.007635
-        a0 = 0.9459
-        a1 = -1.946
-
-        self.coeffs_x = np.array([-b0, a0, a1, 1])/b1
-
-        # Y-direction
-        self.input_old_y = 0.
-
-        b0 = 0.0177
-        b1 = -0.01557
-        a0 = 0.9338
-        a1 = -1.933
-
-        self.coeffs_y = np.array([-b0, a0, a1, 1])/b1
-
-        # # Z-direction
-        # b0 = 0.05301
-        # a0 = -0.946
-        #
-        # self.coeffs_x = np.array([a0, 1])/b0
+        self.initialize_vel_model()
 
         self._robot_est_pose = Point()
         self._robot_est_pose.x = 0.
@@ -116,10 +92,48 @@ class VelCommander(object):
         self.trajectory_marker = rospy.Publisher(
             'motionplanner_traj_marker', Marker, queue_size=1)
 
+    def initialize_vel_model(self):
+        '''Initializes model parameters for conversion of desired velocities to
+        angle inputs.
+        State space model x[k+1] = A*x[k] + B*u[k] in observable canonical
+        form, corresponding to discete time transfer function
+
+                   b1*z + b0
+        G(z) = -----------------
+                z^2 + a1*z + a0
+
+        with sampling time equal to vel_cmd_Ts (0.01s).
+        '''
+        # X-direction
+        self.input_old_x = 0.
+
+        b0 = 0.009437
+        b1 = -0.007635
+        a0 = 0.9459
+        a1 = -1.946
+
+        self.coeffs_x = np.array([-b0, a0, a1, 1])/b1
+
+        # Y-direction
+        self.input_old_y = 0.
+
+        b0 = 0.0177
+        b1 = -0.01557
+        a0 = 0.9338
+        a1 = -1.933
+
+        self.coeffs_y = np.array([-b0, a0, a1, 1])/b1
+
+        # # Z-direction
+        # b0 = 0.05301
+        # a0 = -0.946
+        #
+        # self.coeffs_x = np.array([a0, 1])/b0
+
     def start(self):
-        """Configures,
+        '''Configures,
         Starts the controller's periodical loop.
-        """
+        '''
         rate = self.rate
 
         self.configure()
@@ -139,7 +153,7 @@ class VelCommander(object):
             rate.sleep()
 
     def configure(self):
-        """Configures the controller by loading in the room and static
+        '''Configures the controller by loading in the room and static
         obstacles.
         Sends Settings to Motionplanner.
         Settings constists of
@@ -147,7 +161,7 @@ class VelCommander(object):
         Waits for Motionplanner to set mp_status to configured.
 
         NOTE: This would be better as a service!
-        """
+        '''
 
         self.st = Settings()
         # environment
