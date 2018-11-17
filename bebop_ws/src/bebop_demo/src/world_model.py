@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import TwistStamped, Pose, Point, PointStamped
+from geometry_msgs.msg import TwistStamped, PointStamped
 import numpy as np
 import rospy
 import tf2_ros
@@ -64,20 +64,20 @@ class WorldModel(object):
         depending on varying Ts.
         '''
 
-        a2x = 5.208
-        a1x = 2.65
-        a0x = -0.05182
+        a2x = 5.458
+        a1x = 2.467
+        a0x = -0.03519
         Ax = np.array([[-a2x, 1., 0.],
                        [-a1x, 0., 1.],
                        [-a0x, 0., 0.]])
-        a2y = 6.557
-        a1y = 3.781
-        a0y = -0.08711
+        a2y = 5.921
+        a1y = 2.469
+        a0y = 0.02513
         Ay = np.array([[-a2y, 1., 0.],
                        [-a1y, 0., 1.],
                        [-a0y, 0., 0.]])
-        a1z = 4.941
-        a0z = 0.01532
+        a1z = 1.515
+        a0z = 0.02072
         Az = np.array([[-a1z, 1.],
                        [-a0z, 0.]])
 
@@ -86,16 +86,16 @@ class WorldModel(object):
         self.A[3:6, 3:6] = Ay
         self.A[6:8, 6:8] = Az
 
-        b2x = 0.02308
-        b1x = -0.8863
-        b0x = 18.04
+        b2x = -0.01447
+        b1x = -1.008
+        b0x = 18.32
         Bx = np.array([b2x, b1x, b0x])
-        b2y = 0.02634
-        b1y = -1.764
-        b0y = 21.8
+        b2y = -0.008856
+        b1y = -1.063
+        b0y = 19.74
         By = np.array([b2y, b1y, b0y])
-        b1z = 0.09622
-        b0z = 4.886
+        b1z = 0.6266
+        b0z = 1.597
         Bz = np.array([b1z, b0z])
         self.B = np.zeros([8, 3])  # continuous B matrix
         self.B[0:3, 0] = Bx
