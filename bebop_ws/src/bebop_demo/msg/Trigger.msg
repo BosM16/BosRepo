@@ -1,4 +1,3 @@
-bebop_demo/Pose2D goal
-bebop_demo/Pose2D state
-bebop_demo/Obstacle[] dyn_obstacles
+geometry_msgs/Pose2D goal
+geometry_msgs/Pose2D state
 float32 current_time

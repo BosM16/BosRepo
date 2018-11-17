@@ -2,7 +2,9 @@
 
 from geometry_msgs.msg import Twist, PoseStamped, Point, PointStamped
 from std_msgs.msg import Empty
+from visualization_msgs.msg import Marker
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
+
 import numpy as np
 import math as m
 import rospy
@@ -89,7 +91,6 @@ class Demo(object):
         Arguments:
             vel_cmd: TwistStamped
         '''
-        print 'PREDICT STEP', '\n'
         if not self.init:
             (self.wm.X_r, self.wm.xhat_r) = self.wm.predict_pos_update(
                 vel_cmd, self.wm.vel_cmd_Ts, self.wm.X_r)
@@ -136,10 +137,10 @@ class Demo(object):
             # First make prediction from old point t0 to last point t before
             # new measurement.
             # Calculate variable B (time between latest prediction and new t0).
-
             time_diff_check = self.wm.get_time_diff(
                 self.pc.pose_vive, self.latest_vel_cmd)
             late_cmd_vel = []
+
             # Check for case 4.
             if time_diff_check < 0:
                 late_cmd_vel = [self.vel_list_corr[-1]]
@@ -156,7 +157,8 @@ class Demo(object):
                     self.pc.pose_vive, self.wm.xhat_r_t0)
 
             (X, xhat_r) = self.wm.predict_pos_update(
-                    self.vel_list_corr[0], Ts, self.wm.X_r_t0)  # Ts should be made variable depending on time between vel cmd's.
+                    self.vel_list_corr[0], Ts, self.wm.X_r_t0)
+
             # If not case 2 or 3 -> need to predict up to
             # last vel cmd before new_t0
             if vel_len > 2:
@@ -168,7 +170,8 @@ class Demo(object):
                         self.vel_list_corr[i+1], Ts, X)
 
             # Now make prediction up to new t0 if not case 3.
-            B = self.wm.get_time_diff(self.pc.pose_vive, self.vel_list_corr[-1])
+            B = self.wm.get_time_diff(self.pc.pose_vive,
+                                      self.vel_list_corr[-1])
             if B > self.wm.vel_cmd_Ts:
                 self.case5 = True
             if not case3:

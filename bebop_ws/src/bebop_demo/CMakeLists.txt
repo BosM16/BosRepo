@@ -12,6 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   rospy
   std_msgs
   message_generation
+  visualization_msgs
 )
 
 ## System dependencies are found with CMake's conventions
@@ -51,17 +52,16 @@ find_package(catkin REQUIRED COMPONENTS
 add_message_files(
  FILES
    Trigger.msg
-   RobotPose.msg
-   Trajectory.msg
+   Trajectories.msg
    Obstacle.msg
-   Room.msg
-   Settings.msg
+
 )
 
 ## Generate services in the 'srv' folder
 add_service_files(
   FILES
   GetPoseEst.srv
+  ConfigMotionplanner.srv 
 )
 
 ## Generate added messages and services with any dependencies listed here
