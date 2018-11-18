@@ -101,8 +101,8 @@ class Kalman(object):
             vel_cmd: TwistStamped
         '''
         if not self.init:
-            (self.X_r, xhat_r) = self.wm.predict_step_calc(
-                vel_cmd, self.vel_cmd_Ts, self.X_r)
+            (self.X_r, xhat_r, self.Phat) = self.wm.predict_step_calc(
+                vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
         return xhat_r
 
     def kalman_pos_correct(self, measurement, xhat_r_t0):
@@ -161,8 +161,8 @@ class Kalman(object):
                 Ts = self.get_time_diff(
                     measurement, self.wm.xhat_r_t0)
 
-            (X, xhat_r) = self.predict_step_calc(
-                    self.vel_list_corr[0], Ts, self.X_r_t0)
+            (X, xhat_r, Phat) = self.predict_step_calc(
+                    self.vel_list_corr[0], Ts, self.X_r_t0, self.Phat_t0)
 
             # If not case 2 or 3 -> need to predict up to
             # last vel cmd before new_t0
@@ -171,8 +171,8 @@ class Kalman(object):
                 for i in range(vel_len - 2):
                     Ts = self.get_time_diff(
                         self.vel_list_corr[i+2], self.vel_list_corr[i+1])
-                    (X, xhat_r) = self.predict_step_calc(
-                        self.vel_list_corr[i+1], Ts, X)
+                    (X, xhat_r, Phat) = self.predict_step_calc(
+                        self.vel_list_corr[i+1], Ts, X, Phat)
 
             # Now make prediction up to new t0 if not case 3.
             B = self.get_time_diff(self.pc.pose_vive,
@@ -180,31 +180,32 @@ class Kalman(object):
             if B > self.vel_cmd_Ts:
                 self.case5 = True
             if not case3:
-                (X, xhat_r) = self.predict_step_calc(
-                    self.latest_vel_cmd, B, X)
+                (X, xhat_r, Phat) = self.predict_step_calc(
+                    self.latest_vel_cmd, B, X, Phat)
 
             # ---- CORRECTION ----
             # Correct the estimate at new t0 with the measurement.
-            (X, xhat_r_t0) = self.correct_step_calc(measurement, X, xhat_r)
+            (X, xhat_r_t0, Phat) = self.correct_step_calc(measurement, X, xhat_r, Phat)
             self.X_r_t0 = X
             xhat_r_t0.header.stamp = measurement.header.stamp
 
             # Now predict until next point t that coincides with next timepoint
             # for the controller.
 
-            (X, xhat_r) = self.predict_step_calc(
+            (X, xhat_r, Phat) = self.predict_step_calc(
                                     self.vel_list_corr[-1],
-                                    (1 + self.case5)*self.vel_cmd_Ts - B, X)
+                                    (1 + self.case5)*self.vel_cmd_Ts - B, X, Phat)
 
             # Save variable globally
             self.X_r = X
+            self.Phat = Phat
 
             self.vel_list_corr = [self.vel_list_corr[-1]]
             self.vel_list_corr += late_cmd_vel
 
         return xhat_r, xhat_r_t0
 
-    def predict_step_calc(self, vel_cmd_stamped, Ts, X):
+    def predict_step_calc(self, vel_cmd_stamped, Ts, X, Phat):
         """
         Prediction step of the kalman filter. Update the position of the drone
         using the reference velocity commands.
@@ -227,12 +228,12 @@ class Kalman(object):
         xhat_r.point.y = X[3, 0]
         xhat_r.point.z = X[6, 0]
 
-        self.Phat = np.matmul(Ts*self.A + np.identity(8), np.matmul(
-            self.Phat, np.transpose(Ts*self.A + np.identity(8)))) + self.Q
+        Phat = np.matmul(Ts*self.A + np.identity(8), np.matmul(
+            Phat, np.transpose(Ts*self.A + np.identity(8)))) + self.Q
 
-        return X, xhat_r
+        return X, xhat_r, Phat
 
-    def correct_step_calc(self, pos_meas, X, xhat_r):
+    def correct_step_calc(self, pos_meas, X, xhat_r, Phat):
         """
         Correction step of the kalman filter. Update the position of the drone
         using the measurements.
@@ -245,18 +246,19 @@ class Kalman(object):
 
         nu = y - np.matmul(self.C, X)
         S = np.matmul(self.C, np.matmul(
-            self.Phat, np.transpose(self.C))) + self.R
-        L = np.matmul(self.Phat, np.matmul(
+            Phat, np.transpose(self.C))) + self.R
+        L = np.matmul(Phat, np.matmul(
             np.transpose(self.C), np.linalg.inv(S)))
         X = X + np.matmul(L, nu)
-        self.Phat = np.matmul(
-            (np.identity(8) - np.matmul(L, self.C)), self.Phat)
+        Phat = np.matmul(
+            (np.identity(8) - np.matmul(L, self.C)), Phat)
+        self.Phat_t0 = Phat
 
         xhat_r.point.x = X[0, 0]
         xhat_r.point.y = X[3, 0]
         xhat_r.point.z = X[6, 0]
 
-        return X, xhat_r
+        return X, xhat_r, Phat
 
     def get_timestamp(self, stamped_var):
         '''Returns the timestamp of 'stamped_var' (any stamped msg, eg.
