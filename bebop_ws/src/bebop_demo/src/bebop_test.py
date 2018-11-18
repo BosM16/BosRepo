@@ -107,5 +107,5 @@ if __name__ == '__main__':
     demo = Demo()
     demo.pc = Perception()
     demo.wm = WorldModel()
-    demo.kalman = Kalman()
+    demo.kalman = Kalman(self.wm.A, self.wm.B, self.wm.C)
     demo.start()
