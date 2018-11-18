@@ -72,8 +72,6 @@ class MotionPlanner(object):
             'motionplanner/room_origin_theta', 0.)
         room_width = rospy.get_param('motionplanner/room_width', 1.)
         room_height = rospy.get_param('motionplanner/room_height', 1.)
-        print 'room specs', room_origin_x, room_origin_y, room_origin_theta
-        print 'room size', room_width, room_height
 
         room = {'shape': omg.Rectangle(room_width, room_height),
                 'position': [room_origin_x, room_origin_y]}
@@ -135,8 +133,6 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
-        print '\nnew goal motionplanner\n', cmd.goal
-        print 'current state', 'x=\n', cmd.state.x, '\ny=\n', cmd.state.y
         if cmd.goal != self._goal:
             self._goal = cmd.goal
             self._vehicle.set_initial_conditions(
@@ -149,7 +145,6 @@ class MotionPlanner(object):
             print '-------------------------------------------'
 
         state0 = [cmd.state.x, cmd.state.y]
-        print '--------------------------state0 as used in motionplanner', state0
 
         trajectories = self._deployer.update(cmd.current_time, state0)
         self._result = Trajectories(
