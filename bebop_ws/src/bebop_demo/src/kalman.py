@@ -12,13 +12,18 @@ import numpy as np
 
 class Kalman(object):
 
-    def __init__(self):
+    def __init__(self, A, B, C):
         '''
         Asynchronous kalman filter to estimate position.
         '''
 
         self.case5 = False
-
+        
+        # Assign model matrices
+        self.A = A
+        self.B = B
+        self.C = C
+        
         self.vel_cmd_list = []
         self.vel_list_corr = []
 
