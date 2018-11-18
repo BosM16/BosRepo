@@ -25,7 +25,6 @@ class Demo(object):
         '''
 
         rospy.init_node('bebop_demo')
-        self.kalman.init = True
 
         self.pose_pub = rospy.Publisher(
             "/world_model/xhat", PointStamped, queue_size=1)
@@ -43,6 +42,7 @@ class Demo(object):
         Starts running of bebop_demo node.
         '''
         print '-------------------- \n Demo started \n --------------------'
+        self.kalman.init = True
         rospy.spin()
 
     def vive_ready(self, *_):
@@ -63,7 +63,7 @@ class Demo(object):
         self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
         self.kalman.latest_vel_cmd = req_vel.vel_cmd
         self.wm.xhat_r = self.kalman.kalman_pos_predict(
-                                        self.latest_vel_cmd, self.wm.xhat_r)
+                                        self.kalman.latest_vel_cmd, self.wm.xhat_r)
 
         # Publish latest estimate to read out Kalman result.
         # Transform xhat to world frame.

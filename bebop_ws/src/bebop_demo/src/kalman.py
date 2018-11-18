@@ -7,6 +7,8 @@ import rospy
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
 
+import numpy as np
+
 
 class Kalman(object):
 
@@ -101,7 +103,7 @@ class Kalman(object):
             vel_cmd: TwistStamped
         '''
         if not self.init:
-            (self.X_r, xhat_r, self.Phat) = self.wm.predict_step_calc(
+            (self.X_r, xhat_r, self.Phat) = self.predict_step_calc(
                 vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
         return xhat_r
 
@@ -155,11 +157,11 @@ class Kalman(object):
             if (vel_len > 1):
                 case3 = False
                 Ts = self.get_time_diff(
-                    self.vel_list_corr[1], self.xhat_r_t0)
+                    self.vel_list_corr[1], xhat_r_t0)
             else:
                 case3 = True
                 Ts = self.get_time_diff(
-                    measurement, self.wm.xhat_r_t0)
+                    measurement, xhat_r_t0)
 
             (X, xhat_r, Phat) = self.predict_step_calc(
                     self.vel_list_corr[0], Ts, self.X_r_t0, self.Phat_t0)
@@ -175,7 +177,7 @@ class Kalman(object):
                         self.vel_list_corr[i+1], Ts, X, Phat)
 
             # Now make prediction up to new t0 if not case 3.
-            B = self.get_time_diff(self.pc.pose_vive,
+            B = self.get_time_diff(measurement,
                                    self.vel_list_corr[-1])
             if B > self.vel_cmd_Ts:
                 self.case5 = True
