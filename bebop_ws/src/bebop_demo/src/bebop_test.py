@@ -79,7 +79,7 @@ class Demo(object):
     def new_measurement(self, measurement_world):
 
         self.pc.pose_vive = measurement_world
-        measurement = self.transform_pose(
+        measurement = self.kalman.transform_pose(
                                 measurement_world, "world", "world_rot")
         if self.kalman.init:
             self.wm.xhat_r_t0.header = measurement.header
@@ -107,5 +107,5 @@ if __name__ == '__main__':
     demo = Demo()
     demo.pc = Perception()
     demo.wm = WorldModel()
-    demo.kalman = Kalman(self.wm.A, self.wm.B, self.wm.C)
+    demo.kalman = Kalman(demo.wm.A, demo.wm.B, demo.wm.C)
     demo.start()

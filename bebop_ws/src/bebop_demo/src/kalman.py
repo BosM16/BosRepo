@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, PoseStamped
+from geometry_msgs.msg import Twist, PoseStamped, PointStamped
 from std_msgs.msg import Empty
 
 import rospy
@@ -18,12 +18,12 @@ class Kalman(object):
         '''
 
         self.case5 = False
-        
+
         # Assign model matrices
         self.A = A
         self.B = B
         self.C = C
-        
+
         self.vel_cmd_list = []
         self.vel_list_corr = []
 
@@ -39,7 +39,7 @@ class Kalman(object):
         self.Q = 1e-1*np.identity(8)  # process noise covariance
 
         self.tfBuffer = tf2_ros.Buffer()
-        self.listener = tf2_ros.TransformListener(self.tfBuffer) 
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
     def kalman_pos_predict(self, vel_cmd, xhat_r):
         '''
@@ -73,10 +73,11 @@ class Kalman(object):
         '''
 
         if self.init:
-            self.X_r_t0[0, 0] = measurement.point.x
-            self.X_r_t0[3, 0] = measurement.point.y
-            self.X_r_t0[6, 0] = measurement.point.z
+            self.X_r_t0[0, 0] = measurement.pose.position.x
+            self.X_r_t0[3, 0] = measurement.pose.position.y
+            self.X_r_t0[6, 0] = measurement.pose.position.z
             self.X_r = self.X_r_t0
+            xhat_r = xhat_r_t0
 
         if not self.init:
             self.vel_list_corr = self.vel_list_corr + self.vel_cmd_list

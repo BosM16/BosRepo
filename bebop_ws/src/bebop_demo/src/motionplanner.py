@@ -14,7 +14,6 @@ import rospy
 
 
 class MotionPlanner(object):
-    _result = RobotTrajectory
 
     def __init__(self):
         """Initializes motionplanner. Subscribe to topics published by
@@ -43,7 +42,7 @@ class MotionPlanner(object):
             "/motionplanner/config_motionplanner", ConfigMotionplanner,
             self.configure)
 
-    def configure(self, st):
+    def configure(self, obstacles):
         """Configures the motionplanner. Creates omgtools Point2point problem
         with room, static and dynamic obstacles.
 

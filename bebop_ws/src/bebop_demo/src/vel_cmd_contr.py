@@ -214,7 +214,7 @@ class VelCommander(object):
         '''
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self.cmd_vel.publish(self.cmd_twist_convert)
+        self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
         # Store applied commands.
         self._inputs_applied['jx'].append(
@@ -339,7 +339,7 @@ class VelCommander(object):
         try:
             pose_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
-            resp = pose_est(self._cmd_twist)
+            resp = pose_est(self.cmd_twist_convert)
             xhat = resp.pose_est.point
             self.__publish_real(xhat.x, xhat.y)
             pose = Pose2D(x=xhat.x, y=xhat.y)
@@ -392,7 +392,6 @@ class VelCommander(object):
         input_nrm = np.linalg.norm(
             [self._inputs_applied['jx'][-1],
                 self._inputs_applied['jy'][-1]])
-        angle_nrm = np.abs(self.desired_angle - self.current_angle)
 
         stop_linear = (pos_nrm < self.pos_nrm_tol) and (
                             input_nrm < self.input_nrm_tol)
@@ -400,7 +399,7 @@ class VelCommander(object):
         if (stop_linear):
             self.cmd_twist_convert.twist.linear.x = 0.
             self.cmd_twist_convert.twist.linear.y = 0.
-        stop *= (self.stop_linear and angle_nrm < self.angle_nrm_tol)
+        stop *= (self.stop_linear)
 
         return not stop
 
