@@ -45,6 +45,7 @@ class VelCommander(object):
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
+        self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self._trigger = Trigger()
 
         # Marker setup
@@ -399,7 +400,7 @@ class VelCommander(object):
         if (stop_linear):
             self.cmd_twist_convert.twist.linear.x = 0.
             self.cmd_twist_convert.twist.linear.y = 0.
-        stop *= (self.stop_linear)
+        stop *= (stop_linear)
 
         return not stop
 
@@ -441,9 +442,9 @@ class VelCommander(object):
         self._real_path.pose.orientation.x = 0
         self._real_path.pose.orientation.y = 0
         self._real_path.pose.orientation.z = 0
-        self._real_path.scale.x = 0.2
-        self._real_path.scale.y = 0.2
-        self._real_path.scale.z = 1.0
+        self._real_path.scale.x = 0.05
+        self._real_path.scale.y = 0.05
+        self._real_path.scale.z = 0.0
         self._real_path.color.r = 0.0
         self._real_path.color.g = 1.0
         self._real_path.color.b = 0.0

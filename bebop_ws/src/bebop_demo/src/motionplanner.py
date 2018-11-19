@@ -134,6 +134,7 @@ class MotionPlanner(object):
         # In case goal has changed: set new goal.
         if cmd.goal != self._goal:
             self._goal = cmd.goal
+            print 'motionplanner data received', cmd.state.x, '--', cmd.state.y
             self._vehicle.set_initial_conditions(
                 [cmd.state.x, cmd.state.y])
             self._vehicle.set_terminal_conditions(

@@ -84,7 +84,7 @@ class Kalman(object):
             self.vel_cmd_list = []
 
             if (len(self.vel_list_corr) > 1) and self.get_time_diff(
-                    measurement, self.vel_list_corr[1]) < 0:
+                    measurement, self.vel_list_corr[1]) > 0:
                 self.vel_list_corr = self.vel_list_corr[1:]
             self.case5 = False
 

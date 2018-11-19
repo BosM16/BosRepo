@@ -90,6 +90,7 @@ class Demo(object):
                                                 measurement, self.wm.xhat_r_t0)
         self.wm.xhat = self.transform_point(
             self.wm.xhat_r, "world_rot", "world")
+        self.pose_pub.publish(self.wm.xhat)
 
     def transform_point(self, point, _from, _to):
         '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to
