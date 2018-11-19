@@ -26,6 +26,8 @@ class LocalizationTest(object):
         self.pose_world = PoseStamped()
         self.pose_world.header.frame_id = "world"
 
+        # self.initialize_calibrated_world_tf()
+
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseStamped, queue_size=1)
         self.ready = rospy.Publisher(
@@ -35,48 +37,60 @@ class LocalizationTest(object):
         rospy.Subscriber(
             'vive_localization/publish_poses', Empty, self.publish_pose_est)
 
+    # def initialize_calibrated_world_tf(self):
+    #     '''Retrieves calibrated transform of 'world'-frame expressed in
+    #     'vive'-frame.
+    #     '''
+    #     calib = rospy.get_param("calibrated_world_tf")
+    #
+    #     self.tf_w_in_v = TransformStamped()
+    #     self.tf_w_in_v.header.frame_id = "vive"
+    #     self.tf_w_in_v.child_frame_id = "world"
+    #
+    #     self.tf_w_in_v.
+
     def init_transforms(self):
 
-            self.broadc = tf2_ros.TransformBroadcaster()
-            self.stbroadc = tf2_ros.StaticTransformBroadcaster()
+        self.broadc = tf2_ros.TransformBroadcaster()
+        self.stbroadc = tf2_ros.StaticTransformBroadcaster()
 
-            self.tfBuffer = tf2_ros.Buffer()
-            self.listener = tf2_ros.TransformListener(self.tfBuffer)
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-            self.tf_w_in_v = TransformStamped()
-            self.tf_w_in_v.header.frame_id = "vive"
-            self.tf_w_in_v.child_frame_id = "world"
+        self.tf_w_in_v = TransformStamped()
+        self.tf_w_in_v.header.frame_id = "vive"
+        self.tf_w_in_v.child_frame_id = "world"
 
-            self.tf_r_in_w = TransformStamped()
-            self.tf_r_in_w.header.frame_id = "world"
-            self.tf_r_in_w.child_frame_id = "world_rot"
+        self.tf_r_in_w = TransformStamped()
+        self.tf_r_in_w.header.frame_id = "world"
+        self.tf_r_in_w.child_frame_id = "world_rot"
 
-            self.tf_t_in_v = TransformStamped()
-            self.tf_w_in_v.header.frame_id = "vive"
-            self.tf_w_in_v.child_frame_id = "tracker"
-            pose_vive = self.get_pose_vive()
-            self.tf_t_in_v = self.pose_to_tf(pose_vive, "tracker")
-            self.broadc.sendTransform(self.tf_t_in_v)
+        self.tf_t_in_v = TransformStamped()
+        self.tf_w_in_v.header.frame_id = "vive"
+        self.tf_w_in_v.child_frame_id = "tracker"
+        pose_vive = self.get_pose_vive()
+        self.tf_t_in_v = self.pose_to_tf(pose_vive, "tracker")
+        self.broadc.sendTransform(self.tf_t_in_v)
 
-            self.tf_d_in_t = TransformStamped()
-            self.tf_d_in_t.header.stamp = rospy.Time.now()
-            self.tf_d_in_t.header.frame_id = "tracker"
-            self.tf_d_in_t.child_frame_id = "init_drone"
-            roll_d_in_t = np.pi/2
-            pitch_d_in_t = -np.pi/2
-            yaw_d_in_t = 0.
-            quat = tf.transformations.quaternion_from_euler(roll_d_in_t,
-                                                            pitch_d_in_t,
-                                                            yaw_d_in_t)
-            self.tf_d_in_t.transform.translation.x = 0.
-            self.tf_d_in_t.transform.translation.y = 0.025
-            self.tf_d_in_t.transform.translation.z = 0.1
-            self.tf_d_in_t.transform.rotation.x = quat[0]
-            self.tf_d_in_t.transform.rotation.y = quat[1]
-            self.tf_d_in_t.transform.rotation.z = quat[2]
-            self.tf_d_in_t.transform.rotation.w = quat[3]
+        self.tf_d_in_t = TransformStamped()
+        self.tf_d_in_t.header.stamp = rospy.Time.now()
+        self.tf_d_in_t.header.frame_id = "tracker"
+        self.tf_d_in_t.child_frame_id = "init_drone"
+        roll_d_in_t = np.pi/2
+        pitch_d_in_t = -np.pi/2
+        yaw_d_in_t = 0.
+        quat = tf.transformations.quaternion_from_euler(roll_d_in_t,
+                                                        pitch_d_in_t,
+                                                        yaw_d_in_t)
+        self.tf_d_in_t.transform.translation.x = 0.
+        self.tf_d_in_t.transform.translation.y = 0.025
+        self.tf_d_in_t.transform.translation.z = 0.1
+        self.tf_d_in_t.transform.rotation.x = quat[0]
+        self.tf_d_in_t.transform.rotation.y = quat[1]
+        self.tf_d_in_t.transform.rotation.z = quat[2]
+        self.tf_d_in_t.transform.rotation.w = quat[3]
 
-            self.stbroadc.sendTransform(self.tf_d_in_t)
+        self.stbroadc.sendTransform(self.tf_d_in_t)
 
     def start(self):
         '''
@@ -112,9 +126,10 @@ class LocalizationTest(object):
         self.stbroadc.sendTransform(self.tf_w_in_v)
         print 'tf_w_in_v'
         print self.tf_w_in_v
+        rospy.set_param('tf_w_in_v', self.tf_w_in_v)
 
-        print '--------------------------- \n'
         print 'CALIBRATED \n'
+        print '--------------------------- \n'
 
     def publish_pose_est(self, *_):
         '''Publishes message that calibration is completed. Starts publishing
