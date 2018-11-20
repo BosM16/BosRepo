@@ -23,10 +23,10 @@ class LocalizationTest(object):
 
         self.tracked_object = 'tracker'
 
+        self.calibrate = rospy.get_param('vive_localization/calibrate', True)
+
         self.pose_world = PoseStamped()
         self.pose_world.header.frame_id = "world"
-
-        # self.initialize_calibrated_world_tf()
 
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseStamped, queue_size=1)
@@ -37,18 +37,6 @@ class LocalizationTest(object):
         rospy.Subscriber(
             'vive_localization/publish_poses', Empty, self.publish_pose_est)
 
-    # def initialize_calibrated_world_tf(self):
-    #     '''Retrieves calibrated transform of 'world'-frame expressed in
-    #     'vive'-frame.
-    #     '''
-    #     calib = rospy.get_param("calibrated_world_tf")
-    #
-    #     self.tf_w_in_v = TransformStamped()
-    #     self.tf_w_in_v.header.frame_id = "vive"
-    #     self.tf_w_in_v.child_frame_id = "world"
-    #
-    #     self.tf_w_in_v.
-
     def init_transforms(self):
 
         self.broadc = tf2_ros.TransformBroadcaster()
@@ -57,9 +45,18 @@ class LocalizationTest(object):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
+        # Take calibrated values for Roblab setting as default. Can be
+        # by 'self.calibrate()' function.
         self.tf_w_in_v = TransformStamped()
         self.tf_w_in_v.header.frame_id = "vive"
         self.tf_w_in_v.child_frame_id = "world"
+        self.tf_w_in_v.transform.translation.x =
+        self.tf_w_in_v.transform.translation.y =
+        self.tf_w_in_v.transform.translation.z =
+        self.tf_w_in_v.transform.rotation.x =
+        self.tf_w_in_v.transform.rotation.y =
+        self.tf_w_in_v.transform.rotation.z =
+        self.tf_w_in_v.transform.rotation.w =
 
         self.tf_r_in_w = TransformStamped()
         self.tf_r_in_w.header.frame_id = "world"
@@ -97,11 +94,15 @@ class LocalizationTest(object):
         Starts running of bebop_demo node.
         '''
         print 'Localization test is ON'
-        self.rate = rospy.Rate(50.)
+        sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
+        self.rate = rospy.Rate(1./sample_time)
         self.v = triad_openvr.triad_openvr()
         self.v.print_discovered_objects()
 
         self.init_transforms()
+
+        if not self.calibrate:
+            self.publish_pose_est(Empty)
 
         rospy.spin()
 
@@ -136,7 +137,9 @@ class LocalizationTest(object):
         pose measurements.
         '''
         self.ready.publish(Empty())
-        print '** Vive localization READY **'
+        print '-----------------------'
+        print 'Vive Localization READY'
+        print '-----------------------'
 
         while not rospy.is_shutdown():
             pose_vive = self.get_pose_vive()

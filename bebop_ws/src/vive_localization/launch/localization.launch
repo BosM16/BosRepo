@@ -1,8 +1,7 @@
 <launch>
-  <!-- <arg name="calib_config" default="$(find vive_localization)/tf_calibration/$(arg calib_config).yaml" /> -->
 
   <param name="vive_localization/sample_time" value="0.02" />
-  <!-- <rosparam file="$(arg calib_config)" command="load" /> -->
+  <param name="vive_localization/calibrate" value="False" />
 
   <node name="vive_localization" pkg="vive_localization" type="vive_localization.py" output="screen"/>
 
