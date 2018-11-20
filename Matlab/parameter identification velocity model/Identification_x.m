@@ -510,12 +510,12 @@ sys_d7 = tf(B7, A7, Ts);
 FRF7 = squeeze(freqresp(sys_d7,2*pi*f));
 
 figure('Name','4th order, filtered, strictly proper - Freq. Resp.'), subplot(211)
-semilogx(f, 20*log10(abs(FRF6)))
+semilogx(f, 20*log10(abs(FRF7)))
 grid on
 xlim([f(1) f(end)])
 xlabel('f  [Hz]')
 ylabel('|FRF7|  [m]')
-subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF6)))
+subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF7)))
 grid on
 xlim([f(1) f(end)])
 xlabel('f  [Hz]')
@@ -578,3 +578,31 @@ sys_c6 = d2c(sys_d6)
 %% Save result (transfer function)
 save('XSignals_50Hz','input','output_x','x6')
 
+
+
+%% 
+figure('Name', 'Empirical transfer function freq response'),subplot(2,1,1),semilogx(f, 20*log10(abs(FRF)), 'LineWidth', 1)
+hold on
+axis tight
+grid on
+xlabel('f [Hz]')
+xlim([f(1) f(end)])
+ylabel('|FRF| [m]')
+subplot(2,1,2),semilogx(f, 180/pi*unwrap(angle(FRF)), 'LineWidth', 1)
+grid on
+axis tight
+xlabel('f  [Hz]')
+ylabel('\phi(FRF) [^\circ]')
+xlim([f(1) f(end)])
+
+subplot(211)
+semilogx(f, 20*log10(abs(FRF6)))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRF6|  [m]')
+subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF6)))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRF6)  [^\circ]')
