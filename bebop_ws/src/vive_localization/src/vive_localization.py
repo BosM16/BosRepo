@@ -50,13 +50,14 @@ class LocalizationTest(object):
         self.tf_w_in_v = TransformStamped()
         self.tf_w_in_v.header.frame_id = "vive"
         self.tf_w_in_v.child_frame_id = "world"
-        self.tf_w_in_v.transform.translation.x =
-        self.tf_w_in_v.transform.translation.y =
-        self.tf_w_in_v.transform.translation.z =
-        self.tf_w_in_v.transform.rotation.x =
-        self.tf_w_in_v.transform.rotation.y =
-        self.tf_w_in_v.transform.rotation.z =
-        self.tf_w_in_v.transform.rotation.w =
+        self.tf_w_in_v.transform.translation.x = -0.579949732853
+        self.tf_w_in_v.transform.translation.y = -2.87866738454
+        self.tf_w_in_v.transform.translation.z = 0.204150527522
+        self.tf_w_in_v.transform.rotation.x = -0.619970851896
+        self.tf_w_in_v.transform.rotation.y = 0.29928129688
+        self.tf_w_in_v.transform.rotation.z = 0.329915180093
+        self.tf_w_in_v.transform.rotation.w = 0.645927876842
+        self.stbroadc.sendTransform(self.tf_w_in_v)
 
         self.tf_r_in_w = TransformStamped()
         self.tf_r_in_w.header.frame_id = "world"
@@ -127,7 +128,6 @@ class LocalizationTest(object):
         self.stbroadc.sendTransform(self.tf_w_in_v)
         print 'tf_w_in_v'
         print self.tf_w_in_v
-        rospy.set_param('tf_w_in_v', self.tf_w_in_v)
 
         print 'CALIBRATED \n'
         print '--------------------------- \n'
