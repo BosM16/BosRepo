@@ -23,7 +23,7 @@ class LocalizationTest(object):
 
         self.tracked_object = 'tracker'
 
-        self.calibrate = rospy.get_param('vive_localization/calibrate', True)
+        self.calib = rospy.get_param('vive_localization/calibrate', True)
 
         self.pose_world = PoseStamped()
         self.pose_world.header.frame_id = "world"
@@ -45,8 +45,9 @@ class LocalizationTest(object):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-        # Take calibrated values for Roblab setting as default. Can be
-        # by 'self.calibrate()' function.
+        # Take calibrated values for Roblab setting as default.
+        # Can be overwridden by 'self.calibrate()' function.
+        # (Set calibration in localization.launch file to True)
         self.tf_w_in_v = TransformStamped()
         self.tf_w_in_v.header.frame_id = "vive"
         self.tf_w_in_v.child_frame_id = "world"
@@ -58,6 +59,7 @@ class LocalizationTest(object):
         self.tf_w_in_v.transform.rotation.z = 0.329915180093
         self.tf_w_in_v.transform.rotation.w = 0.645927876842
         self.stbroadc.sendTransform(self.tf_w_in_v)
+        rospy.sleep(2.)
 
         self.tf_r_in_w = TransformStamped()
         self.tf_r_in_w.header.frame_id = "world"
@@ -90,6 +92,10 @@ class LocalizationTest(object):
 
         self.stbroadc.sendTransform(self.tf_d_in_t)
 
+        # To make sure drone-frame is not fixed to world, change "init drone"
+        # to "drone".
+        self.tf_d_in_t.child_frame_id = "drone"
+
     def start(self):
         '''
         Starts running of bebop_demo node.
@@ -102,7 +108,7 @@ class LocalizationTest(object):
 
         self.init_transforms()
 
-        if not self.calibrate:
+        if not self.calib:
             self.publish_pose_est(Empty)
 
         rospy.spin()
@@ -121,9 +127,6 @@ class LocalizationTest(object):
         # Calibrate: fix current drone pose as pose of world frame.
         self.tf_w_in_v = self.get_transform("init_drone", "vive")
         self.tf_w_in_v.child_frame_id = "world"
-        # To make sure drone-frame is not fixed to world, change "init drone"
-        # to "drone".
-        self.tf_d_in_t.child_frame_id = "drone"
 
         self.stbroadc.sendTransform(self.tf_w_in_v)
         print 'tf_w_in_v'
@@ -140,7 +143,7 @@ class LocalizationTest(object):
         print '-----------------------'
         print 'Vive Localization READY'
         print '-----------------------'
-
+        # rospy.sleep(10.)
         while not rospy.is_shutdown():
             pose_vive = self.get_pose_vive()
             self.tf_t_in_v = self.pose_to_tf(pose_vive, "tracker")
