@@ -32,8 +32,8 @@ class VelCommander(object):
         self.safety_treshold = rospy.get_param('vel_cmd/safety_treshold', 0.5)
         self.pos_nrm_tol = rospy.get_param(
                                         'vel_cmd/goal_reached_pos_tol', 0.05)
-        self.angle_nrm_tol = rospy.get_param(
-                                        'vel_cmd/goal_reached_angle_tol', 0.05)
+        # self.angle_nrm_tol = rospy.get_param(
+        #                                 'vel_cmd/goal_reached_angle_tol', 0.05)
         self.input_nrm_tol = rospy.get_param(
                                         'vel_cmd/goal_reached_input_tol', 0.03)
 
@@ -46,6 +46,7 @@ class VelCommander(object):
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
+        self.vhat = Point()
         self._trigger = Trigger()
 
         # Marker setup
@@ -64,7 +65,7 @@ class VelCommander(object):
 
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
-            'mp_trigger', Trigger, queue_size=1)
+            'motionplanner/trigger', Trigger, queue_size=1)
         self.trajectory_desired = rospy.Publisher(
             'motionplanner/desired_path', Marker, queue_size=1)
         self.trajectory_real = rospy.Publisher(
@@ -90,20 +91,20 @@ class VelCommander(object):
         # X-direction
         self.input_old_x = 0.
 
-        b0 = -0.0007172
-        b1 = 0.002182
-        a0 = 0.9592
-        a1 = -1.959
+        b0 = 0.0008254
+        b1 = 0.0008254
+        a0 = 0.9531
+        a1 = -1.953
 
         self.coeffs_x = np.array([-b0, a0, a1, 1])/b1
 
         # Y-direction
         self.input_old_y = 0.
 
-        b0 = -0.0007388
-        b1 = 0.002249
-        a0 = 0.9576
-        a1 = -1.957
+        b0 = 0.0008582
+        b1 = 0.0008582
+        a0 = 0.9509
+        a1 = -1.951
 
         self.coeffs_y = np.array([-b0, a0, a1, 1])/b1
 
@@ -131,9 +132,6 @@ class VelCommander(object):
                     self.update()
                     self.progress = self.proceed()
                 rate.sleep()
-            print '-------------------'
-            print '- Target Reached! -'
-            print '-------------------'
             rate.sleep()
 
     def configure(self):
@@ -173,8 +171,13 @@ class VelCommander(object):
         self._time = 0.
         self._new_trajectories = False
 
+        self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self._robot_est_pose = self.get_pose_est()
+        print 'est_pose received from kalman when setting goal', self._robot_est_pose
         self._inputs_applied = {'jx': [], 'jy': []}
+        self.marker_setup()
+        self.__publish_desired([0], [0])
+        self.__publish_real(0, 0)
 
         self.fire_motionplanner()
 
@@ -189,7 +192,8 @@ class VelCommander(object):
         '''Publishes inputs to motionplanner via Trigger topic.
         '''
         self._trigger.goal = self._goal
-        self._trigger.state = self._robot_est_pose
+        self._trigger.pos_state = self._robot_est_pose
+        self._trigger.vel_state = self.vhat
         self._trigger.current_time = self._time
         self._mp_trigger_topic.publish(self._trigger)
 
@@ -285,22 +289,21 @@ class VelCommander(object):
         velocity.
         '''
 
-        self._cmd_twist.twist
-        self.cmd_twist_convert
-
         # Convert velocity command in x-direction
-        phi = np.array([[self._inputs_applied['jx'][-1]],
-                        [self._traj['v'][index]],
-                        [self._traj['v'][index + 1]],
-                        [self._traj['v'][index + 2]]])
-        self.cmd_twist_convert.twist.linear.x = np.matmul(self.coeffs_x, phi)
+        phi = np.array([self._inputs_applied['jx'][-1],
+                        self._traj['v'][index],
+                        self._traj['v'][index + 1],
+                        self._traj['v'][index + 2]])
+        self.cmd_twist_convert.twist.linear.x = np.matmul(
+                                            self.coeffs_x, np.transpose(phi))
 
         # Convert velocity command in y-direction
-        phi = np.array([[self._inputs_applied['jy'][-1]],
-                        [self._traj['w'][index]],
-                        [self._traj['w'][index + 1]],
-                        [self._traj['w'][index + 2]]])
-        self.cmd_twist_convert.twist.linear.y = np.matmul(self.coeffs_y, phi)
+        phi = np.array([self._inputs_applied['jy'][-1],
+                        self._traj['w'][index],
+                        self._traj['w'][index + 1],
+                        self._traj['w'][index + 2]])
+        self.cmd_twist_convert.twist.linear.y = np.matmul(
+                                            self.coeffs_y, np.transpose(phi))
         # print ('twist convert',
         #        'jx', self.cmd_twist_convert.twist.linear.x,
         #        'jy', self.cmd_twist_convert.twist.linear.y)
@@ -309,7 +312,6 @@ class VelCommander(object):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
-
         # Summing feedforward and feedback part of the controller.
         x_error = self._traj['x'][self._index] - self._robot_est_pose.x
         y_error = self._traj['y'][self._index] - self._robot_est_pose.y
@@ -341,9 +343,10 @@ class VelCommander(object):
             pose_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
             resp = pose_est(self.cmd_twist_convert)
-            xhat = resp.pose_est.point
-            self.__publish_real(xhat.x, xhat.y)
-            pose = Pose2D(x=xhat.x, y=xhat.y)
+            yhat = resp.pose_est.point
+            self.vhat = resp.vel_est.point
+            self.__publish_real(yhat.x, yhat.y)
+            pose = Pose2D(x=yhat.x, y=yhat.y)
             return pose
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -398,6 +401,10 @@ class VelCommander(object):
                             input_nrm < self.input_nrm_tol)
 
         if (stop_linear):
+            print '-------------------'
+            print '- Target Reached! -'
+            print '-------------------'
+            # If goal reached, send out feedback vel commands to stay in place.
             self.cmd_twist_convert.twist.linear.x = 0.
             self.cmd_twist_convert.twist.linear.y = 0.
         stop *= (stop_linear)

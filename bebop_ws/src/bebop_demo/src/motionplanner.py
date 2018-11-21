@@ -60,9 +60,8 @@ class MotionPlanner(object):
                     'amax': self.amax, 'amin': -self.amax})
         self._vehicle.define_knots(knot_intervals=self.knots)
         self._vehicle.set_options({'safety_distance': self.safety_margin})
-        self._robot = omg.Fleet(self._vehicle)
-        self._robot.set_initial_conditions([[0., 0.]])
-        self._robot.set_terminal_conditions([[0., 0.]])
+        self._vehicle.set_initial_conditions([0., 0.])
+        self._vehicle.set_terminal_conditions([0., 0.])
 
         # Environment.
         room_origin_x = rospy.get_param('motionplanner/room_origin_x', 0.)
@@ -94,7 +93,7 @@ class MotionPlanner(object):
         print 'Motionplanner Creating Problem ...'
         print '----------------------------------'
 
-        problem = omg.Point2point(self._robot, environment, freeT=True)
+        problem = omg.Point2point(self._vehicle, environment, freeT=True)
         problem.set_options({'solver_options': {'ipopt': {
             'ipopt.linear_solver': 'ma57',
             'ipopt.print_level': 0}}})
@@ -134,9 +133,9 @@ class MotionPlanner(object):
         # In case goal has changed: set new goal.
         if cmd.goal != self._goal:
             self._goal = cmd.goal
-            print 'motionplanner data received', cmd.state.x, '--', cmd.state.y
             self._vehicle.set_initial_conditions(
-                [cmd.state.x, cmd.state.y])
+                [cmd.pos_state.x, cmd.pos_state.y],
+                [cmd.vel_state.x, cmd.vel_state.y])
             self._vehicle.set_terminal_conditions(
                 [self._goal.x, self._goal.y])
             self._deployer.reset()
@@ -144,9 +143,10 @@ class MotionPlanner(object):
             print 'New Goal - Motionplanner Resetted Deployer!'
             print '-------------------------------------------'
 
-        state0 = [cmd.state.x, cmd.state.y]
+        state0 = [cmd.pos_state.x, cmd.pos_state.y]
+        input0 = [cmd.vel_state.x, cmd.vel_state.y]
 
-        trajectories = self._deployer.update(cmd.current_time, state0)
+        trajectories = self._deployer.update(cmd.current_time, state0, input0)
         self._result = Trajectories(
             v_traj=trajectories['input'][0, :],
             w_traj=trajectories['input'][1, :],

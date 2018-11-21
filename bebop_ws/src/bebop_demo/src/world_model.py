@@ -26,13 +26,17 @@ class WorldModel(object):
         self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.2)
 
         # Variables.
-        self.xhat = PointStamped()
-        self.xhat.header.frame_id = "world"
-        self.xhat_r = PointStamped()
-        self.xhat_r.header.frame_id = "world_rot"
-        self.xhat_r_t0 = PointStamped()
-        self.xhat_r_t0.header.frame_id = "world_rot"
-        
+        self.yhat = PointStamped()
+        self.yhat.header.frame_id = "world"
+        self.yhat_r = PointStamped()
+        self.yhat_r.header.frame_id = "world_rot"
+        self.yhat_r_t0 = PointStamped()
+        self.yhat_r_t0.header.frame_id = "world_rot"
+        self.vhat = PointStamped()  # Store velocities from kalman filter
+        self.vhat.header.frame_id = "world"
+        self.vhat_r = PointStamped()  # Store velocities from kalman filter
+        self.vhat_r.header.frame_id = "world_rot"
+
         self.initialize_model()
 
     def initialize_model(self):
@@ -52,45 +56,58 @@ class WorldModel(object):
         a2x = 5.458
         a1x = 2.467
         a0x = -0.03519
-        Ax = np.array([[-a2x, 1., 0.],
-                       [-a1x, 0., 1.],
-                       [-a0x, 0., 0.]])
+        Ax = np.array([[0., 1., 0.],
+                       [0., 0., 1.],
+                       [-a0x, -a1x, -a2x]])
         a2y = 5.921
         a1y = 2.469
         a0y = 0.02513
-        Ay = np.array([[-a2y, 1., 0.],
-                       [-a1y, 0., 1.],
-                       [-a0y, 0., 0.]])
+        Ay = np.array([[0., 1., 0.],
+                       [0., 0., 1.],
+                       [-a0y, -a1y, -a2y]])
         a1z = 1.515
         a0z = 0.02072
-        Az = np.array([[-a1z, 1.],
-                       [-a0z, 0.]])
+        Az = np.array([[0., 1.],
+                       [-a0z, -a1z]])
 
-        self.A = np.zeros([8, 8])  # continuous A matrix
-        self.A[0:3, 0:3] = Ax
-        self.A[3:6, 3:6] = Ay
-        self.A[6:8, 6:8] = Az
+        self.model.A = np.zeros([8, 8])  # continuous A matrix
+        self.model.A[0:3, 0:3] = Ax
+        self.model.A[3:6, 3:6] = Ay
+        self.model.A[6:8, 6:8] = Az
+
+        self.model.B = np.zeros([8, 3])  # continuous B matrix
+        self.model.B[2, 0] = 1
+        self.model.B[5, 1] = 1
+        self.model.B[7, 2] = 1
 
         b2x = -0.01447
         b1x = -1.008
         b0x = 18.32
-        Bx = np.array([b2x, b1x, b0x])
+        Bx = np.array([b0x, b1x, b2x])
         b2y = -0.008856
         b1y = -1.063
         b0y = 19.74
-        By = np.array([b2y, b1y, b0y])
+        By = np.array([b0y, b1y, b2y])
         b1z = 0.6266
         b0z = 1.597
-        Bz = np.array([b1z, b0z])
-        self.B = np.zeros([8, 3])  # continuous B matrix
-        self.B[0:3, 0] = Bx
-        self.B[3:6, 1] = By
-        self.B[6:8, 2] = Bz
+        Bz = np.array([b0z, b1z])
+        self.model.C = np.zeros([3, 8])
+        self.model.C[0, 0:3] = Bx
+        self.model.C[1, 3:6] = By
+        self.model.C[2, 6:8] = Bz
 
-        self.C = np.zeros([3, 8])
-        self.C[0, 0] = 1
-        self.C[1, 3] = 1
-        self.C[2, 6] = 1
+        Bx = np.array([-b2x*a0x, b0x - a1x*b2x, b1x - b2x*a2x])
+        By = np.array([-b2y*a0y, b0y - a1y*b2y, b1y - b2y*a2y])
+        Bz = np.array([-b1z*a0z, b0z - a1z*b1z])
+        self.model.C_vel = np.zeros([3, 8])
+        self.model.C_vel[0, 0:3] = Bx
+        self.model.C_vel[1, 3:6] = By
+        self.model.C_vel[2, 6:8] = Bz
+
+        self.model.D_vel = np.zeros([3, 1])
+        self.model.D_vel[0, :] = b2x
+        self.model.D_vel[1, :] = b2y
+        self.model.D_vel[2, :] = b1z
 
 
 if __name__ == '__main__':
