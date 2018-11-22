@@ -60,10 +60,6 @@ class Demo(object):
         self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
         self.kalman.latest_vel_cmd = req_vel.vel_cmd
 
-        # if self.kalman.init is True: #NECESSARY?
-        #     new_vel_cmd.header.stamp = self.wm.yhat_r_t0.header.stamp
-        #     self.kalman.init = False
-
         print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
         self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
                                         self.kalman.latest_vel_cmd, self.wm.yhat_r)
@@ -88,7 +84,7 @@ class Demo(object):
             self.wm.yhat_r_t0.header = measurement.header
             zero_vel_cmd = TwistStamped()
             zero_vel_cmd.header = measurement.header
-            self.vel_cmd_list = [zero_vel_cmd]
+            self.kalman.vel_cmd_list = [zero_vel_cmd]
             self.kalman.init = False
 
         self.wm.yhat_r, self.wm.yhat_r_t0 = self.kalman.kalman_pos_correct(

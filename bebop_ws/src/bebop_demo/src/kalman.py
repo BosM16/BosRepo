@@ -50,11 +50,10 @@ class Kalman(object):
         Arguments:
             vel_cmd: TwistStamped
         '''
-        if not self.init: #NECESSARY?
-            print '---------------self.X_r before', self.X_r
-            (self.X_r, yhat_r, vhat_r, self.Phat) = self.predict_step_calc(
-                vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
-            print '---------------self.X_r after', self.X_r
+        print '---------------self.X_r before', self.X_r
+        (self.X_r, yhat_r, vhat_r, self.Phat) = self.predict_step_calc(
+            vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
+        print '---------------self.X_r after', self.X_r
         return yhat_r, vhat_r
 
     def kalman_pos_correct(self, measurement, yhat_r_t0):
@@ -121,20 +120,25 @@ class Kalman(object):
                 (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                     self.vel_list_corr[i+1], Ts, X, Phat)
 
-        # Now make prediction up to new t0 if not case 3.
         B = self.get_time_diff(measurement,
                                self.vel_list_corr[-1])
-        if B > self.vel_cmd_Ts:
+        if (B > self.vel_cmd_Ts):
             self.case5 = True
+
+        # Now make prediction up to new t0 if not case 3.
         if not case3:
             print '\n kalman third predict step Ts and yhat_r \n', B, yhat_r.point
             (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                 self.vel_list_corr[-1], B, X, Phat)
+        else:
+            self.case5 = False
+            B = B % self.vel_cmd_Ts
 
         # ---- CORRECTION ----
         # Correct the estimate at new t0 with the measurement.
         print '\n kalman correct yhat_r \n', yhat_r.point
-        (X, yhat_r_t0, Phat) = self.correct_step_calc(measurement, X, Phat)
+        (X, yhat_r_t0, Phat) = self.correct_step_calc(
+                                                measurement, X, yhat_r, Phat)
         self.X_r_t0 = X
         yhat_r_t0.header.stamp = measurement.header.stamp
 
@@ -171,7 +175,7 @@ class Kalman(object):
         X = (np.matmul(Ts*self.A + np.identity(8), X)
              + np.matmul(Ts*self.B, u))
 
-        Y = np.matmul(self.C_vel, X)
+        Y = np.matmul(self.C, X)
         Y_vel = np.matmul(self.C_vel, X) + np.matmul(self.D_vel, u)
 
         yhat_r = PointStamped()
@@ -191,7 +195,7 @@ class Kalman(object):
 
         return X, yhat_r, vhat_r, Phat
 
-    def correct_step_calc(self, pos_meas, X, Phat):
+    def correct_step_calc(self, pos_meas, X, yhat_r, Phat):
         """
         Correction step of the kalman filter. Update the position of the drone
         using the measurements.
@@ -212,7 +216,7 @@ class Kalman(object):
             (np.identity(8) - np.matmul(L, self.C)), Phat)
         self.Phat_t0 = Phat
 
-        Y = np.matmul(self.C_vel, X)
+        Y = np.matmul(self.C, X)
 
         yhat_r.point.x = Y[0, 0]
         yhat_r.point.y = Y[1, 0]

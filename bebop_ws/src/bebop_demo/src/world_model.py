@@ -37,6 +37,12 @@ class WorldModel(object):
         self.vhat_r = PointStamped()  # Store velocities from kalman filter
         self.vhat_r.header.frame_id = "world_rot"
 
+        self.model = Model()
+
+
+class Model(object):
+
+    def __init__(self):
         self.initialize_model()
 
     def initialize_model(self):
@@ -70,15 +76,15 @@ class WorldModel(object):
         Az = np.array([[0., 1.],
                        [-a0z, -a1z]])
 
-        self.model.A = np.zeros([8, 8])  # continuous A matrix
-        self.model.A[0:3, 0:3] = Ax
-        self.model.A[3:6, 3:6] = Ay
-        self.model.A[6:8, 6:8] = Az
+        self.A = np.zeros([8, 8])  # continuous A matrix
+        self.A[0:3, 0:3] = Ax
+        self.A[3:6, 3:6] = Ay
+        self.A[6:8, 6:8] = Az
 
-        self.model.B = np.zeros([8, 3])  # continuous B matrix
-        self.model.B[2, 0] = 1
-        self.model.B[5, 1] = 1
-        self.model.B[7, 2] = 1
+        self.B = np.zeros([8, 3])  # continuous B matrix
+        self.B[2, 0] = 1
+        self.B[5, 1] = 1
+        self.B[7, 2] = 1
 
         b2x = -0.01447
         b1x = -1.008
@@ -91,23 +97,23 @@ class WorldModel(object):
         b1z = 0.6266
         b0z = 1.597
         Bz = np.array([b0z, b1z])
-        self.model.C = np.zeros([3, 8])
-        self.model.C[0, 0:3] = Bx
-        self.model.C[1, 3:6] = By
-        self.model.C[2, 6:8] = Bz
+        self.C = np.zeros([3, 8])
+        self.C[0, 0:3] = Bx
+        self.C[1, 3:6] = By
+        self.C[2, 6:8] = Bz
 
         Bx = np.array([-b2x*a0x, b0x - a1x*b2x, b1x - b2x*a2x])
         By = np.array([-b2y*a0y, b0y - a1y*b2y, b1y - b2y*a2y])
         Bz = np.array([-b1z*a0z, b0z - a1z*b1z])
-        self.model.C_vel = np.zeros([3, 8])
-        self.model.C_vel[0, 0:3] = Bx
-        self.model.C_vel[1, 3:6] = By
-        self.model.C_vel[2, 6:8] = Bz
+        self.C_vel = np.zeros([3, 8])
+        self.C_vel[0, 0:3] = Bx
+        self.C_vel[1, 3:6] = By
+        self.C_vel[2, 6:8] = Bz
 
-        self.model.D_vel = np.zeros([3, 1])
-        self.model.D_vel[0, :] = b2x
-        self.model.D_vel[1, :] = b2y
-        self.model.D_vel[2, :] = b1z
+        self.D_vel = np.zeros([3, 3])
+        self.D_vel[0, 0] = b2x
+        self.D_vel[1, 1] = b2y
+        self.D_vel[2, 2] = b1z
 
 
 if __name__ == '__main__':
