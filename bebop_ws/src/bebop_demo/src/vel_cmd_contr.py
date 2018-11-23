@@ -10,6 +10,7 @@ from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 
 import rospy
 import numpy as np
+import tf
 
 
 class VelCommander(object):
@@ -26,9 +27,11 @@ class VelCommander(object):
         self.calc_succeeded = False
         self.progress = True
         self.startup = False
+        self.target_reached = False
         self._index = 0
 
-        self.feedback_gain = rospy.get_param('vel_cmd/feedback_gain', 0.3)
+        self.K_x = rospy.get_param('vel_cmd/K_x', 0.3)
+        self.K_theta = rospy.get_param('vel_cmd/K_theta', 0.3)
         self.safety_treshold = rospy.get_param('vel_cmd/safety_treshold', 0.5)
         self.pos_nrm_tol = rospy.get_param(
                                         'vel_cmd/goal_reached_pos_tol', 0.05)
@@ -41,6 +44,8 @@ class VelCommander(object):
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
 
+        self.desired_angle = 0.0
+        self.real_angle = 0.0
         self.pos_nrm = np.inf
 
         self.cmd_twist_convert = TwistStamped()
@@ -75,6 +80,8 @@ class VelCommander(object):
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
+        rospy.Subscriber(
+            'vive_localization/pose', PoseStamped, self.new_measurement)
 
     def initialize_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
@@ -92,21 +99,19 @@ class VelCommander(object):
         self.input_old_x = 0.
 
         b0 = 0.0008254
-        b1 = 0.0008254
         a0 = 0.9531
         a1 = -1.953
 
-        self.coeffs_x = np.array([-b0, a0, a1, 1])/b1
+        self.coeffs_x = np.array([a0, a1, 1])/b0
 
         # Y-direction
         self.input_old_y = 0.
 
         b0 = 0.0008582
-        b1 = 0.0008582
         a0 = 0.9509
         a1 = -1.951
 
-        self.coeffs_y = np.array([-b0, a0, a1, 1])/b1
+        self.coeffs_y = np.array([a0, a1, 1])/b0
 
         # # Z-direction
         # b0 = 0.05301
@@ -132,6 +137,7 @@ class VelCommander(object):
                     self.update()
                     self.progress = self.proceed()
                 rate.sleep()
+            self.pos_feedback()
             rate.sleep()
 
     def configure(self):
@@ -165,6 +171,7 @@ class VelCommander(object):
         Args:
             goal: Pose2D
         '''
+        self.target_reached = False
         self._goal = goal
 
         self.progress = True
@@ -243,7 +250,7 @@ class VelCommander(object):
             self._init = False
 
         if ((self._index >= int(self._update_time/self._sample_time))
-                or (self._index >= len(self._traj['v'])-2)):
+                or (self._index >= len(self._traj['v'])-3)):
             if self._new_trajectories:
                 # Load fresh trajectories.
                 self.load_trajectories()
@@ -290,23 +297,23 @@ class VelCommander(object):
         '''
 
         # Convert velocity command in x-direction
-        phi = np.array([self._inputs_applied['jx'][-1],
-                        self._traj['v'][index],
-                        self._traj['v'][index + 1],
-                        self._traj['v'][index + 2]])
+        phi = np.array([self._traj['v'][index + 1],
+                        self._traj['v'][index + 2],
+                        self._traj['v'][index + 3]])
         self.cmd_twist_convert.twist.linear.x = np.matmul(
                                             self.coeffs_x, np.transpose(phi))
+        print '\nphi', phi
+        print 'coeffs_x', self.coeffs_x
 
         # Convert velocity command in y-direction
-        phi = np.array([self._inputs_applied['jy'][-1],
-                        self._traj['w'][index],
-                        self._traj['w'][index + 1],
-                        self._traj['w'][index + 2]])
+        phi = np.array([self._traj['w'][index + 1],
+                        self._traj['w'][index + 2],
+                        self._traj['w'][index + 3]])
         self.cmd_twist_convert.twist.linear.y = np.matmul(
                                             self.coeffs_y, np.transpose(phi))
-        # print ('twist convert',
-        #        'jx', self.cmd_twist_convert.twist.linear.x,
-        #        'jy', self.cmd_twist_convert.twist.linear.y)
+        print ('twist convert',
+               'jx', self.cmd_twist_convert.twist.linear.x,
+               'jy', self.cmd_twist_convert.twist.linear.y)
 
     def calc_vel_cmd(self):
         '''Combines the feedforward and feedback commands to generate a
@@ -327,12 +334,47 @@ class VelCommander(object):
         # SHOULD BE ADAPTED! OR FEEDBACK WILL BE TAKEN AS PART OF LAST INPUT J
         # BOS: Geeft dat niet iets accurater dan het niet te doen?
         self.cmd_twist_convert.twist.linear.x = (
-            x_error * self.feedback_gain +
-            self.cmd_twist_convert.twist.linear.x)
+            x_error * self.K_x + self.cmd_twist_convert.twist.linear.x)
 
         self.cmd_twist_convert.twist.linear.y = (
-            y_error * self.feedback_gain +
-            self.cmd_twist_convert.twist.linear.y)
+            y_error * self.K_x + self.cmd_twist_convert.twist.linear.y)
+
+        # FOUT, moet eerst geroteerd worden voordat snelheid in inverse model gestoken wordt!
+        # moet feedback oo in inverse model?
+        # # Transform velocity command to rotated frame
+        # cmd_vel = PointStamped()
+        # cmd_vel.header.frame_id = "world_rot"
+        # cmd_vel.point.x = self.cmd_twist_convert.twist.linear.x
+        # cmd_vel.point.y = self.cmd_twist_convert.twist.linear.y
+        # cmd_vel_rotated = self.transform_point(
+        #                                 cmd_vel, "world", "world_rot")
+
+        # Add theta feedback to remain at zero yaw angle
+        self.cmd_twist_convert.twist.angular.z = self.K_theta*(
+                                        self.desired_angle - self.real_angle)
+
+    def pos_feedback(self):
+        '''Whenever the target is reached, apply position feedback to the
+        desired end posotion to remain in the correct spot and compensate for
+        drift.
+        '''
+        # If goal reached, send out feedback vel commands to stay in place.
+        if self.target_reached:
+            self._robot_est_pose = self.get_pose_est()
+            self.cmd_twist_convert.twist.linear.x = self.K_x*(
+                                        self._goal.x - self._robot_est_pose.x)
+            self.cmd_twist_convert.twist.linear.y = self.K_x*(
+                                        self._goal.y - self._robot_est_pose.y)
+            self.cmd_twist_convert.twist.angular.z = self.K_theta*(
+                                        self.desired_angle - self.real_angle)
+            self.cmd_vel.publish(self.cmd_twist_convert.twist)
+
+    def new_measurement(self, meas):
+        '''Substract current angle of rotation about the yaw axis from
+            the measurement.
+        '''
+        euler = tf.transformations.euler_from_quaternion(meas.pose.orientation)
+        self.real_angle = euler[2]
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
@@ -401,12 +443,10 @@ class VelCommander(object):
                             input_nrm < self.input_nrm_tol)
 
         if (stop_linear):
+            self.target_reached = True
             print '-------------------'
             print '- Target Reached! -'
             print '-------------------'
-            # If goal reached, send out feedback vel commands to stay in place.
-            self.cmd_twist_convert.twist.linear.x = 0.
-            self.cmd_twist_convert.twist.linear.y = 0.
         stop *= (stop_linear)
 
         return not stop

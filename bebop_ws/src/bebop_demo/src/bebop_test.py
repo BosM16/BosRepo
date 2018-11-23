@@ -60,7 +60,7 @@ class Demo(object):
         self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
         self.kalman.latest_vel_cmd = req_vel.vel_cmd
 
-        print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
+        # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
         self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
                                         self.kalman.latest_vel_cmd, self.wm.yhat_r)
 
@@ -71,6 +71,7 @@ class Demo(object):
             self.wm.vhat_r, "world_rot", "world")
 
         self.pose_r_pub.publish(self.wm.yhat_r)
+        print 'yhat as published in bebop_test', self.wm.yhat
         self.pose_pub.publish(self.wm.yhat)
 
         return GetPoseEstResponse(self.wm.yhat, self.wm.vhat)

@@ -50,10 +50,10 @@ class Kalman(object):
         Arguments:
             vel_cmd: TwistStamped
         '''
-        print '---------------self.X_r before', self.X_r
+        # print '---------------self.X_r before', self.X_r
         (self.X_r, yhat_r, vhat_r, self.Phat) = self.predict_step_calc(
             vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
-        print '---------------self.X_r after', self.X_r
+        # print '---------------self.X_r after', self.X_r
         return yhat_r, vhat_r
 
     def kalman_pos_correct(self, measurement, yhat_r_t0):
@@ -96,7 +96,6 @@ class Kalman(object):
             self.vel_list_corr = self.vel_list_corr[0:-1]
 
         vel_len = len(self.vel_list_corr)
-        print 'length of velocity list in kalman', vel_len
         if (vel_len > 1):
             case3 = False
             Ts = self.get_time_diff(
@@ -105,7 +104,7 @@ class Kalman(object):
             case3 = True
             Ts = self.get_time_diff(
                 measurement, yhat_r_t0)
-        print '\n kalman first predict step Ts, X_r_t0 \n', Ts, self.X_r_t0
+        # print '\n kalman first predict step Ts, X_r_t0 \n', Ts, self.X_r_t0
         (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                 self.vel_list_corr[0], Ts, self.X_r_t0, self.Phat_t0)
 
@@ -116,7 +115,7 @@ class Kalman(object):
             for i in range(vel_len - 2):
                 Ts = self.get_time_diff(
                     self.vel_list_corr[i+2], self.vel_list_corr[i+1])
-                print '\n kalman second predict step Ts and yhat_r \n', Ts, yhat_r.point
+                # print '\n kalman second predict step Ts and yhat_r \n', Ts, yhat_r.point
                 (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                     self.vel_list_corr[i+1], Ts, X, Phat)
 
@@ -127,7 +126,7 @@ class Kalman(object):
 
         # Now make prediction up to new t0 if not case 3.
         if not case3:
-            print '\n kalman third predict step Ts and yhat_r \n', B, yhat_r.point
+            # print '\n kalman third predict step Ts and yhat_r \n', B, yhat_r.point
             (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                 self.vel_list_corr[-1], B, X, Phat)
         else:
@@ -136,7 +135,7 @@ class Kalman(object):
 
         # ---- CORRECTION ----
         # Correct the estimate at new t0 with the measurement.
-        print '\n kalman correct yhat_r \n', yhat_r.point
+        # print '\n kalman correct yhat_r \n', yhat_r.point
         (X, yhat_r_t0, Phat) = self.correct_step_calc(
                                                 measurement, X, yhat_r, Phat)
         self.X_r_t0 = X
@@ -144,7 +143,7 @@ class Kalman(object):
 
         # Now predict until next point t that coincides with next timepoint
         # for the controller.
-        print '\n kalman fourth predict step Ts and yhat_r \n', (1 + self.case5)*self.vel_cmd_Ts - B, yhat_r_t0.point
+        # print '\n kalman fourth predict step Ts and yhat_r \n', (1 + self.case5)*self.vel_cmd_Ts - B, yhat_r_t0.point
         (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                                 self.vel_list_corr[-1],
                                 (1 + self.case5)*self.vel_cmd_Ts - B,

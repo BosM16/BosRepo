@@ -8,7 +8,8 @@
   <param name='vel_cmd/goal_reached_pos_tol' value="0.1" />
   <param name='vel_cmd/goal_reached_angle_tol' value="0.05" />
   <param name='vel_cmd/goal_reached_input_tol' value="0.03" />
-  <param name='vel_cmd/feedback_gain' value="0.0" />
+  <param name='vel_cmd/K_x' value="0.0" />
+  <param name='vel_cmd/K_theta' value="0.1" />
   <param name='vel_cmd/safety_treshold' value="0.5" />
 
   <param name='motionplanner/knot_intervals' value="10" />
