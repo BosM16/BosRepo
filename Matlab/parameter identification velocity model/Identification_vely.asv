@@ -257,88 +257,20 @@ axis tight
 figure('Name','2nd - filtered - strictly proper: Pole Zero Map')
 pzmap(sys_d3)
 
-
-
-%% ========================================================================
-%                               MINIMUM PHASE
-%  ========================================================================
-%% With Butterworth filtering of in and output
-% 2nd order strictly proper minimum phase
-
-%                       b1
-%      HVxJ(z) = -----------------
-%                 z^2 + a1*z + a0
-
-y4 = velocity_y_filt(3:end);
-Phi4 = [-velocity_y_filt(2:end-1), -velocity_y_filt(1:end-2), input_filt(1:end-2)];
-theta_filt4 = Phi4\y4;
-
-B4 = [theta_filt4(3)];
-A4 = [1, theta_filt4(1) theta_filt4(2)];
-
-sys_d4 = tf(B4, A4, Ts);
-
-FRF4 = squeeze(freqresp(sys_d4,2*pi*f));
-
-figure('Name','2nd - filtered - strictly proper - Minimum Phase: Freq Response'),subplot(2,1,1),semilogx(f, 20*log10(abs(FRF4)))
-grid on 
-xlim([f(1) f(end)])
-xlabel('f  [Hz]')
-ylabel('|FRF4|  [m]')
-axis tight
-subplot(2,1,2)
-semilogx(f, 180/pi*unwrap(angle(FRF4)))
-grid on
-xlim([f(1) f(end)])
-xlabel('f  [Hz]')
-ylabel('\phi(FRF4)  [^\circ]')
-
-x4 = lsim(sys_d4,input,t);
-
-figure('Name','2nd - filtered - strictly proper - Minimum Phase: Simulation')
-subplot(211)
-hold on
-plot(t, velocity_y,'g')
-plot(t, velocity_y_filt)
-plot(t,x4)
-legend('v_{y,meas}', 'v_{y,filt}', 'v_{y,sim}')
-title('2nd - filtered - strictly proper - Minimum Phase: Simulation vs Measurement')
-xlabel('Time [s]')
-axis tight
-ylabel('Velocity [m/s]')
-subplot(212)
-plot(t,velocity_y - x4)
-title('Difference between simulation and measurement')
-legend('v_{y,meas}-v_{y,sim}')
-xlabel('Time [s]')
-ylabel('Velocity [m/s]')
-axis tight
-
-figure('Name','2nd - filtered - strictly proper - Minimum Phase: Pole Zero Map')
-pzmap(sys_d4)
-
-
-
+%% ------------------------
+%   MINIMUM PHASE
+%  ===============
 %% Comparison
-figure('Name','Comparison frequency responses')
+figure
 hold on
 bode(sys_d1), grid
 bode(sys_d2)
 bode(sys_d3)
-bode(sys_d4)
-legend('2nd - not filtered - proper', ...
-       '2nd - filtered - proper', ...
-       '2nd - filtered - strictly proper', ...
-       '2nd - filtered - proper - minimum phase')
+legend('2nd - not filtered - proper', '2nd - filtered - proper', '2nd - filtered - strictly proper')
 
-figure('Name', 'Comparison simulation results')
-plot(t,[velocity_y velocity_y_filt x1 x2 x3 x4])
-legend('measured', ...
-       'filtered measurement', ...
-       '2nd - no filter - proper', ...
-       '2nd - filter - proper', ...
-       '2nd - filter - strictly proper', ...
-       '2nd - filter - strictly proper - minimum phase')
+figure
+plot(t,[velocity_y velocity_y_filt x1 x2 x3])
+legend('measured', 'filtered measurement', '2nd - no filter - proper', '2nd - filter - proper', '2nd - filter - strictly proper')
 
 %% Find crossover frequency of best fit
 [error, index] = min(abs(20*log10(abs(FRF3(1:end-100)))));
@@ -347,25 +279,11 @@ f0 = f(index);
 fprintf('f0x: %d \n', f0)
 
 
-%% continuous time transfer function  + 50Hz --> 100Hz
+%% continuous equivalent of tf (pk)
 
-% 2nd filtered strictly proper
-sys_c3 = d2c(sys_d3);
-sys_3 = c2d(sys_c3, 0.01);
+sys_c3 = d2c(sys_d3)
+sys_3 = c2d(sys_c3, 0.01)
 
-% 2nd filtered strictly proper MINIMUM PHASE
-% NOTE: we use 'matched' in order to preserve minimum phase in the
-% conversion between discrete and continuous.
-sys_c4 = d2c(sys_d4,'matched')
-sys_4 = c2d(sys_c4, 0.01,'matched')
-
-figure('Name','PZmaps for minimum-phase discrete & continuous')
-hold on
-pzmap(sys_d4)
-pzmap(sys_4)
-pzmap(sys_c4)
-
-legend('50Hz','100Hz','continuous')
 
 %% Save result (transfer function)
 % sys_2nd = sys_dpk;
@@ -375,27 +293,13 @@ legend('50Hz','100Hz','continuous')
 % save('HVJ_y_filtered', 'sys_2nd_f')
 % save('HVJ_y_cont','sys_c2nd')
 
-%% Plot 100Hz fit
-%  & Integreer deze en kijk of fit op positie goed is.
-dt100Hz = .01;
-t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
+%% Probeersel: integreer deze en kijk of fit op positie goed is.
+z = tf('z', dt);
+int_d = z*dt/(z-1);
+sys_y = int_d * sys_d3;
+y_sim = lsim(sys_y,input,t);
 
-% Differentiator
-z = tf('z', dt100Hz);
-int_d = z*dt100Hz/(z-1);
-sys_x = int_d * sys_4;
-
-% Interpolate input
-input100Hz = interp1(t,input,t100Hz);
-
-v_sim = lsim(sys_4,input100Hz,t100Hz);
-x_sim = lsim(sys_x,input100Hz,t100Hz);
-
-figure('Name','Velocity 100Hz model simulation')
-plot(t,velocity_y_filt, t100Hz, v_sim)
-legend('filtered velocity','simulation')
-
-figure('Name', 'Integrated velocity simulation')
-plot(t, output_y, t100Hz, x_sim);
+figure
+plot(time, output_y, time, y_sim);
 % Conclusie: komt heel goed overeen met fit 3e orde op positie!
 
