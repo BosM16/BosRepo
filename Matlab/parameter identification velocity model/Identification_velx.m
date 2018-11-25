@@ -410,6 +410,23 @@ pzmap(sys_4)
 pzmap(sys_c4)
 legend('50Hz','100Hz','continuous')
 
+%% Minimum phase with matched, but without zero at z=-1
+%  Manual 'matched' c2d.
+
+[coeffs_num, coeffs_den] = tfdata(sys_c4);
+b0 = coeffs_num{1}(3);
+a1 = coeffs_den{1}(2);
+a0 = coeffs_den{1}(3);
+
+% continuous poles
+P = pole(sys_c4);
+
+kd = b0/a0*(1-exp(P(1)*0.01))*(1-exp(P(2)*0.01));
+
+z = tf('z',0.01);
+sys_4m = kd/((1-exp(P(1)*0.01)*z^-1)*(1-exp(P(2)*0.01)*z^-1));
+
+
 
 %% Plot 100Hz fit
 %  & Integreer deze en kijk of fit op positie goed is.
@@ -435,21 +452,6 @@ figure('Name', 'Integrated velocity simulation')
 plot(t, output_x, t100Hz, x_sim);
 % Conclusie: komt heel goed overeen met fit 3e orde op positie!
 
-%% Minimum phase with matched, but without zero at z=-1
-%  Manual 'matched' c2d.
-
-[coeffs_num, coeffs_den] = tfdata(sys_c4);
-b0 = coeffs_num{1}(3);
-a1 = coeffs_den{1}(2);
-a0 = coeffs_den{1}(3);
-
-% continuous poles
-P = pole(sys_c4);
-
-kd = b0/a0*(1-exp(P(1)*0.01))*(1-exp(P(2)*0.01));
-
-z = tf('z',0.01);
-sys_4m = kd/((1-exp(P(1)*0.01)*z^-1)*(1-exp(P(2)*0.01)*z^-1));
 
 %% Filter 2nd order system to prevent inverse model to rise 40db/dec
 figure('Name', 'Empirical VS Fit: Freq response magnitude')
@@ -490,16 +492,29 @@ xlim([f(1) f(end)])
 xlabel('f  [Hz]')
 ylabel('\phi(FRF_diff)  [^\circ]')
 
-%%
+%% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
 Fs = 100;
 Fc = 1;
 Fcn = Fc/(Fs/2);
-[Bpre, Apre] = butter(2, Fcn);
-freqz(Bpre,Apre)
+[Bpre, Apre] = butter(3, Fcn);
+% freqz(Bpre,Apre)
 
 filt = tf(Bpre,Apre);
 FRFfilt = squeeze(freqresp(filt,2*pi*f));
-FRFfilt(1)
+gain = 1/FRFfilt(1);
 
+% Bpre = gain*Bpre;
 
+LPF = tf(Bpre,Apre);
+% freqz(Bpre, Apre)
+
+figure('Name','Low Pass Filter (Butterworth)')
+bode(LPF)
+
+sys_LPF = sys_c4/LPF;
+figure('Name','Filtered continuous time system')
+bode(sys_LPF)
+hold on
+bode(sys_c4)
+legend('Filtered','Regular')
 
