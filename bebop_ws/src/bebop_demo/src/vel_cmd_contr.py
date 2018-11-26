@@ -98,7 +98,7 @@ class VelCommander(object):
         '''
         Ax = np.array([[1.9556, -0.9565],
                        [1.0000, 0.]])
-        Ay = np.array([[1.9507, -0.9509],
+        Ay = np.array([[1.9556, -0.9565],
                        [1.0000, 0.]])
 
         self.A = np.zeros([4, 4])
@@ -111,10 +111,10 @@ class VelCommander(object):
 
         self.C = np.zeros([2, 4])
         self.C[0, 0:2] = [0.0016, -0.0020]
-        self.C[1, 2:4] = [-0.0087, 0.0101]
+        self.C[1, 2:4] = [0.0028, - 0.0032]
 
         self.D = np.array([[0.5846, 0.0],
-                           [0.0, 1.7784]])
+                           [0.0, 0.5623]])
 
         # X-direction
         # b0 = 1.636
