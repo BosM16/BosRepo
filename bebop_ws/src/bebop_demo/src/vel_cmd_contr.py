@@ -28,7 +28,7 @@ class VelCommander(object):
         self.progress = True
         self.startup = False
         self.target_reached = False
-        self._index = 0
+        self._index = 1
 
         self.K_x = rospy.get_param('vel_cmd/K_x', 0.3)
         self.K_theta = rospy.get_param('vel_cmd/K_theta', 0.3)
@@ -44,6 +44,7 @@ class VelCommander(object):
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
 
+        self.X = np.array([[0.0], [0.0], [0.0], [0.0]])
         self.desired_angle = 0.0
         self.real_angle = 0.0
         self.pos_nrm = np.inf
@@ -66,7 +67,7 @@ class VelCommander(object):
 
         self._traj = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
         self._traj_strg = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
-        self._inputs_applied = {'jx': [], 'jy': []}
+        self._inputs_applied = {'jx': [0.0, 0.0], 'jy': [0.0, 0.0]}
 
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
@@ -95,29 +96,45 @@ class VelCommander(object):
 
         with sampling time equal to vel_cmd_Ts (0.01s).
         '''
+        Ax = np.array([[1.9556, -0.9565],
+                       [1.0000, 0.]])
+        Ay = np.array([[1.9507, -0.9509],
+                       [1.0000, 0.]])
+
+        self.A = np.zeros([4, 4])
+        self.A[0:2, 0:2] = Ax
+        self.A[2:4, 2:4] = Ay
+
+        self.B = np.zeros([4, 2])
+        self.B[1, 0] = 1
+        self.B[3, 1] = 1
+
+        self.C = np.zeros([2, 4])
+        self.C[0, 0:2] = [0.0016, -0.0020]
+        self.C[1, 2:4] = [-0.0087, 0.0101]
+
+        self.D = np.array([[0.5846, 0.0],
+                           [0.0, 1.7784]])
+
         # X-direction
-        self.input_old_x = 0.
-
-        b0 = 0.0008254
-        a0 = 0.9531
-        a1 = -1.953
-
-        self.coeffs_x = np.array([a0, a1, 1])/b0
+        # b0 = 1.636
+        # b1 = -3.345
+        # b2 = 1.71
+        # a0 = 0.9531
+        # a1 = -1.953
+        #
+        # self.coeffs_x = np.array([a0, a1, 1, -b0, -b1])/b2
 
         # Y-direction
-        self.input_old_y = 0.
-
-        b0 = 0.0008582
-        a0 = 0.9509
-        a1 = -1.951
-
-        self.coeffs_y = np.array([a0, a1, 1])/b0
+        # b0 = 1.701
+        # b1 = -3.478
+        # b2 = 1.778
+        # a0 = 0.9511
+        # a1 = -1.951
+        #
+        # self.coeffs_y = np.array([a0, a1, 1, -b0, -b1])/b2
 
         # # Z-direction
-        # b0 = 0.05301
-        # a0 = -0.946
-        #
-        # self.coeffs_x = np.array([a0, 1])/b0
 
     def start(self):
         '''Configures,
@@ -181,10 +198,7 @@ class VelCommander(object):
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self._robot_est_pose = self.get_pose_est()
         print 'est_pose received from kalman when setting goal', self._robot_est_pose
-        self._inputs_applied = {'jx': [], 'jy': []}
         self.marker_setup()
-        self.__publish_desired([0], [0])
-        self.__publish_real(0, 0)
 
         self.fire_motionplanner()
 
@@ -228,12 +242,6 @@ class VelCommander(object):
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
-        # Store applied commands.
-        self._inputs_applied['jx'].append(
-                                        self.cmd_twist_convert.twist.linear.x)
-        self._inputs_applied['jy'].append(
-                                        self.cmd_twist_convert.twist.linear.y)
-
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
@@ -250,7 +258,7 @@ class VelCommander(object):
             self._init = False
 
         if ((self._index >= int(self._update_time/self._sample_time))
-                or (self._index >= len(self._traj['v'])-3)):
+                or (self._index >= len(self._traj['v'])-2)):
             if self._new_trajectories:
                 # Load fresh trajectories.
                 self.load_trajectories()
@@ -296,24 +304,52 @@ class VelCommander(object):
         velocity.
         '''
 
-        # Convert velocity command in x-direction
-        phi = np.array([self._traj['v'][index + 1],
-                        self._traj['v'][index + 2],
-                        self._traj['v'][index + 3]])
-        self.cmd_twist_convert.twist.linear.x = np.matmul(
-                                            self.coeffs_x, np.transpose(phi))
-        print '\nphi', phi
-        print 'coeffs_x', self.coeffs_x
+        u = np.array([[self._traj['v'][index + 1]],
+                      [self._traj['w'][index + 1]]])
+        self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
+        Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
+        self.cmd_twist_convert.twist.linear.x = Y[0, 0]
+        self.cmd_twist_convert.twist.linear.y = Y[1, 0]
+        print '-----x speed desired and real', self._traj['v'][index + 1], Y[0, 0]
+        print 'y speed desired and real-----', self._traj['w'][index + 1], Y[1, 0]
 
-        # Convert velocity command in y-direction
-        phi = np.array([self._traj['w'][index + 1],
-                        self._traj['w'][index + 2],
-                        self._traj['w'][index + 3]])
-        self.cmd_twist_convert.twist.linear.y = np.matmul(
-                                            self.coeffs_y, np.transpose(phi))
-        print ('twist convert',
-               'jx', self.cmd_twist_convert.twist.linear.x,
-               'jy', self.cmd_twist_convert.twist.linear.y)
+        # # Convert velocity command in x-direction
+        # phi = np.array([self._traj['v'][index - 1],
+        #                 self._traj['v'][index],
+        #                 self._traj['v'][index + 1],
+        #                 self._inputs_applied['jx'][0],
+        #                 self._inputs_applied['jx'][1]])
+        # self.cmd_twist_convert.twist.linear.x = np.matmul(
+        #                                     self.coeffs_x, np.transpose(phi))
+        # print '\nphi', phi
+        # print 'coeffs_x', self.coeffs_x
+        #
+        # # Convert velocity command in y-direction
+        # phi = np.array([self._traj['w'][index - 1],
+        #                 self._traj['w'][index],
+        #                 self._traj['w'][index + 1],
+        #                 self._inputs_applied['jy'][0],
+        #                 self._inputs_applied['jy'][1]])
+        # self.cmd_twist_convert.twist.linear.y = np.matmul(
+        #                                     self.coeffs_y, np.transpose(phi))
+        # print '\nphi', phi
+        # print 'coeffs_y', self.coeffs_y
+        # print ('twist convert',
+        #        'jx', self.cmd_twist_convert.twist.linear.x,
+        #        'jy', self.cmd_twist_convert.twist.linear.y)
+        # # Store applied commands.
+        # self.store_inputs(self.cmd_twist_convert.twist.linear.x,
+        #                   self.cmd_twist_convert.twist.linear.y)
+
+    def store_inputs(self, vel_cmd_x, vel_cmd_y):
+        '''Stores the two latest inputs that have been applied to the drone,
+        needed when calculating the difference equation.
+        '''
+        self._inputs_applied['jx'] = [self._inputs_applied['jx'][-1]]
+        self._inputs_applied['jy'] = [self._inputs_applied['jy'][-1]]
+
+        self._inputs_applied['jx'].append(vel_cmd_x)
+        self._inputs_applied['jy'].append(vel_cmd_y)
 
     def calc_vel_cmd(self):
         '''Combines the feedforward and feedback commands to generate a
@@ -373,7 +409,11 @@ class VelCommander(object):
         '''Substract current angle of rotation about the yaw axis from
             the measurement.
         '''
-        euler = tf.transformations.euler_from_quaternion(meas.pose.orientation)
+        quat = (meas.pose.orientation.x,
+                meas.pose.orientation.y,
+                meas.pose.orientation.z,
+                meas.pose.orientation.w)
+        euler = tf.transformations.euler_from_quaternion(quat)
         self.real_angle = euler[2]
 
     def get_pose_est(self):

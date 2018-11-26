@@ -71,7 +71,6 @@ class Demo(object):
             self.wm.vhat_r, "world_rot", "world")
 
         self.pose_r_pub.publish(self.wm.yhat_r)
-        print 'yhat as published in bebop_test', self.wm.yhat
         self.pose_pub.publish(self.wm.yhat)
 
         return GetPoseEstResponse(self.wm.yhat, self.wm.vhat)

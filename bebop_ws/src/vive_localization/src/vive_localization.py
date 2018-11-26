@@ -65,6 +65,13 @@ class LocalizationTest(object):
         self.tf_w_in_v.transform.rotation.y = -0.639533223494
         self.tf_w_in_v.transform.rotation.z = -0.61245458901
         self.tf_w_in_v.transform.rotation.w = 0.312953968416
+        # self.tf_w_in_v.transform.translation.x = 0.0708966901567
+        # self.tf_w_in_v.transform.translation.y = -2.92482276032
+        # self.tf_w_in_v.transform.translation.z = -7.11681368875
+        # self.tf_w_in_v.transform.rotation.x = -0.342985968821
+        # self.tf_w_in_v.transform.rotation.y = -0.650466725041
+        # self.tf_w_in_v.transform.rotation.z = -0.592736932571
+        # self.tf_w_in_v.transform.rotation.w = 0.328506611155
         self.stbroadc.sendTransform(self.tf_w_in_v)
         rospy.sleep(2.)
 
@@ -84,7 +91,7 @@ class LocalizationTest(object):
         self.tf_d_in_t.header.frame_id = "tracker"
         self.tf_d_in_t.child_frame_id = "init_drone"
         roll_d_in_t = np.pi/2
-        pitch_d_in_t = -np.pi/2
+        pitch_d_in_t = -np.pi/2 #- 0.0559  # Tracker tilt
         yaw_d_in_t = 0.
         quat = tf.transformations.quaternion_from_euler(roll_d_in_t,
                                                         pitch_d_in_t,
