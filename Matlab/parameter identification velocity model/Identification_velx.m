@@ -502,4 +502,8 @@ FRFfilt = squeeze(freqresp(filt,2*pi*f));
 FRFfilt(1)
 
 
+%% Simulate filtered system
+v_LPFsim = lsim(sys_dLPF, input100Hz,t100Hz);
+figure
+plot(v_LPFsim)
 
