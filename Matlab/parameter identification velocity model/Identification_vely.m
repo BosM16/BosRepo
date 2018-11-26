@@ -538,5 +538,5 @@ figure
 plot(j_LPFsim)
 
 %% State space representation of the filtered system
-[b_dLPF, a_dLPF] = tfdata(sys_dLPF, 'v');
+[b_dLPF, a_dLPF] = tfdata(sys_dLPF^(-1), 'v');
 [A_dLPF, B_dLPF, C_dLPF, D_dLPF] = tf2ss(b_dLPF, a_dLPF)
