@@ -93,7 +93,6 @@ fcn = fc/(fs/2); % normalized cutoff frequency
 %% Filtering of the in- and output data using Butterworth filter
 [B, A] = butter(3,fcn); % order must be higher than order of system, 
                              % adjust cut-off frquency to be higher than highest eigenfrequency of the system
-                             % data sampling at 100Hz
 
 % input filtering                           
 input_filt = filter(B,A,input);
@@ -491,13 +490,23 @@ xlim([f(1) f(end)])
 xlabel('f  [Hz]')
 ylabel('\phi(FRF_diff)  [^\circ]')
 
-%%
+%% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
 Fs = 100;
-Fc = 0.5;
+Fc = 1;
 Fcn = Fc/(Fs/2);
-[Bpre, Apre] = butter(3, Fcn);
-LPF = tf(10000*Bpre, Apre);
+[Bpre, Apre] = butter(2, Fcn);
+% freqz(Bpre,Apre)
+
+filt = tf(Bpre,Apre);
+FRFfilt = squeeze(freqresp(filt,2*pi*f));
+gain = 1/FRFfilt(1);
+
+Bpre = gain*Bpre;
+
+LPF = tf(Bpre,Apre);
+freqz(Bpre, Apre)
+
 figure
 bode(LPF)
 
-
+sys_LPF = sys
