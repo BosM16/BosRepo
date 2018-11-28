@@ -106,8 +106,8 @@ class VelCommander(object):
         self.A[2:4, 2:4] = Ay
 
         self.B = np.zeros([4, 2])
-        self.B[1, 0] = 1
-        self.B[3, 1] = 1
+        self.B[0, 0] = 1
+        self.B[2, 1] = 1
 
         self.C = np.zeros([2, 4])
         self.C[0, 0:2] = [0.0016, -0.0020]
