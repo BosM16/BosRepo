@@ -525,19 +525,59 @@ t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
 % Interpolate input
 input100Hz = interp1(t,input,t100Hz);
 
-v_LPFsim = lsim(sys_dLPF, input100Hz,t100Hz);
+v_LPFsim = lsim(sys_dLPF, input100Hz, t100Hz);
 figure
 plot(v_LPFsim)
 
 % simulate inverse
-vdes = 0:0.002:0.5;
-tsim = (0:dt100Hz:(length(vdes)-1)*dt100Hz)';
+vramp = 0:0.002:0.5;
+tsim = (0:dt100Hz:(length(vramp)-1)*dt100Hz)';
 
-j_LPFsim = lsim(sys_dLPF^(-1), vdes, tsim);
-figure
+j_LPFsim = lsim(sys_dLPF^(-1), vramp, tsim);
+figure('Name','Inverse system with LPF: Simulation with ramp input')
 plot(j_LPFsim)
 
-%% State space representation of the filtered system
-[b_dLPFi, a_dLPFi] = tfdata(sys_dLPF^(-1), 'v');
-[A_dLPFi, B_dLPFi, C_dLPFi, D_dLPFi] = tf2ss(b_dLPFi, a_dLPFi)
+% simulate on realistic speed: interpolated simulation result
+x4_100Hz = interp1(t,x4,t100Hz);
+j_LPFx4sim = lsim(sys_dLPF^(-1), x4_100Hz, t100Hz);
 
+figure('Name','Inverse system with LPF: Simulation with sys d4 velocity')
+hold on
+plot(x4_100Hz)
+plot(j_LPFx4sim)
+legend('Desired velocity','Calculated input')
+
+
+%% State space representation of the filtered system and simulation
+
+[b_dLPFi, a_dLPFi] = tfdata(sys_dLPF^(-1), 'v');
+[A_dLPFi, B_dLPFi, C_dLPFi, D_dLPFi] = tf2ss(b_dLPFi, a_dLPFi);
+sys_try = ss(A_dLPFi,B_dLPFi,C_dLPFi,D_dLPFi,0.01)
+sim_ss = lsim(sys_try, x4_100Hz, t100Hz);
+figure('Name', '')
+plot(t100Hz, sim_ss)
+
+% manual simulation
+% u = x4_100Hz
+xsim = zeros(2, length(t100Hz));
+ysim = zeros(1, length(t100Hz));
+for i = 1:length(t100Hz)
+    xsim(:,i+1) = A_dLPFi*xsim(:,i) + B_dLPFi*x4_100Hz(i);
+    ysim(i) = C_dLPFi*xsim(:,i) + D_dLPFi*x4_100Hz(i);
+end
+
+figure('Name','Result of manual state space simulation')
+plot(t100Hz, ysim)
+
+% step response:
+vstep = 0.2*ones(length(t100Hz),1);
+xstep = zeros(2, length(t100Hz));
+ystep = zeros(1, length(t100Hz));
+for i = 1:length(t100Hz)
+    xstep(:,i+1) = A_dLPFi*xstep(:,i) + B_dLPFi*vstep(i);
+    ystep(i) = C_dLPFi*xstep(:,i) + D_dLPFi*vstep(i);
+end
+
+figure('Name','Result of manual state space simulation - Step input')
+plot(t100Hz, ystep, t100Hz, vstep)
+legend('step response','step input')
