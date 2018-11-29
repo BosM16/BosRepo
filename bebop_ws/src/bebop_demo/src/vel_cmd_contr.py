@@ -48,6 +48,9 @@ class VelCommander(object):
         self.desired_angle = 0.0
         self.real_angle = 0.0
         self.pos_nrm = np.inf
+        self.x_error = 0.
+        self.y_error = 0.
+        self.safe = True
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -115,6 +118,12 @@ class VelCommander(object):
 
         self.D = np.array([[0.5846, 0.0],
                            [0.0, 0.5623]])
+
+        print 'matrices for inverse model'
+        print self.A
+        print self.B
+        print self.C
+        print self.D
 
         # X-direction
         # b0 = 1.636
@@ -245,7 +254,11 @@ class VelCommander(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
+        old_pose = self._robot_est_pose
         self._robot_est_pose = self.get_pose_est()
+        self.safe = self.safety_check()
+        if not self._init and self.safe:
+            self._robot_est_pose = old_pose
 
         # Check for new trajectories. Trigger Motionplanner or raise
         # 'overtime'
@@ -303,15 +316,15 @@ class VelCommander(object):
         where j is the input signal applied to the bebop and v the desired
         velocity.
         '''
-
+        print 'velocity input to inverse model'
+        print 'x-direction', self._traj['v'][index + 1]
+        print 'y_direction', self._traj['w'][index + 1]
         u = np.array([[self._traj['v'][index + 1]],
                       [self._traj['w'][index + 1]]])
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
         self.cmd_twist_convert.twist.linear.x = Y[0, 0]
         self.cmd_twist_convert.twist.linear.y = Y[1, 0]
-        print '-----x speed desired and real', self._traj['v'][index + 1], Y[0, 0]
-        print 'y speed desired and real-----', self._traj['w'][index + 1], Y[1, 0]
 
         # # Convert velocity command in x-direction
         # phi = np.array([self._traj['v'][index - 1],
@@ -351,29 +364,38 @@ class VelCommander(object):
         self._inputs_applied['jx'].append(vel_cmd_x)
         self._inputs_applied['jy'].append(vel_cmd_y)
 
+    def safety_check(self):
+        ''' Check if measurement still working, otherwise, set velocity
+        command equal to zero.
+        '''
+        # NEEDS TO BE ADAPTED TO ALSO WORK WHEN DOING POS FEEDBACK!!!!!
+        if not self._index > (len(self._traj['x']) - 1):
+            self.x_error = self._traj['x'][self._index] - self._robot_est_pose.x
+            self.y_error = self._traj['y'][self._index] - self._robot_est_pose.y
+
+        # Safety feature, if position measurement stops working, set velocity
+        # command equal to zero
+        if (self.x_error > self.safety_treshold) or (
+                self.y_error > self.safety_treshold):
+            self.cmd_twist_convert.twist = Twist()
+            return False
+        return True
+
     def calc_vel_cmd(self):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
-        # Summing feedforward and feedback part of the controller.
-        x_error = self._traj['x'][self._index] - self._robot_est_pose.x
-        y_error = self._traj['y'][self._index] - self._robot_est_pose.y
-
-        # Safety feature, if position measurement stops working, set velocity
-        # command equal to zero
-        if (x_error > self.safety_treshold) or (
-                y_error > self.safety_treshold):
-            self.cmd_twist_convert.twist = Twist()
+        if not self.safe:
             return
 
         # Combine feedforward and feedback part
         # SHOULD BE ADAPTED! OR FEEDBACK WILL BE TAKEN AS PART OF LAST INPUT J
         # BOS: Geeft dat niet iets accurater dan het niet te doen?
         self.cmd_twist_convert.twist.linear.x = (
-            x_error * self.K_x + self.cmd_twist_convert.twist.linear.x)
+            self.x_error * self.K_x + self.cmd_twist_convert.twist.linear.x)
 
         self.cmd_twist_convert.twist.linear.y = (
-            y_error * self.K_x + self.cmd_twist_convert.twist.linear.y)
+            self.y_error * self.K_x + self.cmd_twist_convert.twist.linear.y)
 
         # FOUT, moet eerst geroteerd worden voordat snelheid in inverse model gestoken wordt!
         # moet feedback oo in inverse model?
@@ -409,12 +431,14 @@ class VelCommander(object):
         '''Substract current angle of rotation about the yaw axis from
             the measurement.
         '''
-        quat = (meas.pose.orientation.x,
-                meas.pose.orientation.y,
-                meas.pose.orientation.z,
-                meas.pose.orientation.w)
-        euler = tf.transformations.euler_from_quaternion(quat)
-        self.real_angle = euler[2]
+        # HERE ALSO ADAPT SAFETY PROCEDURE? DO NOT CHANGE ANGLE WHEN WRONG MEASUREMENT!
+        if self.safe:
+            quat = (meas.pose.orientation.x,
+                    meas.pose.orientation.y,
+                    meas.pose.orientation.z,
+                    meas.pose.orientation.w)
+            euler = tf.transformations.euler_from_quaternion(quat)
+            self.real_angle = euler[2]
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
