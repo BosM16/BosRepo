@@ -8,15 +8,15 @@ participant "Kalman" as K;
 -> K: Pos measurement
 note left: **t0**;
 
--> A: OMG-tools command;
+-> V: OMG-tools command;
 note left: t1;
-A -> B: Req: vel_cmd(t1);
-activate B;
-B -> A: Resp: Xhat(t2)
-deactivate B;
-activate A;
-deactivate A;
-A -> B: Req: vel_cmd(t1);
+V -> K: Req: vel_cmd(t1);
+activate K;
+K -> V: Resp: Xhat(t2)
+deactivate K;
+activate V;
+deactivate V;
+V -> K: Req: vel_cmd(t1);
 
 
 @enduml
