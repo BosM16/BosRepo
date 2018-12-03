@@ -5,7 +5,7 @@ custom_mark13
 participant "Vel_cmd" as V;
 participant "Kalman" as K;
 
--> K: Pos measurement
+K <- : Pos measurement
 note left: **t0**;
 
 -> V: OMG-tools command;
