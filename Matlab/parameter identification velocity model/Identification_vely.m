@@ -347,33 +347,86 @@ f0 = f(index);
 fprintf('f0x: %d \n', f0)
 
 
-%% continuous time transfer function  + 50Hz --> 100Hz
+%% =================================
+%  Continuous time transfer function
+%  =================================
 
-% 2nd filtered strictly proper
-sys_c3 = d2c(sys_d3);
-sys_3 = c2d(sys_c3, 0.01);
+% % 2nd filtered strictly proper
+% sys_c3 = d2c(sys_d3);
+% sys_3 = c2d(sys_c3, 0.01);
 
 % 2nd filtered strictly proper MINIMUM PHASE
 % NOTE: we use 'matched' in order to preserve minimum phase in the
 % conversion between discrete and continuous.
-sys_c4 = d2c(sys_d4,'matched')
-sys_4 = c2d(sys_c4, 0.01,'matched')
+sys_c4 = d2c(sys_d4,'matched');
+FRFc4 = squeeze(freqresp(sys_c4,2*pi*f));
+
+figure('Name','Continuous - 2nd - filtered - strictly proper - Minimum Phase: Freq Response')
+subplot(2,1,1)
+semilogx(f, 20*log10(abs(FRFc4)))
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRFc4|  [m]')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRFc4)))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRFc4)  [^\circ]')
+
+xc4 = lsim(sys_c4,input,t);
+
+figure('Name','2nd - filtered - strictly proper - Minimum Phase: Simulation')
+subplot(211)
+hold on
+plot(t, velocity_x,'g')
+plot(t, velocity_x_filt)
+plot(t,xc4)
+legend('v_{x,meas}', 'v_{x,filt}', 'v_{x,sim}')
+title('2nd - filtered - strictly proper - Minimum Phase: Simulation vs Measurement')
+xlabel('Time [s]')
+axis tight
+ylabel('Velocity [m/s]')
+subplot(212)
+plot(t,velocity_x - xc4)
+title('Difference between simulation and measurement')
+legend('v_{x,meas}-v_{x,sim}')
+xlabel('Time [s]')
+ylabel('Velocity [m/s]')
+axis tight
+
+figure('Name','2nd - filtered - strictly proper - Minimum Phase: Pole Zero Map')
+pzmap(sys_c4)
+
+
+%% Discretize to 100Hz 
+sys_4 = c2d(sys_c4, 0.01,'matched');
 
 figure('Name','PZmaps for minimum-phase discrete & continuous')
 hold on
 pzmap(sys_d4)
 pzmap(sys_4)
 pzmap(sys_c4)
-
 legend('50Hz','100Hz','continuous')
 
-%% Save result (transfer function)
-% sys_2nd = sys_dpk;
-% sys_2nd_f = sys_d2;
-% sys_c2nd = sys_cpk;
-% save('HVJ_y','sys_2nd')
-% save('HVJ_y_filtered', 'sys_2nd_f')
-% save('HVJ_y_cont','sys_c2nd')
+%% Minimum phase with matched, but without zero at z=-1
+%  Manual 'matched' c2d.
+
+[coeffs_num, coeffs_den] = tfdata(sys_c4);
+b0 = coeffs_num{1}(3);
+a1 = coeffs_den{1}(2);
+a0 = coeffs_den{1}(3);
+
+% continuous poles
+P = pole(sys_c4);
+
+kd = b0/a0*(1-exp(P(1)*0.01))*(1-exp(P(2)*0.01));
+
+z = tf('z',0.01);
+sys_4m = kd/((1-exp(P(1)*0.01)*z^-1)*(1-exp(P(2)*0.01)*z^-1));
+
 
 %% Plot 100Hz fit
 %  & Integreer deze en kijk of fit op positie goed is.
@@ -388,14 +441,108 @@ sys_x = int_d * sys_4;
 % Interpolate input
 input100Hz = interp1(t,input,t100Hz);
 
-v_sim = lsim(sys_4,input100Hz,t100Hz);
+v_sim = lsim(sys_4m,input100Hz,t100Hz);
 x_sim = lsim(sys_x,input100Hz,t100Hz);
 
 figure('Name','Velocity 100Hz model simulation')
-plot(t,velocity_y_filt, t100Hz, v_sim)
+plot(t,velocity_x_filt, t100Hz, v_sim)
 legend('filtered velocity','simulation')
 
 figure('Name', 'Integrated velocity simulation')
-plot(t, output_y, t100Hz, x_sim);
+plot(t, output_x, t100Hz, x_sim);
 % Conclusie: komt heel goed overeen met fit 3e orde op positie!
+
+
+%% Filter 2nd order system to prevent inverse model to rise 40db/dec
+figure('Name', 'Empirical VS Fit: Freq response magnitude')
+semilogx(f, 20*log10(abs(FRF)), 'LineWidth', 1)
+hold on
+semilogx(f, 20*log10(abs(FRFc4)))
+axis tight
+grid on
+xlabel('f [Hz]')
+xlim([f(1) f(end)])
+ylabel('|FRF| [m]')
+
+figure('Name', 'Empirical VS Fit: Freq response phase')
+semilogx(f, 180/pi*unwrap(angle(FRF)), 'LineWidth', 1)
+hold on
+semilogx(f, 180/pi*unwrap(angle(FRFc4)), 'LineWidth', 1)
+grid on
+axis tight
+xlabel('f  [Hz]')
+ylabel('\phi(FRF) [^\circ]')
+xlim([f(1) f(end)])
+
+% Difference
+FRF_diff = (FRF-FRFc4)./FRFc4;
+
+figure('Name','Empirical VS Continuous Fit: Difference in Freq Response')
+subplot(2,1,1)
+semilogx(f, 20*log10(abs(FRF_diff)))
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRF_{diff}|  [m]')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRF_diff)))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRF_diff)  [^\circ]')
+
+
+%% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
+
+Fc = 0.5;
+[Bpre, Apre] = butter(2, Fc*2*pi, 's'); % continuous time!
+
+filt = tf(Bpre,Apre);
+FRF_LPF = squeeze(freqresp(filt,2*pi*f));
+
+LPF = tf(Bpre,Apre);
+
+
+figure('Name','Low Pass Filter (Butterworth)')
+bode(LPF)
+
+sys_LPF = sys_c4/LPF;
+
+
+figure('Name','Inverse filtered continuous time system')
+bode(sys_c4)
+hold on
+bode(sys_LPF)
+legend('Identified system before filtering','Filtered system')
+
+figure('Name','Difference Empirical - Continuous VS inverse filter')
+subplot(2,1,1)
+semilogx(f, 20*log10(abs(FRF_diff)))
+hold on
+semilogx(f, 20*log10(abs(FRF_LPF.^(-1))))
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRF_{diff}|  [m]')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRF_diff)))
+hold on
+semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRF_diff)  [^\circ]')
+
+%% Discretize filtered system to 100Hz
+
+sys_dLPF = c2d(sys_LPF,0.01,'tustin')
+
+figure('Name','Inverse low pass filtered, discretized (100Hz) system: Freq resp')
+bode(sys_dLPF)
+
+figure('Name', 'Inverse low pass filtered, discretized (100Hz) system: Pole Zero Map')
+pzmap(sys_dLPF)
+
 

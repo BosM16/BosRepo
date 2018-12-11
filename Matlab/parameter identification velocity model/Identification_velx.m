@@ -339,6 +339,7 @@ legend('filtered measurement', ...
        '2nd - filter - proper', ...
        '2nd - filter - strictly proper', ...
        '2nd - filter - strictly proper - minimum phase')
+   
 %% Find crossover frequency of best fit
 [error, index] = min(abs(20*log10(abs(FRF3(1:end-100)))));
 f0 = f(index);
@@ -427,7 +428,6 @@ z = tf('z',0.01);
 sys_4m = kd/((1-exp(P(1)*0.01)*z^-1)*(1-exp(P(2)*0.01)*z^-1));
 
 
-
 %% Plot 100Hz fit
 %  & Integreer deze en kijk of fit op positie goed is.
 dt100Hz = .01;
@@ -492,29 +492,57 @@ xlim([f(1) f(end)])
 xlabel('f  [Hz]')
 ylabel('\phi(FRF_diff)  [^\circ]')
 
+
 %% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
-Fs = 100;
-Fc = 1;
-Fcn = Fc/(Fs/2);
-[Bpre, Apre] = butter(3, Fcn);
-% freqz(Bpre,Apre)
+
+Fc = 0.5;
+[Bpre, Apre] = butter(2, Fc*2*pi, 's'); % continuous time!
 
 filt = tf(Bpre,Apre);
-FRFfilt = squeeze(freqresp(filt,2*pi*f));
-gain = 1/FRFfilt(1);
-
-% Bpre = gain*Bpre;
+FRF_LPF = squeeze(freqresp(filt,2*pi*f));
 
 LPF = tf(Bpre,Apre);
-% freqz(Bpre, Apre)
+
 
 figure('Name','Low Pass Filter (Butterworth)')
 bode(LPF)
 
 sys_LPF = sys_c4/LPF;
-figure('Name','Filtered continuous time system')
-bode(sys_LPF)
-hold on
+
+
+figure('Name','Inverse filtered continuous time system')
 bode(sys_c4)
-legend('Filtered','Regular')
+hold on
+bode(sys_LPF)
+legend('Identified system before filtering','Filtered system')
+
+figure('Name','Difference Empirical - Continuous VS inverse filter')
+subplot(2,1,1)
+semilogx(f, 20*log10(abs(FRF_diff)))
+hold on
+semilogx(f, 20*log10(abs(FRF_LPF.^(-1))))
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('|FRF_{diff}|  [m]')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRF_diff)))
+hold on
+semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))))
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('\phi(FRF_diff)  [^\circ]')
+
+%% Discretize filtered system to 100Hz
+
+sys_dLPF = c2d(sys_LPF,0.01,'tustin')
+
+figure('Name','Inverse low pass filtered, discretized (100Hz) system: Freq resp')
+bode(sys_dLPF)
+
+figure('Name', 'Inverse low pass filtered, discretized (100Hz) system: Pole Zero Map')
+pzmap(sys_dLPF)
+
 
