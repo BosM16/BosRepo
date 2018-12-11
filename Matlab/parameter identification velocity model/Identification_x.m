@@ -353,60 +353,60 @@ axis tight
 figure('Name','NOT  filtered pole zero map'),pzmap(sys_d4)
 
 %% Without filtering
-% --- STRICTLY PROPER [order(N) < order(D)]
-%
-%           Y(z)       b2*z^2 + b1*z + b0
-%   G(z) = ----- = --------------------------
-%           U(z)    z^3 + a2*z^2 + a1*z + a0
-%
-% y[k] = -a2*y[k-1]-a1*y[k-2]-a0*y[k-3]+b2*u[k-1]+b1*u[k-2]+b0*u[k-3]
-%
-% theta = [a2 a1 a0 b2 b1 b0]
-
-y5 = output_x(4:end);
-Phi5 = [-output_x(3:end-1), -output_x(2:end-2), -output_x(1:end-3), input(4:end), input(3:end-1), input(2:end-2), input(1:end-3)];
-theta5 = Phi5\y5;
-
-B5 = [theta5(4), theta5(5), theta5(6)];
-A5 = [1, theta5(1) theta5(2) theta5(3)];
-
-sys_d5 = tf(B5, A5, Ts);
-
-FRF5 = squeeze(freqresp(sys_d5,2*pi*f));
-
-figure('Name','3d order, no filter, strictly proper - Freq. Resp.'), subplot(211)
-semilogx(f, 20*log10(abs(FRF5)))
-grid on
-xlim([f(1) f(end)])
-xlabel('f  [Hz]')
-ylabel('|FRF5|  [m]')
-subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF5)))
-grid on
-xlim([f(1) f(end)])
-xlabel('f  [Hz]')
-ylabel('\phi(FRF5)  [^\circ]')
-
-x5 = lsim(sys_d5,input,t);
-
-figure('Name','3d order, no filter, strictly proper - Simulation')
-subplot(211)
-hold on
-plot(t, output_x,'g')
-plot(t, x5)
-title('3d order, no filter, strictly proper - Simulation VS Measurement')
-legend('pos_{x,meas}','pos_{x,sim}')
-xlabel('Time [s]')
-ylabel('Displacement [m]')
-axis tight
-subplot(212)
-plot(t,output_x - x5)
-title('Difference between simulation and measurement')
-legend('pos_{x,meas}-pos_{x,sim}')
-xlabel('Time [s]')
-ylabel('Displacement [m]')
-axis tight
-
-figure('Name','3d order, no filter, strictly proper - Pole Zero Map'),pzmap(sys_d5)
+% % --- STRICTLY PROPER [order(N) < order(D)]
+% %
+% %           Y(z)       b2*z^2 + b1*z + b0
+% %   G(z) = ----- = --------------------------
+% %           U(z)    z^3 + a2*z^2 + a1*z + a0
+% %
+% % y[k] = -a2*y[k-1]-a1*y[k-2]-a0*y[k-3]+b2*u[k-1]+b1*u[k-2]+b0*u[k-3]
+% %
+% % theta = [a2 a1 a0 b2 b1 b0]
+% 
+% y5 = output_x(4:end);
+% Phi5 = [-output_x(3:end-1), -output_x(2:end-2), -output_x(1:end-3), input(4:end), input(3:end-1), input(2:end-2), input(1:end-3)];
+% theta5 = Phi5\y5;
+% 
+% B5 = [theta5(4), theta5(5), theta5(6)];
+% A5 = [1, theta5(1) theta5(2) theta5(3)];
+% 
+% sys_d5 = tf(B5, A5, Ts);
+% 
+% FRF5 = squeeze(freqresp(sys_d5,2*pi*f));
+% 
+% figure('Name','3d order, no filter, strictly proper - Freq. Resp.'), subplot(211)
+% semilogx(f, 20*log10(abs(FRF5)))
+% grid on
+% xlim([f(1) f(end)])
+% xlabel('f  [Hz]')
+% ylabel('|FRF5|  [m]')
+% subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF5)))
+% grid on
+% xlim([f(1) f(end)])
+% xlabel('f  [Hz]')
+% ylabel('\phi(FRF5)  [^\circ]')
+% 
+% x5 = lsim(sys_d5,input,t);
+% 
+% figure('Name','3d order, no filter, strictly proper - Simulation')
+% subplot(211)
+% hold on
+% plot(t, output_x,'g')
+% plot(t, x5)
+% title('3d order, no filter, strictly proper - Simulation VS Measurement')
+% legend('pos_{x,meas}','pos_{x,sim}')
+% xlabel('Time [s]')
+% ylabel('Displacement [m]')
+% axis tight
+% subplot(212)
+% plot(t,output_x - x5)
+% title('Difference between simulation and measurement')
+% legend('pos_{x,meas}-pos_{x,sim}')
+% xlabel('Time [s]')
+% ylabel('Displacement [m]')
+% axis tight
+% 
+% figure('Name','3d order, no filter, strictly proper - Pole Zero Map'),pzmap(sys_d5)
 
 
 %% With Butterworth filtering of in- and output.
@@ -415,16 +415,23 @@ figure('Name','3d order, no filter, strictly proper - Pole Zero Map'),pzmap(sys_
 %           Y(z)       b2*z^2 + b1*z + b0
 %   G(z) = ----- = --------------------------
 %           U(z)    z^3 + a2*z^2 + a1*z + a0
+
+% MINIMUM Phase (no zero's):
+%           Y(z)             b0
+%   G(z) = ----- = --------------------------
+%           U(z)    z^3 + a2*z^2 + a1*z + a0
 %
 % y[k] = -a2*y[k-1]-a1*y[k-2]-a0*y[k-3]]+b2*u[k-1]+b1*u[k-2]+b0*u[k-3]
 %
 % theta = [a2 a1 a0 b2 b1 b0]
 
 y6 = output_x_filt(4:end);
-Phi6 = [-output_x_filt(3:end-1), -output_x_filt(2:end-2), -output_x_filt(1:end-3), input_filt(3:end-1), input_filt(2:end-2), input_filt(1:end-3)];
+% Phi6 = [-output_x_filt(3:end-1), -output_x_filt(2:end-2), -output_x_filt(1:end-3), input_filt(3:end-1), input_filt(2:end-2), input_filt(1:end-3)];
+Phi6 = [-output_x_filt(3:end-1), -output_x_filt(2:end-2), -output_x_filt(1:end-3), input_filt(1:end-3)];
 theta6 = Phi6\y6;
 
-B6 = [theta6(4), theta6(5), theta6(6)];
+% B6 = [theta6(4), theta6(5), theta6(6)];
+B6 = [theta6(4)];
 A6 = [1, theta6(1) theta6(2) theta6(3)];
 
 sys_d6 = tf(B6, A6, Ts);
@@ -467,103 +474,105 @@ figure('Name','3d order, filtered, strictly proper - Pole Zero Map'),pzmap(sys_d
 
 
 %% ---------------------
-%   FOURTH ORDER FITTING 
-%  ---------------------
-
-%% Filtering of the in- and output data using Butterworth filter
-[B, A] = butter(5, fcn); % order must be higher than order of system, 
-                            % adjust cut-off frquency to be higher than 
-                            % highest eigenfrequency of the system
-                             
-% input filtering                           
-input_filt = filter(B, A, input);
-% output filtering
-output_x_filt = filter(B, A, output_x);
-
-figure('Name','4th order Butt. filtered Input & Measurement')
-subplot(211),plot(t,input,t,input_filt),title('Input filtered')
-legend('raw input', 'filtered input')
-subplot(212),plot(time, output_x, time, output_x_filt),title('pos_{x,filt}')
-legend('raw measurement', 'filtered measurement')
-
-
-%% With Butterworth filtering of in- and output.
-% --- STRICTLY PROPER [order(N) < order(D)]
-%
-%           Y(z)       b3*z^3 + b2*z^2 + b1*z + b0
-%   G(z) = ----- = -----------------------------------
-%           U(z)    z^4 + a3*z^3 + a2*z^2 + a1*z + a0
-%
-% y[k] = -a3*y[k-1]-a2*y[k-2]-a1*y[k-3]-a0*y[k-4]+b3*u[k-1]+b2*u[k-2]+b1*u[k-3]+b1*u[k-4]
-%
-% theta = [a3 a2 a1 a0 b3 b2 b1 b0]
-
-y7 = output_x_filt(5:end);
-Phi7 = [-output_x_filt(4:end-1), -output_x_filt(3:end-2), -output_x_filt(2:end-3), -output_x_filt(1:end-4), input_filt(4:end-1), input_filt(3:end-2), input_filt(2:end-3), input_filt(1:end-4)];
-theta7 = Phi7\y7;
-
-B7 = [theta7(5), theta7(6), theta7(7), theta7(8)];
-A7 = [1, theta7(1) theta7(2) theta7(3) theta7(4)];
-
-sys_d7 = tf(B7, A7, Ts);
-
-FRF7 = squeeze(freqresp(sys_d7,2*pi*f));
-
-figure('Name','4th order, filtered, strictly proper - Freq. Resp.'), subplot(211)
-semilogx(f, 20*log10(abs(FRF7)))
-grid on
-xlim([f(1) f(end)])
-xlabel('f  [Hz]')
-ylabel('|FRF7|  [m]')
-subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF7)))
-grid on
-xlim([f(1) f(end)])
-xlabel('f  [Hz]')
-ylabel('\phi(FRF7)  [^\circ]')
-
-x7 = lsim(sys_d7,input,t);
-
-figure('Name','4th order, filtered, strictly proper - Simulation')
-subplot(211)
-hold on
-plot(t, output_x_filt,'g')
-plot(t, x7)
-title('4th order, filtered, strictly proper - Simulation VS Measurement')
-legend('pos_{x,meas}','pos_{x,sim}')
-xlabel('Time [s]')
-ylabel('Displacement [m]')
-axis tight
-subplot(212)
-plot(t,output_x_filt - x7)
-title('Difference between simulation and measurement')
-legend('pos_{x,meas}-pos_{x,sim}')
-xlabel('Time [s]')
-ylabel('Displacement [m]')
-axis tight
-
-figure('Name','4th order, filtered, strictly proper - Pole Zero Map'),pzmap(sys_d7)
-
-
-
+% %   FOURTH ORDER FITTING 
+% %  ---------------------
+% 
+% %% Filtering of the in- and output data using Butterworth filter
+% [B, A] = butter(5, fcn); % order must be higher than order of system, 
+%                             % adjust cut-off frquency to be higher than 
+%                             % highest eigenfrequency of the system
+%                              
+% % input filtering                           
+% input_filt = filter(B, A, input);
+% % output filtering
+% output_x_filt = filter(B, A, output_x);
+% 
+% figure('Name','4th order Butt. filtered Input & Measurement')
+% subplot(211),plot(t,input,t,input_filt),title('Input filtered')
+% legend('raw input', 'filtered input')
+% subplot(212),plot(time, output_x, time, output_x_filt),title('pos_{x,filt}')
+% legend('raw measurement', 'filtered measurement')
+% 
+% 
+% %% With Butterworth filtering of in- and output.
+% % --- STRICTLY PROPER [order(N) < order(D)]
+% %
+% %           Y(z)       b3*z^3 + b2*z^2 + b1*z + b0
+% %   G(z) = ----- = -----------------------------------
+% %           U(z)    z^4 + a3*z^3 + a2*z^2 + a1*z + a0
+% %
+% % y[k] = -a3*y[k-1]-a2*y[k-2]-a1*y[k-3]-a0*y[k-4]+b3*u[k-1]+b2*u[k-2]+b1*u[k-3]+b1*u[k-4]
+% %
+% % theta = [a3 a2 a1 a0 b3 b2 b1 b0]
+% 
+% y7 = output_x_filt(5:end);
+% Phi7 = [-output_x_filt(4:end-1), -output_x_filt(3:end-2), -output_x_filt(2:end-3), -output_x_filt(1:end-4), input_filt(4:end-1), input_filt(3:end-2), input_filt(2:end-3), input_filt(1:end-4)];
+% theta7 = Phi7\y7;
+% 
+% B7 = [theta7(5), theta7(6), theta7(7), theta7(8)];
+% A7 = [1, theta7(1) theta7(2) theta7(3) theta7(4)];
+% 
+% sys_d7 = tf(B7, A7, Ts);
+% 
+% FRF7 = squeeze(freqresp(sys_d7,2*pi*f));
+% 
+% figure('Name','4th order, filtered, strictly proper - Freq. Resp.'), subplot(211)
+% semilogx(f, 20*log10(abs(FRF7)))
+% grid on
+% xlim([f(1) f(end)])
+% xlabel('f  [Hz]')
+% ylabel('|FRF7|  [m]')
+% subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF7)))
+% grid on
+% xlim([f(1) f(end)])
+% xlabel('f  [Hz]')
+% ylabel('\phi(FRF7)  [^\circ]')
+% 
+% x7 = lsim(sys_d7,input,t);
+% 
+% figure('Name','4th order, filtered, strictly proper - Simulation')
+% subplot(211)
+% hold on
+% plot(t, output_x_filt,'g')
+% plot(t, x7)
+% title('4th order, filtered, strictly proper - Simulation VS Measurement')
+% legend('pos_{x,meas}','pos_{x,sim}')
+% xlabel('Time [s]')
+% ylabel('Displacement [m]')
+% axis tight
+% subplot(212)
+% plot(t,output_x_filt - x7)
+% title('Difference between simulation and measurement')
+% legend('pos_{x,meas}-pos_{x,sim}')
+% xlabel('Time [s]')
+% ylabel('Displacement [m]')
+% axis tight
+% 
+% figure('Name','4th order, filtered, strictly proper - Pole Zero Map'),pzmap(sys_d7)
+% 
 
 
-%  ------------------
-%% Comparison of fits
-%  ------------------
-figure
-plot(t,[output_x ...
-        x3 x4 x5 x6 x7])
-        %x1 x2]) 
-legend('measurement',...
-       '3d - no filter - proper',...
-       '3d - filter - proper',...
-       '3d - no filter - strictly proper',...
-       '3d - filter - strictly proper',...
-       '4th - filter - strictly proper')
-     %'2nd - no filter - proper', ...
-     %'2nd - filter - proper')  % unstable!
 
+
+%% ------------------
+% %  Comparison of fits
+% %  ------------------
+% figure
+% plot(t,[output_x ...
+%         x3 x4 x5 x6 x7])
+%         %x1 x2]) 
+% legend('measurement',...
+%        '3d - no filter - proper',...
+%        '3d - filter - proper',...
+%        '3d - no filter - strictly proper',...
+%        '3d - filter - strictly proper',...
+%        '4th - filter - strictly proper')
+%      %'2nd - no filter - proper', ...
+%      %'2nd - filter - proper')  % unstable!
+% 
      
+
+
 %% Find crossover frequency of best fit
 [error, index] = min(abs(20*log10(abs(FRF6(1:end-100)))));
 f0 = f(index);
@@ -572,12 +581,11 @@ fprintf('f0x: %d \n', f0)
 
 
 %% continuous time transfer function
-sys_c6 = d2c(sys_d6)
+sys_c6 = d2c(sys_d6, 'matched')
 
 
 %% Save result (transfer function)
-save('XSignals_50Hz','input','output_x','x6')
-
+% save('XSignals_50Hz','input','output_x','x6')
 
 
 %% 
@@ -606,3 +614,5 @@ grid on
 xlim([f(1) f(end)])
 xlabel('f  [Hz]')
 ylabel('\phi(FRF6)  [^\circ]')
+
+%% end

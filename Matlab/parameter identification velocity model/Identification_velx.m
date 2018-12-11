@@ -372,7 +372,7 @@ ylabel('\phi(FRFc4)  [^\circ]')
 
 xc4 = lsim(sys_c4,input,t);
 
-figure('Name','2nd - filtered - strictly proper - Minimum Phase: Simulation')
+figure('Name','Continuous - 2nd - filtered - strictly proper - Minimum Phase: Simulation')
 subplot(211)
 hold on
 plot(t, velocity_x,'g')
@@ -391,7 +391,7 @@ xlabel('Time [s]')
 ylabel('Velocity [m/s]')
 axis tight
 
-figure('Name','2nd - filtered - strictly proper - Minimum Phase: Pole Zero Map')
+figure('Name','Continuous - 2nd - filtered - strictly proper - Minimum Phase: Pole Zero Map')
 pzmap(sys_c4)
 
 %% Find crossover frequency of best fit
