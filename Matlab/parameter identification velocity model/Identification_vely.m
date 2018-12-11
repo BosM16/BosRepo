@@ -1,5 +1,4 @@
 %%% Parameter estimation %%%
-% zie ook 'test.m' !
 clear all
 close all
 
