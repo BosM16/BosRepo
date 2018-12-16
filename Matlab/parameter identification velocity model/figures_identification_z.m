@@ -31,14 +31,14 @@ hold on
 plot(t, output_z_filt,'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',2.5)
 plot(t, x0, 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
 title('Position fit: Simulation VS Filtered Measurement')
-legend('pos_{z,meas}','pos_{z,sim}')
+legend({'pos_{z,meas}','pos_{z,sim}'}, 'FontSize',10)
 xlabel('Time [s]')
 ylabel('Displacement [m]')
 axis tight
 subplot(212)
 plot(t,output_z_filt - x0, 'Color', [0.9290, 0.6940, 0.1250], 'LineWidth',2.5)
 title('Difference between simulation and measurement')
-legend('pos_{z,meas}-pos_{z,sim}')
+legend({'pos_{z,meas}-pos_{z,sim}'}, 'FontSize',10)
 xlabel('Time [s]')
 ylabel('Displacement [m]')
 axis tight
