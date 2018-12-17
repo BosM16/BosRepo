@@ -1,0 +1,14 @@
+close all
+
+% Important note: first run file "Identification_velx.m"
+%% 
+s = tf('s');
+sysbrol1 = -(s-1)/(1+s+s^2);
+sysbrol2 = (s+1)/(1+s+s^2);
+
+
+
+figure
+hold on
+step(sysbrol1)
+step(sysbrol2)
