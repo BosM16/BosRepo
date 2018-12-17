@@ -511,7 +511,6 @@ bode(LPF)
 
 sys_LPF = sys_c4/LPF;
 
-
 figure('Name','Inverse filtered continuous time system')
 bode(sys_c4)
 hold on
@@ -520,22 +519,24 @@ legend('Identified system before filtering','Filtered system')
 
 figure('Name','Difference Empirical - Continuous VS inverse filter')
 subplot(2,1,1)
-semilogx(f, 20*log10(abs(FRF_diff)))
+semilogx(f, 20*log10(abs(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
 hold on
-semilogx(f, 20*log10(abs(FRF_LPF.^(-1))))
+semilogx(f, 20*log10(abs(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
 grid on 
 xlim([f(1) f(end)])
 xlabel('f  [Hz]')
-ylabel('|FRF_{diff}|  [m]')
+ylabel('H(f)|  [m]')
+legend('FRF_{diff}', 'LPF')
 axis tight
 subplot(2,1,2)
-semilogx(f, 180/pi*unwrap(angle(FRF_diff)))
+semilogx(f, 180/pi*unwrap(angle(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
 hold on
-semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))))
+semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
 grid on
 xlim([f(1) f(end)])
 xlabel('f  [Hz]')
-ylabel('\phi(FRF_diff)  [^\circ]')
+ylabel('\phi(H(f))  [^\circ]')
+legend('FRF_{diff}', 'LPF')
 
 %% Discretize filtered system to 100Hz
 

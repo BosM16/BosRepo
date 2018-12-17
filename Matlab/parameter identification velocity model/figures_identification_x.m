@@ -31,14 +31,15 @@ hold on
 plot(t, output_x_filt,'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',2.5)
 plot(t, x6, 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
 title('Position fit: Simulation VS Filtered Measurement')
-legend('pos_{x,meas}','pos_{x,sim}')
+legend({'pos_{x,meas}','pos_{x,sim}'}, 'FontSize',10)
+
 xlabel('Time [s]')
 ylabel('Displacement [m]')
 axis tight
 subplot(212)
 plot(t,output_x_filt - x6, 'Color', [0.9290, 0.6940, 0.1250], 'LineWidth',2.5)
 title('Difference between simulation and measurement')
-legend('pos_{x,meas}-pos_{x,sim}')
+legend({'pos_{x,meas}-pos_{x,sim}'}, 'FontSize',10)
 xlabel('Time [s]')
 ylabel('Displacement [m]')
 axis tight
@@ -61,3 +62,51 @@ legend('v_{x,meas}-v_{x,sim}')
 xlabel('Time [s]')
 ylabel('Velocity [m/s]')
 axis tight
+
+%% VELOCITY FIT INVERSE WITH LPF
+
+figure('Name','Difference Empirical - Continuous VS inverse filter')
+subplot(2,1,1)
+semilogx(f, 20*log10(abs(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
+hold on
+semilogx(f, 20*log10(abs(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('magnitude  [m]')
+legend('FRF_{diff}', 'LPF', 'Location','northwest')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
+hold on
+semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('phase  [^\circ]')
+legend('FRF_{diff}', 'LPF', 'Location','northwest')
+
+
+sys_c4_eval = squeeze(freqresp(sys_c4^(-1),2*pi*f));
+sys_LPF_eval = squeeze(freqresp(sys_LPF^(-1),2*pi*f));
+
+figure('Name','Filtered vs non filtered inverse continuous time system')
+subplot(2,1,1)
+semilogx(f, 20*log10(abs(sys_c4_eval)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
+hold on
+semilogx(f, 20*log10(abs(sys_LPF_eval)), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
+grid on 
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('magnitude  [dB]')
+legend('System without filtering','Filtered system', 'Location','northwest')
+axis tight
+subplot(2,1,2)
+semilogx(f, 180/pi*unwrap(angle(sys_c4_eval)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
+hold on
+semilogx(f, 180/pi*unwrap(angle(sys_LPF_eval)), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
+grid on
+xlim([f(1) f(end)])
+xlabel('f  [Hz]')
+ylabel('phase  [^\circ]')
+legend('System without filtering','Filtered system', 'Location','northwest')
