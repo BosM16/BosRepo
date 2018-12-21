@@ -110,3 +110,6 @@ xlim([f(1) f(end)])
 xlabel('f  [Hz]')
 ylabel('phase  [^\circ]')
 legend('System without filtering','Filtered system', 'Location','northwest')
+
+%% BODE
+

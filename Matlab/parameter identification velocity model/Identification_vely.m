@@ -400,7 +400,7 @@ f0 = f(index);
 fprintf('f0x: %d \n', f0)
 
 %% Discretize to 100Hz using matched method
-% sys_4 = c2d(sys_c4, 0.01,'matched');
+sys_4 = c2d(sys_c4, 0.01,'matched');
 % 
 % figure('Name','PZmaps for minimum-phase discrete & continuous')
 % hold on
@@ -429,27 +429,27 @@ fprintf('f0x: %d \n', f0)
 % 
 % 
 % %% Plot fit
-% %  & Integreer deze en kijk of fit op positie goed is.
-% dt100Hz = .01;
-% t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
-% 
-% % Differentiator
-% z = tf('z', dt100Hz);
-% int_d = z*dt100Hz/(z-1);
-% sys_x = int_d * sys_4;
-% 
+%  & Integreer deze en kijk of fit op positie goed is.
+dt100Hz = .01;
+t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
+
+% Differentiator
+z = tf('z', dt100Hz);
+int_d = z*dt100Hz/(z-1);
+sys_x = int_d * sys_4;
+
 % % Interpolate input
 % input100Hz = interp1(t,input,t100Hz);
 % 
 % v_sim = lsim(sys_4m,input100Hz,t100Hz);
-% x_sim = lsim(sys_x,input100Hz,t100Hz);
-% 
+x_sim = lsim(sys_x,input100Hz,t100Hz);
+
 % figure('Name','Velocity 100Hz model simulation')
 % plot(t,velocity_x_filt, t100Hz, v_sim)
 % legend('filtered velocity','simulation')
-% 
-% figure('Name', 'Integrated velocity simulation')
-% plot(t, output_x, t100Hz, x_sim);
+
+figure('Name', 'Integrated velocity simulation')
+plot(t, output_x, t100Hz, x_sim);
 % % Conclusie: komt heel goed overeen met fit 3e orde op positie!
 
 
