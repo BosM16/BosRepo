@@ -59,6 +59,7 @@ class Demo(object):
         '''
         self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
         self.kalman.latest_vel_cmd = req_vel.vel_cmd
+        print '-----latest vel cmd received by kalman filter-----', self.kalman.latest_vel_cmd.twist.linear
 
         # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
         self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(

@@ -119,12 +119,6 @@ class VelCommander(object):
         self.D = np.array([[0.5846, 0.0],
                            [0.0, 0.5623]])
 
-        print 'matrices for inverse model'
-        print self.A
-        print self.B
-        print self.C
-        print self.D
-
         # X-direction
         # b0 = 1.636
         # b1 = -3.345
@@ -254,11 +248,11 @@ class VelCommander(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
-        old_pose = self._robot_est_pose
+        # old_pose = self._robot_est_pose
         self._robot_est_pose = self.get_pose_est()
         self.safe = self.safety_check()
-        if not self._init and self.safe:
-            self._robot_est_pose = old_pose
+        # if not self._init and self.safe:
+        #     self._robot_est_pose = old_pose
 
         # Check for new trajectories. Trigger Motionplanner or raise
         # 'overtime'
@@ -373,11 +367,16 @@ class VelCommander(object):
             self.x_error = self._traj['x'][self._index] - self._robot_est_pose.x
             self.y_error = self._traj['y'][self._index] - self._robot_est_pose.y
 
+            # publish current pose calculated by omg-tools
+            self.__publish_omg_pos(
+                self._traj['x'][self._index], self._traj['x'][self._index])
+
         # Safety feature, if position measurement stops working, set velocity
         # command equal to zero
         if (self.x_error > self.safety_treshold) or (
                 self.y_error > self.safety_treshold):
-            self.cmd_twist_convert.twist = Twist()
+            self.cmd_twist_convert.twist = TwistStamped()
+            self.cmd_twist_convert.header.stamp = rospy.Time.now()
             return False
         return True
 
@@ -385,8 +384,8 @@ class VelCommander(object):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
-        if not self.safe:
-            return
+        # if not self.safe:
+        #     return
 
         # Combine feedforward and feedback part
         # SHOULD BE ADAPTED! OR FEEDBACK WILL BE TAKEN AS PART OF LAST INPUT J
@@ -418,6 +417,7 @@ class VelCommander(object):
         '''
         # If goal reached, send out feedback vel commands to stay in place.
         if self.target_reached:
+            print 'TARGET IS REEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCHHHHHHHHHHHHED'
             self._robot_est_pose = self.get_pose_est()
             self.cmd_twist_convert.twist.linear.x = self.K_x*(
                                         self._goal.x - self._robot_est_pose.x)
@@ -425,6 +425,7 @@ class VelCommander(object):
                                         self._goal.y - self._robot_est_pose.y)
             self.cmd_twist_convert.twist.angular.z = self.K_theta*(
                                         self.desired_angle - self.real_angle)
+            self.cmd_twist_convert.header.stamp = rospy.Time.now()
             self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
     def new_measurement(self, meas):
@@ -517,7 +518,8 @@ class VelCommander(object):
 
     def marker_setup(self):
         '''Setup markers to display the desired and real path of the drone in
-        rviz.
+        rviz, along with the current position in the omg-tools generated
+        position list.
         '''
         # Desired path
         self._desired_path = Marker()
@@ -562,6 +564,26 @@ class VelCommander(object):
         self._real_path.color.a = 1.0
         self._real_path.lifetime = rospy.Duration(0)
 
+        # omg-tools position
+        self.omg_pos = Marker()
+        self.omg_pos.header.frame_id = 'world'
+        self.omg_pos.ns = "omg_pos"
+        self.omg_pos.id = 2
+        self.omg_pos.type = 1  # Cube
+        self.omg_pos.action = 0
+        self.omg_pos.pose.position.z = 0.
+        self.omg_pos.pose.orientation.x = 0.
+        self.omg_pos.pose.orientation.y = 0.
+        self.omg_pos.pose.orientation.z = 0.
+        self.omg_pos.scale.x = 0.3
+        self.omg_pos.scale.y = 0.3
+        self.omg_pos.scale.z = 0.3
+        self.omg_pos.color.r = 0.0
+        self.omg_pos.color.g = 0.0
+        self.omg_pos.color.b = 1.0
+        self.omg_pos.color.a = 1.0
+        self.omg_pos.lifetime = rospy.Duration(0)
+
     def __publish_desired(self, x_traj, y_traj):
         '''Publish planned x and y trajectory to topic for visualisation in
         rviz.
@@ -574,6 +596,10 @@ class VelCommander(object):
         # calculated.
         self._desired_path.points = self._desired_path.points[
                                             0:(self.old_len + self.pos_index)]
+
+        # After a while list becomes really long so only keep last XXXX values.
+        if len(self._desired_path.points) > 1000:
+            self._desired_path.points = self._desired_path.points[-1000:]
         self.old_len = len(self._desired_path.points)
 
         # Add new calculated pos list to old one.
@@ -591,9 +617,23 @@ class VelCommander(object):
         self._real_path.header.stamp = rospy.get_rostime()
 
         point = Point(x=x_pos, y=y_pos)
-        self._real_path.points.append(point)
+        # After a while list becomes really long so only keep last XXXX values.
+        if len(self._real_path.points) > 1000:
+            self._real_path.points = self._real_path.points[1:] + [point]
+        else:
+            self._real_path.points.append(point)
 
         self.trajectory_real.publish(self._real_path)
+
+    def __publish_omg_pos(self, x_pos, y_pos):
+        '''Publish current position in omg-tools generated position list.
+        '''
+        self.omg_pos.header.stamp = rospy.get_rostime()
+
+        self.omg_pos.pose.position.x = x_pos
+        self.omg_pos.pose.position.y = y_pos
+
+        self.omg_pos.publish(self._real_path)
 
 
 if __name__ == '__main__':
