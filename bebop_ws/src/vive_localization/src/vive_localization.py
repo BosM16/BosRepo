@@ -11,7 +11,7 @@ import tf2_ros
 import triad_openvr
 
 
-class LocalizationTest(object):
+class Vive_localization(object):
     '''
     '''
 
@@ -32,6 +32,8 @@ class LocalizationTest(object):
             'vive_localization/pose', PoseStamped, queue_size=1)
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
+        self.vive_frame_pose = rospy.Publisher(
+            'vive_localization/vive_frame_pose', PoseStamped, queue_size=1)
 
         rospy.Subscriber('vive_localization/calibrate', Empty, self.calibrate)
         rospy.Subscriber(
@@ -112,7 +114,7 @@ class LocalizationTest(object):
 
     def start(self):
         '''
-        Starts running of bebop_demo node.
+        Starts running of localization node.
         '''
         print 'Localization test is ON'
         sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
@@ -124,6 +126,11 @@ class LocalizationTest(object):
 
         if not self.calib:
             self.publish_pose_est(Empty)
+
+        # Calculate and publish location of Vive frame for measurement check.
+        self.tf_v_in_w = self.get_transform("vive", "world")
+        vive_frame_pose = self.pose_to_tf(self.tf_v_in_w)
+        self.vive_frame_pose.publish(vive_frame_pose)
 
         rospy.spin()
 
@@ -148,6 +155,8 @@ class LocalizationTest(object):
 
         print 'CALIBRATED \n'
         print '--------------------------- \n'
+
+        self.publish_pose_est(Empty)
 
     def publish_pose_est(self, *_):
         '''Publishes message that calibration is completed. Starts publishing
@@ -259,5 +268,5 @@ class LocalizationTest(object):
 
 
 if __name__ == '__main__':
-    test = LocalizationTest()
-    test.start()
+    localization = Vive_localization()
+    localization.start()

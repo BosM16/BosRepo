@@ -50,7 +50,8 @@ class VelCommander(object):
         self.pos_nrm = np.inf
         self.x_error = 0.
         self.y_error = 0.
-        self.safe = True
+        self.measurement_valid = False
+        self.safe = False
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -68,6 +69,8 @@ class VelCommander(object):
         self._robot_est_pose.x = 0.
         self._robot_est_pose.y = 0.
 
+        self.vive_frame_pose = PoseStamped()
+
         self._traj = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
         self._traj_strg = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
         self._inputs_applied = {'jx': [0.0, 0.0], 'jy': [0.0, 0.0]}
@@ -84,8 +87,8 @@ class VelCommander(object):
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
-        rospy.Subscriber(
-            'vive_localization/pose', PoseStamped, self.new_measurement)
+        rospy.Subscriber('vive_localization/pose', PoseStamped,
+                         self.new_measurement)
 
     def initialize_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
@@ -167,8 +170,6 @@ class VelCommander(object):
         Settings constists of
             - environment
         Waits for Motionplanner to set mp_status to configured.
-
-        NOTE: This would be better as a service!
         '''
 
         # List containing obstacles of type Obstacle()
@@ -182,6 +183,7 @@ class VelCommander(object):
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
             config_success = False
+
         rospy.Subscriber('motionplanner/goal', Pose2D, self.set_goal)
 
         return config_success
@@ -249,7 +251,13 @@ class VelCommander(object):
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
         # old_pose = self._robot_est_pose
-        self._robot_est_pose = self.get_pose_est()
+        self._robot_est_pose, measurement_valid = self.get_pose_est()
+        if not measurement_valid:
+            self.safety_brake()
+            return
+
+        # DISCUSS WHETHER THIS IS NECESSARY! OTHER SAFETY SITUATION THAN
+        # LOSS OF MEASUREMENT?
         self.safe = self.safety_check()
         # if not self._init and self.safe:
         #     self._robot_est_pose = old_pose
@@ -280,12 +288,7 @@ class VelCommander(object):
                 self.calc_succeeded = False
                 print '-- !! -------- !! --'
                 print '-- !! Overtime !! --'
-                # Brake as emergency measure: Bebop brakes automatically when
-                # /bebop/cmd_vel topic receives all zeros.
-                self.cmd_twist_convert.twist.linear.x = 0.
-                self.cmd_twist_convert.twist.linear.y = 0.
-                self.cmd_twist_convert.twist.linear.z = 0.
-                self.cmd_vel.publish(self.cmd_twist_convert.twist)
+                self.safety_brake()
                 return
 
         # Convert feedforward velocity command to angle input.
@@ -383,6 +386,15 @@ class VelCommander(object):
             return False
         return True
 
+    def safety_brake(self):
+        '''Brake as emergency measure: Bebop brakes automatically when
+            /bebop/cmd_vel topic receives all zeros.
+        '''
+        self.cmd_twist_convert.twist.linear.x = 0.
+        self.cmd_twist_convert.twist.linear.y = 0.
+        self.cmd_twist_convert.twist.linear.z = 0.
+        self.cmd_vel.publish(self.cmd_twist_convert.twist)
+
     def calc_vel_cmd(self):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
@@ -392,7 +404,6 @@ class VelCommander(object):
 
         # Combine feedforward and feedback part
         # SHOULD BE ADAPTED! OR FEEDBACK WILL BE TAKEN AS PART OF LAST INPUT J
-        # BOS: Geeft dat niet iets accurater dan het niet te doen?
         self.cmd_twist_convert.twist.linear.x = (
             self.x_error * self.K_x + self.cmd_twist_convert.twist.linear.x)
 
@@ -432,8 +443,9 @@ class VelCommander(object):
             self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
     def new_measurement(self, meas):
-        '''Substract current angle of rotation about the yaw axis from
-            the measurement.
+        '''Substract (Bos: Substract??? betekent aftrekken...)
+        current angle of rotation about the yaw axis from
+        the measurement.
         '''
         # HERE ALSO ADAPT SAFETY PROCEDURE? DO NOT CHANGE ANGLE WHEN WRONG MEASUREMENT!
         if self.safe:
@@ -447,17 +459,22 @@ class VelCommander(object):
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
         '''
-
+        # This service is provided as soon as vive is ready. (See bebop_test)
         rospy.wait_for_service("/world_model/get_pose")
         try:
             pose_est = rospy.ServiceProxy(
                 "/world_model/get_pose", GetPoseEst)
             resp = pose_est(self.cmd_twist_convert)
+
+            measurement_valid = resp.measurement_valid
             yhat = resp.pose_est.point
-            self.vhat = resp.vel_est.point
-            self.__publish_real(yhat.x, yhat.y)
             pose = Pose2D(x=yhat.x, y=yhat.y)
-            return pose
+            self.__publish_real(yhat.x, yhat.y)
+
+            self.vhat = resp.vel_est.point
+
+            return pose, measurement_valid
+
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
             return
@@ -662,7 +679,7 @@ class VelCommander(object):
         '''Publish current omg-tools velocity input vector.
         '''
         self.omg_vel.header.stamp = rospy.get_rostime()
-        
+
         point_start = Point(x=x_pos, y=y_pos)
         point_end = Point(x=(x_pos + x_vel), y=(y_pos + y_vel))
         self.omg_vel.points = [point_start, point_end]

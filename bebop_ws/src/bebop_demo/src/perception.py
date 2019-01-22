@@ -30,6 +30,19 @@ class Perception(object):
         self.pose_bebop = data.pose.pose
         self.twist_bebop = data.twist.twist
 
+    def measurement_check(self):
+        '''Monitor function: checks measurementself.
+        If the measurement equals the vive frame origin, this means that
+        vibrations cause a false measurement.
+        '''
+        measurement_valid = (self.pose_vive == self.vive_frame_pose.pose)
+        if not measurement_valid:
+            print '***********************************'
+            print '   Warning: invalid measurement!   '
+            print '***********************************'
+
+        return measurement_valid
+
 
 if __name__ == '__main__':
     perception = Perception()

@@ -35,6 +35,9 @@ class Demo(object):
             'vive_localization/ready', Empty, self.vive_ready)
         rospy.Subscriber(
             'vive_localization/pose', PoseStamped, self.new_measurement)
+        rospy.Subscriber('vive_localization/vive_frame_pose', PoseStamped,
+                         self.store_vive_frame_pose)
+
         self._get_pose_service = None
 
     def start(self):
@@ -57,42 +60,58 @@ class Demo(object):
         Argument:
             - req_vel = TwistStamped
         '''
-        self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
-        self.kalman.latest_vel_cmd = req_vel.vel_cmd
-        print '-----latest vel cmd received by kalman filter-----', self.kalman.latest_vel_cmd.twist.linear
+        # Don't do prediction and transformation calculations if the
+        # measurement is invalid.
+        if self.measurement_valid:
 
-        # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
-        self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                        self.kalman.latest_vel_cmd, self.wm.yhat_r)
+            self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
+            self.kalman.latest_vel_cmd = req_vel.vel_cmd
+            print '-----latest vel cmd received by kalman filter-----', self.kalman.latest_vel_cmd.twist.linear
 
-        # Transform the rotated yhat and vhat to world frame.
-        self.wm.yhat = self.transform_point(
-            self.wm.yhat_r, "world_rot", "world")
-        self.wm.vhat = self.transform_point(
-            self.wm.vhat_r, "world_rot", "world")
+            # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
+            self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
+                                            self.kalman.latest_vel_cmd, self.wm.yhat_r)
 
-        self.pose_r_pub.publish(self.wm.yhat_r)
-        self.pose_pub.publish(self.wm.yhat)
+            # Transform the rotated yhat and vhat to world frame.
+            self.wm.yhat = self.transform_point(
+                self.wm.yhat_r, "world_rot", "world")
+            self.wm.vhat = self.transform_point(
+                self.wm.vhat_r, "world_rot", "world")
 
-        return GetPoseEstResponse(self.wm.yhat, self.wm.vhat)
+            self.pose_r_pub.publish(self.wm.yhat_r)
+            self.pose_pub.publish(self.wm.yhat)
+
+        return GetPoseEstResponse(
+            self.wm.yhat, self.wm.vhat, self.measurement_valid)
 
     def new_measurement(self, measurement_world):
-
+        '''Processes incoming measurement from Vive localization.
+        measurement_world: PoseStamped
+        '''
         self.pc.pose_vive = measurement_world
+        self.measurement_valid = self.pc.measurement_check()
+
         measurement = self.kalman.transform_pose(
                                 measurement_world, "world", "world_rot")
-        if self.kalman.init:
-            self.wm.yhat_r_t0.header = measurement.header
-            zero_vel_cmd = TwistStamped()
-            zero_vel_cmd.header = measurement.header
-            self.kalman.vel_cmd_list = [zero_vel_cmd]
-            self.kalman.init = False
+        if self.measurement_valid:
+            if self.kalman.init:
+                self.wm.yhat_r_t0.header = measurement.header
+                zero_vel_cmd = TwistStamped()
+                zero_vel_cmd.header = measurement.header
+                self.kalman.vel_cmd_list = [zero_vel_cmd]
+                self.kalman.init = False
 
-        self.wm.yhat_r, self.wm.yhat_r_t0 = self.kalman.kalman_pos_correct(
+            # Apply correction step.
+            self.wm.yhat_r, self.wm.yhat_r_t0 = self.kalman.kalman_pos_correct(
                                                 measurement, self.wm.yhat_r_t0)
-        self.wm.yhat = self.transform_point(
-            self.wm.yhat_r, "world_rot", "world")
-        self.pose_pub.publish(self.wm.yhat)
+            self.wm.yhat = self.transform_point(
+                self.wm.yhat_r, "world_rot", "world")
+            self.pose_pub.publish(self.wm.yhat)
+
+    def store_vive_frame_pose(self, vive_frame_pose):
+        '''
+        '''
+        self.pc.vive_frame_pose = vive_frame_pose
 
     def transform_point(self, point, _from, _to):
         '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to
