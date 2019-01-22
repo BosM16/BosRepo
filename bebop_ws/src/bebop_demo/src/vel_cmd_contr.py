@@ -367,9 +367,12 @@ class VelCommander(object):
             self.x_error = self._traj['x'][self._index] - self._robot_est_pose.x
             self.y_error = self._traj['y'][self._index] - self._robot_est_pose.y
 
-            # publish current pose calculated by omg-tools
+            # publish current pose and velocity calculated by omg-tools
             self.__publish_omg_pos(
                 self._traj['x'][self._index], self._traj['x'][self._index])
+            self.__publish_omg_vel(
+                self._traj['x'][self._index], self._traj['x'][self._index],
+                self._traj['v'][self._index], self._traj['w'][self._index])
 
         # Safety feature, if position measurement stops working, set velocity
         # command equal to zero
@@ -528,10 +531,10 @@ class VelCommander(object):
         self._desired_path.id = 0
         self._desired_path.type = 4  # Line List.
         self._desired_path.action = 0
-        self._desired_path.pose.position.z = 0.
-        self._desired_path.pose.orientation.x = 0
-        self._desired_path.pose.orientation.y = 0
-        self._desired_path.pose.orientation.z = 0
+        # self._desired_path.pose.position.z = 0.
+        # self._desired_path.pose.orientation.x = 0
+        # self._desired_path.pose.orientation.y = 0
+        # self._desired_path.pose.orientation.z = 0
         self._desired_path.scale.x = 0.05
         self._desired_path.scale.y = 0.05
         self._desired_path.scale.z = 0.0
@@ -551,10 +554,10 @@ class VelCommander(object):
         self._real_path.id = 1
         self._real_path.type = 4  # Line List.
         self._real_path.action = 0
-        self._real_path.pose.position.z = 0.
-        self._real_path.pose.orientation.x = 0
-        self._real_path.pose.orientation.y = 0
-        self._real_path.pose.orientation.z = 0
+        # self._real_path.pose.position.z = 0.
+        # self._real_path.pose.orientation.x = 0
+        # self._real_path.pose.orientation.y = 0
+        # self._real_path.pose.orientation.z = 0
         self._real_path.scale.x = 0.05
         self._real_path.scale.y = 0.05
         self._real_path.scale.z = 0.0
@@ -583,6 +586,26 @@ class VelCommander(object):
         self.omg_pos.color.b = 1.0
         self.omg_pos.color.a = 1.0
         self.omg_pos.lifetime = rospy.Duration(0)
+
+        # omg-tools velocity
+        self.omg_vel = Marker()
+        self.omg_vel.header.frame_id = 'world'
+        self.omg_vel.ns = "omg_vel"
+        self.omg_vel.id = 3
+        self.omg_vel.type = 0  # Arrow
+        self.omg_vel.action = 0
+        # self.omg_vel.pose.position.z = 0.
+        # self.omg_vel.pose.orientation.x = 0.
+        # self.omg_vel.pose.orientation.y = 0.
+        # self.omg_vel.pose.orientation.z = 0.
+        # self.omg_vel.scale.x = 1.0  # length
+        # self.omg_vel.scale.y = 0.2  # width
+        # self.omg_vel.scale.z = 0.4  # height
+        self.omg_vel.color.r = 0.0
+        self.omg_vel.color.g = 0.0
+        self.omg_vel.color.b = 1.0
+        self.omg_vel.color.a = 1.0
+        self.omg_vel.lifetime = rospy.Duration(0)
 
     def __publish_desired(self, x_traj, y_traj):
         '''Publish planned x and y trajectory to topic for visualisation in
@@ -634,6 +657,17 @@ class VelCommander(object):
         self.omg_pos.pose.position.y = y_pos
 
         self.omg_pos.publish(self._real_path)
+
+    def __publish_omg_vel(self, x_pos, y_pos, x_vel, y_vel):
+        '''Publish current omg-tools velocity input vector.
+        '''
+        self.omg_vel.header.stamp = rospy.get_rostime()
+        
+        point_start = Point(x=x_pos, y=y_pos)
+        point_end = Point(x=(x_pos + x_vel), y=(y_pos + y_vel))
+        self.omg_vel.points = [point_start, point_end]
+
+        self.omg_vel.publish(self.omg_vel)
 
 
 if __name__ == '__main__':
