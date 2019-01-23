@@ -54,6 +54,7 @@ add_message_files(
    Trigger.msg
    Trajectories.msg
    Obstacle.msg
+   PoseMeas.msg
 
 )
 
@@ -61,7 +62,7 @@ add_message_files(
 add_service_files(
   FILES
   GetPoseEst.srv
-  ConfigMotionplanner.srv 
+  ConfigMotionplanner.srv
 )
 
 ## Generate added messages and services with any dependencies listed here

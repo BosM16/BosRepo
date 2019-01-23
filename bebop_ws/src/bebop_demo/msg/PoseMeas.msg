@@ -1,0 +1,2 @@
+geometry_msgs/PoseStamped meas_world
+float32 yaw

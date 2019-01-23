@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, PoseStamped, Point, PointStamped, TwistStamped
+from geometry_msgs.msg import (
+    Twist, PoseStamped, Point, PointStamped, TwistStamped)
+from bebop_demo.msg import PoseMeas
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 
 import numpy as np
@@ -34,7 +36,7 @@ class Demo(object):
         rospy.Subscriber(
             'vive_localization/ready', Empty, self.vive_ready)
         rospy.Subscriber(
-            'vive_localization/pose', PoseStamped, self.new_measurement)
+            'vive_localization/pose', PoseMeas, self.new_measurement)
         rospy.Subscriber('vive_localization/vive_frame_pose', PoseStamped,
                          self.store_vive_frame_pose)
 

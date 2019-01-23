@@ -2,6 +2,7 @@
 
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from std_msgs.msg import Empty
+from bebop_demo.msg import PoseMeas
 
 import numpy as np
 import rospy
@@ -33,7 +34,7 @@ class Vive_localization(object):
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
         self.vive_frame_pose = rospy.Publisher(
-            'vive_localization/vive_frame_pose', PoseStamped, queue_size=1)
+            'vive_localization/vive_frame_pose', PoseMeas, queue_size=1)
 
         rospy.Subscriber('vive_localization/calibrate', Empty, self.calibrate)
         rospy.Subscriber(
