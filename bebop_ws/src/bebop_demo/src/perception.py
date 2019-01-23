@@ -35,7 +35,7 @@ class Perception(object):
         If the measurement equals the vive frame origin, this means that
         vibrations cause a false measurement.
         '''
-        measurement_valid = (self.pose_vive == self.vive_frame_pose.pose)
+        measurement_valid = (self.pose_vive.pose != self.vive_frame_pose.pose)
         if not measurement_valid:
             print '***********************************'
             print '   Warning: invalid measurement!   '

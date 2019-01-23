@@ -77,18 +77,22 @@ class Demo(object):
                 self.wm.yhat_r, "world_rot", "world")
             self.wm.vhat = self.transform_point(
                 self.wm.vhat_r, "world_rot", "world")
+            self.wm.yaw = self.pc.yaw
 
             self.pose_r_pub.publish(self.wm.yhat_r)
             self.pose_pub.publish(self.wm.yhat)
 
         return GetPoseEstResponse(
-            self.wm.yhat, self.wm.vhat, self.measurement_valid)
+            self.wm.yhat, self.wm.vhat, self.wm.yaw, self.measurement_valid)
 
-    def new_measurement(self, measurement_world):
+    def new_measurement(self, data):
         '''Processes incoming measurement from Vive localization.
-        measurement_world: PoseStamped
+        data:
+            meas_world: PoseStamped
+            yaw: float32
         '''
-        self.pc.pose_vive = measurement_world
+        self.pc.pose_vive = data.meas_world
+        self.pc.yaw = data.yaw
         self.measurement_valid = self.pc.measurement_check()
 
         measurement = self.kalman.transform_pose(

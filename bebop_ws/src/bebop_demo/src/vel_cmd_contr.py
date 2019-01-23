@@ -45,8 +45,8 @@ class VelCommander(object):
         self.rate = rospy.Rate(1./self._sample_time)
 
         self.X = np.array([[0.0], [0.0], [0.0], [0.0]])
-        self.desired_angle = 0.0
-        self.real_angle = 0.0
+        self.desired_yaw = 0.0
+        self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.x_error = 0.
         self.y_error = 0.
@@ -65,9 +65,9 @@ class VelCommander(object):
         # Coefficients for inverted model of velocity to input angle
         self.initialize_vel_model()
 
-        self._robot_est_pose = Pose2D()
-        self._robot_est_pose.x = 0.
-        self._robot_est_pose.y = 0.
+        self._drone_est_pose = Pose2D()
+        self._drone_est_pose.x = 0.
+        self._drone_est_pose.y = 0.
 
         self.vive_frame_pose = PoseStamped()
 
@@ -87,8 +87,8 @@ class VelCommander(object):
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
-        rospy.Subscriber('vive_localization/pose', PoseStamped,
-                         self.new_measurement)
+        # rospy.Subscriber('vive_localization/pose', PoseStamped,
+        #                  self.new_measurement)
 
     def initialize_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
@@ -201,8 +201,8 @@ class VelCommander(object):
         self._new_trajectories = False
 
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self._robot_est_pose = self.get_pose_est()
-        print 'est_pose received from kalman when setting goal', self._robot_est_pose
+        self._drone_est_pose = self.get_pose_est()[0]
+        print 'est_pose received from kalman when setting goal', self._drone_est_pose
         self.marker_setup()
 
         self.fire_motionplanner()
@@ -218,7 +218,7 @@ class VelCommander(object):
         '''Publishes inputs to motionplanner via Trigger topic.
         '''
         self._trigger.goal = self._goal
-        self._trigger.pos_state = self._robot_est_pose
+        self._trigger.pos_state = self._drone_est_pose
         self._trigger.vel_state = self.vhat
         self._trigger.current_time = self._time
         self._mp_trigger_topic.publish(self._trigger)
@@ -250,21 +250,20 @@ class VelCommander(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
-        # old_pose = self._robot_est_pose
-        self._robot_est_pose, measurement_valid = self.get_pose_est()
+        # old_pose = self._drone_est_pose
+        (self._drone_est_pose,
+         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+
+        # Publish pose to plot in rviz.
+        self.publish_real(self._drone_est_pose.x, self._drone_est_pose.y)
+
         if not measurement_valid:
             self.safety_brake()
             return
 
-        # DISCUSS WHETHER THIS IS NECESSARY! OTHER SAFETY SITUATION THAN
-        # LOSS OF MEASUREMENT?
-        self.safe = self.safety_check()
-        # if not self._init and self.safe:
-        #     self._robot_est_pose = old_pose
-
         # Check for new trajectories. Trigger Motionplanner or raise
         # 'overtime'
-        pose0 = [self._robot_est_pose.x, self._robot_est_pose.y]
+        pose0 = [self._drone_est_pose.x, self._drone_est_pose.y]
 
         if self._init:
             if not self._new_trajectories:
@@ -290,6 +289,10 @@ class VelCommander(object):
                 print '-- !! Overtime !! --'
                 self.safety_brake()
                 return
+
+        # publish current pose and velocity calculated by omg-tools
+        self.publish_omg_pos()
+        self.publish_omg_vel()
 
         # Convert feedforward velocity command to angle input.
         self.convert_vel_cmd(self._index)
@@ -361,30 +364,6 @@ class VelCommander(object):
         self._inputs_applied['jx'].append(vel_cmd_x)
         self._inputs_applied['jy'].append(vel_cmd_y)
 
-    def safety_check(self):
-        ''' Check if measurement still working, otherwise, set velocity
-        command equal to zero.
-        '''
-        # NEEDS TO BE ADAPTED TO ALSO WORK WHEN DOING POS FEEDBACK!!!!!
-        if not self._index > (len(self._traj['x']) - 1):
-            self.x_error = self._traj['x'][self._index] - self._robot_est_pose.x
-            self.y_error = self._traj['y'][self._index] - self._robot_est_pose.y
-
-            # publish current pose and velocity calculated by omg-tools
-            self.__publish_omg_pos(
-                self._traj['x'][self._index], self._traj['x'][self._index])
-            self.__publish_omg_vel(
-                self._traj['x'][self._index], self._traj['x'][self._index],
-                self._traj['v'][self._index], self._traj['w'][self._index])
-
-        # Safety feature, if position measurement stops working, set velocity
-        # command equal to zero
-        if (self.x_error > self.safety_treshold) or (
-                self.y_error > self.safety_treshold):
-            self.cmd_twist_convert.twist = TwistStamped()
-            self.cmd_twist_convert.header.stamp = rospy.Time.now()
-            return False
-        return True
 
     def safety_brake(self):
         '''Brake as emergency measure: Bebop brakes automatically when
@@ -399,8 +378,6 @@ class VelCommander(object):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
-        # if not self.safe:
-        #     return
 
         # Combine feedforward and feedback part
         # SHOULD BE ADAPTED! OR FEEDBACK WILL BE TAKEN AS PART OF LAST INPUT J
@@ -422,39 +399,23 @@ class VelCommander(object):
 
         # Add theta feedback to remain at zero yaw angle
         self.cmd_twist_convert.twist.angular.z = self.K_theta*(
-                                        self.desired_angle - self.real_angle)
+                                        self.desired_yaw - self.real_yaw)
 
     def pos_feedback(self):
         '''Whenever the target is reached, apply position feedback to the
-        desired end posotion to remain in the correct spot and compensate for
+        desired end position to remain in the correct spot and compensate for
         drift.
         '''
         # If goal reached, send out feedback vel commands to stay in place.
-        if self.target_reached:
-            print 'TARGET IS REEEEEEEEEEEEEEAAAAAAAAAAAAAAAAAAAAACCCCCCCCCCCCCHHHHHHHHHHHHED'
-            self._robot_est_pose = self.get_pose_est()
-            self.cmd_twist_convert.twist.linear.x = self.K_x*(
-                                        self._goal.x - self._robot_est_pose.x)
-            self.cmd_twist_convert.twist.linear.y = self.K_x*(
-                                        self._goal.y - self._robot_est_pose.y)
-            self.cmd_twist_convert.twist.angular.z = self.K_theta*(
-                                        self.desired_angle - self.real_angle)
-            self.cmd_twist_convert.header.stamp = rospy.Time.now()
-            self.cmd_vel.publish(self.cmd_twist_convert.twist)
-
-    def new_measurement(self, meas):
-        '''Substract (Bos: Substract??? betekent aftrekken...)
-        current angle of rotation about the yaw axis from
-        the measurement.
-        '''
-        # HERE ALSO ADAPT SAFETY PROCEDURE? DO NOT CHANGE ANGLE WHEN WRONG MEASUREMENT!
-        if self.safe:
-            quat = (meas.pose.orientation.x,
-                    meas.pose.orientation.y,
-                    meas.pose.orientation.z,
-                    meas.pose.orientation.w)
-            euler = tf.transformations.euler_from_quaternion(quat)
-            self.real_angle = euler[2]
+        self._drone_est_pose = self.get_pose_est()[0]
+        self.cmd_twist_convert.twist.linear.x = self.K_x*(
+                                    self._goal.x - self._drone_est_pose.x)
+        self.cmd_twist_convert.twist.linear.y = self.K_x*(
+                                    self._goal.y - self._drone_est_pose.y)
+        self.cmd_twist_convert.twist.angular.z = self.K_theta*(
+                                    self.desired_yaw - self.real_yaw)
+        self.cmd_twist_convert.header.stamp = rospy.Time.now()
+        self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
@@ -466,14 +427,13 @@ class VelCommander(object):
                 "/world_model/get_pose", GetPoseEst)
             resp = pose_est(self.cmd_twist_convert)
 
-            measurement_valid = resp.measurement_valid
             yhat = resp.pose_est.point
             pose = Pose2D(x=yhat.x, y=yhat.y)
-            self.__publish_real(yhat.x, yhat.y)
+            vhat = resp.vel_est.point
+            yaw = resp.yaw
+            measurement_valid = resp.measurement_valid
 
-            self.vhat = resp.vel_est.point
-
-            return pose, measurement_valid
+            return pose, vhat, yaw, measurement_valid
 
         except rospy.ServiceException, e:
             print "Service call failed: %s" % e
@@ -503,7 +463,7 @@ class VelCommander(object):
 
         x_traj = self._traj_strg['x'][:]
         y_traj = self._traj_strg['y'][:]
-        self.__publish_desired(x_traj, y_traj)
+        self.publish_desired(x_traj, y_traj)
 
     def proceed(self):
         '''Determines whether goal is reached.
@@ -518,7 +478,7 @@ class VelCommander(object):
         stop = True
 
         pos_nrm = np.linalg.norm(np.array(
-            [self._robot_est_pose.x, self._robot_est_pose.y])
+            [self._drone_est_pose.x, self._drone_est_pose.y])
             - np.array([self._goal.x, self._goal.y]))
         input_nrm = np.linalg.norm(
             [self._inputs_applied['jx'][-1],
@@ -624,7 +584,7 @@ class VelCommander(object):
         self.omg_vel.color.a = 1.0
         self.omg_vel.lifetime = rospy.Duration(0)
 
-    def __publish_desired(self, x_traj, y_traj):
+    def publish_desired(self, x_traj, y_traj):
         '''Publish planned x and y trajectory to topic for visualisation in
         rviz.
         '''
@@ -650,7 +610,7 @@ class VelCommander(object):
 
         self.trajectory_desired.publish(self._desired_path)
 
-    def __publish_real(self, x_pos, y_pos):
+    def publish_real(self, x_pos, y_pos):
         '''Publish real x and y trajectory to topic for visualisation in
         rviz.
         '''
@@ -665,20 +625,25 @@ class VelCommander(object):
 
         self.trajectory_real.publish(self._real_path)
 
-    def __publish_omg_pos(self, x_pos, y_pos):
+    def publish_omg_pos(self):
         '''Publish current position in omg-tools generated position list.
         '''
         self.omg_pos.header.stamp = rospy.get_rostime()
 
-        self.omg_pos.pose.position.x = x_pos
-        self.omg_pos.pose.position.y = y_pos
+        self.omg_pos.pose.position.x = self._traj['x'][self._index]
+        self.omg_pos.pose.position.y = self._traj['y'][self._index]
 
         self.omg_pos.publish(self._real_path)
 
-    def __publish_omg_vel(self, x_pos, y_pos, x_vel, y_vel):
+    def publish_omg_vel(self):
         '''Publish current omg-tools velocity input vector.
         '''
         self.omg_vel.header.stamp = rospy.get_rostime()
+
+        x_pos = self._traj['x'][self._index]
+        y_pos = self._traj['y'][self._index]
+        x_vel = self._traj['v'][self._index]
+        y_vel = self._traj['w'][self._index]
 
         point_start = Point(x=x_pos, y=y_pos)
         point_end = Point(x=(x_pos + x_vel), y=(y_pos + y_vel))

@@ -127,10 +127,12 @@ class Vive_localization(object):
         if not self.calib:
             self.publish_pose_est(Empty)
 
-        # Calculate and publish location of Vive frame for measurement check.
-        self.tf_v_in_w = self.get_transform("vive", "world")
-        vive_frame_pose = self.pose_to_tf(self.tf_v_in_w)
-        self.vive_frame_pose.publish(vive_frame_pose)
+            # Calculate and publish location of Vive frame for measurement check.
+            self.tf_v_in_w = self.get_transform("vive", "world")
+            vive_frame_pose = self.pose_to_tf(self.tf_v_in_w)
+            self.vive_frame_pose.publish(vive_frame_pose)
+
+
 
         rospy.spin()
 
@@ -158,6 +160,11 @@ class Vive_localization(object):
 
         self.publish_pose_est(Empty)
 
+        # Calculate and publish location of Vive frame for measurement check.
+        self.tf_v_in_w = self.get_transform("vive", "world")
+        vive_frame_pose = self.pose_to_tf(self.tf_v_in_w)
+        self.vive_frame_pose.publish(vive_frame_pose)
+
     def publish_pose_est(self, *_):
         '''Publishes message that calibration is completed. Starts publishing
         pose measurements.
@@ -178,13 +185,15 @@ class Vive_localization(object):
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
             pose_world = self.tf_to_pose(tf_d_in_w)
-            self.pos_update.publish(pose_world)
 
             # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
+
+            self.pos_update.publish(pose_world, yaw)
+
             # - Yaw only (roll and pitch 0.0) to quaternions.
             quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
             self.tf_r_in_w.transform.rotation.x = quat[0]
