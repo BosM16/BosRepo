@@ -12,7 +12,7 @@ import tf2_ros
 import triad_openvr
 
 
-class Vive_localization(object):
+class ViveLocalization(object):
     '''
     '''
 
@@ -22,7 +22,7 @@ class Vive_localization(object):
         '''
         rospy.init_node('bebop_demo')
 
-        self.tracked_object = 'tracker'
+        self.tracked_object = 'controller'
 
         self.calib = rospy.get_param('vive_localization/calibrate', True)
 
@@ -126,14 +126,14 @@ class Vive_localization(object):
         self.init_transforms()
 
         if not self.calib:
-            self.publish_pose_est(Empty)
-
-            # Calculate and publish location of Vive frame for measurement check.
+            # Calculate and publish location of Vive frame for measurement
+            # check.
             self.tf_v_in_w = self.get_transform("vive", "world")
-            vive_frame_pose = self.pose_to_tf(self.tf_v_in_w)
+            vive_frame_pose = self.tf_to_pose(self.tf_v_in_w)
             self.vive_frame_pose.publish(vive_frame_pose)
 
-
+            # Start periodic publishing of measurements.
+            self.publish_pose_est(Empty)
 
         rospy.spin()
 
@@ -146,6 +146,8 @@ class Vive_localization(object):
         self.tf_t_in_v = self.pose_to_tf(pose_vive, "tracker")
         self.broadc.sendTransform(self.tf_t_in_v)
         # self.stbroadc.sendTransform(self.tf_d_in_t)
+
+        # Dirty fix to make sure every transform is broadcasted & received.
         rospy.sleep(2.)
 
         # Calibrate: fix current drone pose as pose of world frame.
@@ -159,12 +161,14 @@ class Vive_localization(object):
         print 'CALIBRATED \n'
         print '--------------------------- \n'
 
-        self.publish_pose_est(Empty)
-
         # Calculate and publish location of Vive frame for measurement check.
         self.tf_v_in_w = self.get_transform("vive", "world")
         vive_frame_pose = self.pose_to_tf(self.tf_v_in_w)
         self.vive_frame_pose.publish(vive_frame_pose)
+
+        self.publish_pose_est(Empty)
+
+
 
     def publish_pose_est(self, *_):
         '''Publishes message that calibration is completed. Starts publishing
@@ -182,19 +186,21 @@ class Vive_localization(object):
             self.broadc.sendTransform(self.tf_t_in_v)
             self.stbroadc.sendTransform(self.tf_d_in_t)
 
-            # Calculate and publish pose of drone in world frame.
+            # Calculate and publish pose of drone in world frame & send yaw
+            # along with it.
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
             pose_world = self.tf_to_pose(tf_d_in_w)
 
-            # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
 
-            self.pos_update.publish(pose_world, yaw)
+            data = PoseMeas(meas_world=pose_world, yaw=yaw)
+            self.pos_update.publish(data)
 
+            # Rotating world frame:
             # - Yaw only (roll and pitch 0.0) to quaternions.
             quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
             self.tf_r_in_w.transform.rotation.x = quat[0]
@@ -278,5 +284,5 @@ class Vive_localization(object):
 
 
 if __name__ == '__main__':
-    localization = Vive_localization()
+    localization = ViveLocalization()
     localization.start()
