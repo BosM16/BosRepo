@@ -54,7 +54,6 @@ add_message_files(
    Trigger.msg
    Trajectories.msg
    Obstacle.msg
-   PoseMeas.msg
 
 )
 

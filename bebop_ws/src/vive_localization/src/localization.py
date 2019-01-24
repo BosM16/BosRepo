@@ -2,7 +2,7 @@
 
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from std_msgs.msg import Empty
-from bebop_demo.msg import PoseMeas
+from vive_localization.msg import PoseMeas
 
 import numpy as np
 import rospy
