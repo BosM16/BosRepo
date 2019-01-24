@@ -37,8 +37,6 @@ class Demo(object):
             'vive_localization/ready', Empty, self.vive_ready)
         rospy.Subscriber(
             'vive_localization/pose', PoseMeas, self.new_measurement)
-        rospy.Subscriber('vive_localization/vive_frame_pose', PoseStamped,
-                         self.store_vive_frame_pose)
 
         self._get_pose_service = None
 
@@ -113,11 +111,6 @@ class Demo(object):
             self.wm.yhat = self.transform_point(
                 self.wm.yhat_r, "world_rot", "world")
             self.pose_pub.publish(self.wm.yhat)
-
-    def store_vive_frame_pose(self, vive_frame_pose):
-        '''
-        '''
-        self.pc.vive_frame_pose = vive_frame_pose
 
     def transform_point(self, point, _from, _to):
         '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to

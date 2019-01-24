@@ -22,7 +22,7 @@ class ViveLocalization(object):
         '''
         rospy.init_node('bebop_demo')
 
-        self.tracked_object = 'tracker'
+        self.tracked_object = 'controller'
 
         self.calib = rospy.get_param('vive_localization/calibrate', True)
 
@@ -33,8 +33,6 @@ class ViveLocalization(object):
             'vive_localization/pose', PoseMeas, queue_size=1)
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
-        self.vive_frame_pose = rospy.Publisher(
-            'vive_localization/vive_frame_pose', PoseStamped, queue_size=1)
 
         rospy.Subscriber('vive_localization/calibrate', Empty, self.calibrate)
         rospy.Subscriber(
@@ -117,7 +115,6 @@ class ViveLocalization(object):
         '''
         Starts running of localization node.
         '''
-        print 'Localization test is ON'
         sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
         self.rate = rospy.Rate(1./sample_time)
         self.v = triad_openvr.triad_openvr()
@@ -126,12 +123,6 @@ class ViveLocalization(object):
         self.init_transforms()
 
         if not self.calib:
-            # Calculate and publish location of Vive frame for measurement
-            # check.
-            self.tf_v_in_w = self.get_transform("vive", "world")
-            vive_frame_pose = self.tf_to_pose(self.tf_v_in_w)
-            self.vive_frame_pose.publish(vive_frame_pose)
-
             # Start periodic publishing of measurements.
             self.publish_pose_est(Empty)
 
@@ -161,14 +152,7 @@ class ViveLocalization(object):
         print 'CALIBRATED \n'
         print '--------------------------- \n'
 
-        # Calculate and publish location of Vive frame for measurement check.
-        self.tf_v_in_w = self.get_transform("vive", "world")
-        vive_frame_pose = self.pose_to_tf(self.tf_v_in_w)
-        self.vive_frame_pose.publish(vive_frame_pose)
-
         self.publish_pose_est(Empty)
-
-
 
     def publish_pose_est(self, *_):
         '''Publishes message that calibration is completed. Starts publishing
