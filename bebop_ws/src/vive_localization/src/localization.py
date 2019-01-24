@@ -22,7 +22,7 @@ class ViveLocalization(object):
         '''
         rospy.init_node('bebop_demo')
 
-        self.tracked_object = 'controller'
+        self.tracked_object = 'tracker'
 
         self.calib = rospy.get_param('vive_localization/calibrate', True)
 
@@ -30,11 +30,11 @@ class ViveLocalization(object):
         self.pose_world.header.frame_id = "world"
 
         self.pos_update = rospy.Publisher(
-            'vive_localization/pose', PoseStamped, queue_size=1)
+            'vive_localization/pose', PoseMeas, queue_size=1)
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
         self.vive_frame_pose = rospy.Publisher(
-            'vive_localization/vive_frame_pose', PoseMeas, queue_size=1)
+            'vive_localization/vive_frame_pose', PoseStamped, queue_size=1)
 
         rospy.Subscriber('vive_localization/calibrate', Empty, self.calibrate)
         rospy.Subscriber(

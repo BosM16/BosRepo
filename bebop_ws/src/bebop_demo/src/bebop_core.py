@@ -98,7 +98,7 @@ class Demo(object):
         self.measurement_valid = self.pc.measurement_check()
 
         measurement = self.kalman.transform_pose(
-                                measurement_world, "world", "world_rot")
+                                self.pc.pose_vive, "world", "world_rot")
         if self.measurement_valid:
             if self.kalman.init:
                 self.wm.yhat_r_t0.header = measurement.header
