@@ -44,8 +44,6 @@ class Perception(object):
         '''
         tf_v_in_w = self.get_transform("vive", "world")
         tf_t_in_w = self.get_transform("tracker", "world")
-        print 'perception test\n', tf_v_in_w
-        print '\n', tf_t_in_w
         measurement_valid = (tf_v_in_w.transform != tf_t_in_w.transform)
         if not measurement_valid:
             print '***********************************'

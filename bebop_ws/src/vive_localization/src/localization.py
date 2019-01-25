@@ -22,7 +22,7 @@ class ViveLocalization(object):
         '''
         rospy.init_node('bebop_demo')
 
-        self.tracked_object = 'controller'
+        self.tracked_object = 'tracker'
 
         self.calib = rospy.get_param('vive_localization/calibrate', True)
 
