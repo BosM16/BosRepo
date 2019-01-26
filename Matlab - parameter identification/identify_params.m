@@ -4,7 +4,7 @@ clc
 fprintf('-- Start identification -- \n')
 
 
-%%
+%% Settings & Execution
 options.figures = true;
 options.prints = true;
 
@@ -15,15 +15,16 @@ zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
-%       error. Look when vibrations that can't be fitted disappear but
-%       information that CAN be fitted does not.
+%       error. Look when oscillations that can't be fitted disappear but
+%       information that CAN be fitted does not disappear.
 
 
 fprintf('\n-- Identification finished -- \n')
 
 
-%% Main function
-
+%% ========================================================================
+%                                Main function
+%  ========================================================================
 
 function model = identify(data_file, ax, Ts, f0, options)
 % IDENTIFY - identifies LTI parameters for the drone model based on
@@ -136,30 +137,31 @@ end
 
 %% Fitting parameters
 if ax == 'z'
-    [params, transff] = fit_1st_order(data, ax, Ts, options);
+    [vparams, vtransff] = fit_1st_order(data, ax, Ts, options);
 else
-    [params, transff] = fit_2nd_order(data, ax, Ts, options);
+    [vparams, vtransff] = fit_2nd_order(data, ax, Ts, options);
 end
 
 %% Integrating velocity models
 
-
+% transff_pos = 
 
 %% Invert velocity model + LPF, state space for feedforward control
 
 
 
-
 %% Return results
-model.params = params;
-model.transff = transff;
+model.vparams = vparams;
+model.vtransff = vtransff;
+% model.pparams = pparams
+% model.ptransff = ptransff;
 % model.ss_invLPF = 
 
 end
 
-% -------------------------------------------------------------------------
-%% Helper functions
-
+%% ========================================================================
+%%                             Helper functions 
+%  ========================================================================
 
 function [params, transff] = fit_1st_order(data, ax, Ts, options)
 % id_1st_order - calculates transfer function parameters for 1st order 
@@ -322,7 +324,6 @@ params.f0 = f0;
 if options.prints 
     fprintf(strcat('Crossover - f0',ax,': %d \n'), f0); 
 end 
-
 
 
 end
