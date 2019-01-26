@@ -22,14 +22,14 @@ for i=(2:length(time100Hz))
     
     if ignore_nextx
         ignore_nextx = false;
-    elseif abs(x.input100Hz(i)-x.input100Hz(i-1)) > 0.1;
+    elseif abs(x.input100Hz(i)-x.input100Hz(i-1)) > 0.1
         x.input100Hz(i) = x.input100Hz(i-1);
         ignore_nextx = true;
         
     end
     if ignore_nexty
         ignore_nexty = false;
-    elseif abs(y.input100Hz(i)-y.input100Hz(i-1)) > 0.1;
+    elseif abs(y.input100Hz(i)-y.input100Hz(i-1)) > 0.1
         y.input100Hz(i) = y.input100Hz(i-1);
         ignore_nexty = true;
     end

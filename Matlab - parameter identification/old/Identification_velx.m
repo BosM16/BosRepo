@@ -264,7 +264,7 @@ subplot(212), plot(time, velocity_y, time, velocity_y_filt),title('v_{y,filt}')
 %% With Butterworth filtering of in and output
 % 2nd order strictly proper minimum phase
 
-%                        b1
+%                        b0
 %      HVxJ(z) = -----------------
 %                 z^2 + a1*z + a0
 

@@ -1,6 +1,5 @@
 close all
 
-% Important note: first run file "Identification_velx.m"
 %% 
 s = tf('s');
 sysbrol1 =  (s+1)/(1+s+s^2);

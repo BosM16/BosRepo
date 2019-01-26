@@ -71,7 +71,7 @@ xlim([f(1) f(end)])
 
 %% Choose a cutoff frequency for Butterworth filtering
 f0 = 0.3; % crossover frequency (based on iteratively checking crossover of best fit)
-fc = 5*f0; % cutoff frequency (chosen)
+fc = fs/2-0.0001; % cutoff frequency (chosen)
 fcn = fc/(fs/2); % normalized cutoff frequency (as butter() accepts)
 
 
