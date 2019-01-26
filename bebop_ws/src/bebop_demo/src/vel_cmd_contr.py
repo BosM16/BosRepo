@@ -58,6 +58,7 @@ class VelCommander(object):
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
+        self.feedforward_cmd = Twist()
         self.vhat = Point()
         self._trigger = Trigger()
 
@@ -98,7 +99,7 @@ class VelCommander(object):
         '''Initializes model parameters for conversion of desired velocities to
         angle inputs.
         State space model x[k+1] = A*x[k] + B*u[k] in observable canonical
-        form, corresponding to discete time transfer function
+        form, corresponding to discrete time transfer function
 
                    b1*z + b0
         G(z) = -----------------
@@ -126,56 +127,6 @@ class VelCommander(object):
         self.D = np.array([[0.5846, 0.0],
                            [0.0, 0.5623]])
 
-        # X-direction
-        # b0 = 1.636
-        # b1 = -3.345
-        # b2 = 1.71
-        # a0 = 0.9531
-        # a1 = -1.953
-        #
-        # self.coeffs_x = np.array([a0, a1, 1, -b0, -b1])/b2
-
-        # Y-direction
-        # b0 = 1.701
-        # b1 = -3.478
-        # b2 = 1.778
-        # a0 = 0.9511
-        # a1 = -1.951
-        #
-        # self.coeffs_y = np.array([a0, a1, 1, -b0, -b1])/b2
-
-        # # Z-direction
-
-    def start(self):
-        '''Configures,
-        Starts the controller's periodical loop.
-        '''
-        rate = self.rate
-
-        configured = self.configure()
-        print '-----------------------------------------'
-        print '- Controller & Motionplanner Configured -'
-        print '-        Velocity Control Started       -'
-        print '-----------------------------------------'
-
-        while not rospy.is_shutdown():
-            while (self.progress):
-                if (self.startup):
-                    self.update()
-                    self.progress = self.proceed()
-                rate.sleep()
-            (self._drone_est_pose,
-             self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-            pos_desired = Point(x=self._goal.x,
-                                y=self._goal.y)
-            vel_desired = Point(x=0.0,
-                                y=0.0)
-            feedback_cmd = self.feedback(pos_desired, vel_desired)
-            self.cmd_twist_convert.twist = feedback_cmd
-            self.cmd_twist_convert.header.stamp = rospy.Time.now()
-            self.cmd_vel.publish(self.cmd_twist_convert.twist)
-            rate.sleep()
-
     def configure(self):
         '''Configures the controller by loading in the room and static
         obstacles.
@@ -201,6 +152,37 @@ class VelCommander(object):
 
         return config_success
 
+    def start(self):
+        '''Configures,
+        Starts the controller's periodical loop.
+        '''
+        rate = self.rate
+
+        configured = self.configure()
+        print '-----------------------------------------'
+        print '- Controller & Motionplanner Configured -'
+        print '-        Velocity Control Started       -'
+        print '-----------------------------------------'
+
+        while not rospy.is_shutdown():
+            while (self.progress):
+                if (self.startup):
+                    self.update()
+                    self.progress = self.proceed()
+                rate.sleep()
+            (self._drone_est_pose,
+             self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+            pos_desired = Point(x=self._goal.x,
+                                y=self._goal.y)
+            vel_desired = Point(x=0.0,
+                                y=0.0)
+            feedback_cmd = transform_twist(
+                self.feedback(pos_desired, vel_desired), "world", "world_rot")
+            self.cmd_twist_convert.twist = feedback_cmd
+            self.cmd_twist_convert.header.stamp = rospy.Time.now()
+            self.cmd_vel.publish(self.cmd_twist_convert.twist)
+            rate.sleep()
+
     def set_goal(self, goal):
         '''Sets the goal and fires motionplanner.
         Args:
@@ -215,7 +197,6 @@ class VelCommander(object):
 
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self._drone_est_pose = self.get_pose_est()[0]
-        print 'est_pose received from kalman when setting goal', self._drone_est_pose
         self.marker_setup()
 
         self.fire_motionplanner()
@@ -266,7 +247,6 @@ class VelCommander(object):
         # old_pose = self._drone_est_pose
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        print "measurement valid equal to", measurement_valid
 
         # Publish pose to plot in rviz.
         self.publish_real(self._drone_est_pose.x, self._drone_est_pose.y)
@@ -274,7 +254,6 @@ class VelCommander(object):
         if not measurement_valid:
             self.safety_brake()
             return
-        print 'gone through'
         # Check for new trajectories. Trigger Motionplanner or raise
         # 'overtime'
         pose0 = [self._drone_est_pose.x, self._drone_est_pose.y]
@@ -308,17 +287,64 @@ class VelCommander(object):
         self.publish_omg_pos()
         self.publish_omg_vel()
 
+        # Transform feedforward command from frame world to world_rotated.
+        self.rotate_vel_cmd()
+
         # Convert feedforward velocity command to angle input.
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
-        self.calc_vel_cmd()
+        self.combine_ff_fb()
 
         self._index += 1
 
+    def proceed(self):
+        '''Determines whether goal is reached.
+        Returns:
+            not stop: boolean whether goal is reached. If not, controller
+                      proceeds to goal.
+        '''
+        if len(self._inputs_applied['jx']) == 0:
+            return True
+
+        stop_linear = True
+        stop = True
+
+        pos_nrm = np.linalg.norm(np.array(
+            [self._drone_est_pose.x, self._drone_est_pose.y])
+            - np.array([self._goal.x, self._goal.y]))
+        input_nrm = np.linalg.norm(
+            [self._inputs_applied['jx'][-1],
+                self._inputs_applied['jy'][-1]])
+
+        stop_linear = (pos_nrm < self.pos_nrm_tol) and (
+                            input_nrm < self.input_nrm_tol)
+
+        if (stop_linear):
+            self.target_reached = True
+            print '-------------------'
+            print '- Target Reached! -'
+            print '-------------------'
+        stop *= (stop_linear)
+
+        return not stop
+
+####################
+# Helper functions #
+####################
+
+    def rotate_vel_cmd(self):
+        '''Transforms the velocity commands from the global world frame to the
+        rotated world frame world_rot.
+        '''
+        self.feedforward_cmd.linear.x = self._traj['v'][self._index + 1]
+        self.feedforward_cmd.linear.y = self._traj['w'][self._index + 1]
+        self.feedforward_cmd = self.transform_twist(
+                                    self.feedforward_cmd, "world", "world_rot")
+
     def convert_vel_cmd(self):
         '''Converts a velocity command to a desired input angle according to
-        the difference equations:
+        the state space representation of the inverse velocity model:
 
         - for second order velocity/input relation (x and y):
             j[k+1] = 1/b1*{ -b0*j[k] + a0*v[k] + a1*v[k+1] + v[k+2] }
@@ -330,87 +356,32 @@ class VelCommander(object):
         where j is the input signal applied to the bebop and v the desired
         velocity.
         '''
-        u = np.array([[self._traj['v'][self._index + 1]],
-                      [self._traj['w'][self._index + 1]]])
+        u = np.array([[self.feedforward_cmd.linear.x],
+                      [self.feedforward_cmd.linear.y]])
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
-        self.cmd_twist_convert.twist.linear.x = Y[0, 0]
-        self.cmd_twist_convert.twist.linear.y = Y[1, 0]
+        self.feedforward_cmd.linear.x = Y[0, 0]
+        self.feedforward_cmd.linear.y = Y[1, 0]
 
-        # # Convert velocity command in x-direction
-        # phi = np.array([self._traj['v'][index - 1],
-        #                 self._traj['v'][index],
-        #                 self._traj['v'][index + 1],
-        #                 self._inputs_applied['jx'][0],
-        #                 self._inputs_applied['jx'][1]])
-        # self.cmd_twist_convert.twist.linear.x = np.matmul(
-        #                                     self.coeffs_x, np.transpose(phi))
-        # print '\nphi', phi
-        # print 'coeffs_x', self.coeffs_x
-        #
-        # # Convert velocity command in y-direction
-        # phi = np.array([self._traj['w'][index - 1],
-        #                 self._traj['w'][index],
-        #                 self._traj['w'][index + 1],
-        #                 self._inputs_applied['jy'][0],
-        #                 self._inputs_applied['jy'][1]])
-        # self.cmd_twist_convert.twist.linear.y = np.matmul(
-        #                                     self.coeffs_y, np.transpose(phi))
-        # print '\nphi', phi
-        # print 'coeffs_y', self.coeffs_y
-        # print ('twist convert',
-        #        'jx', self.cmd_twist_convert.twist.linear.x,
-        #        'jy', self.cmd_twist_convert.twist.linear.y)
-        # # Store applied commands.
-        # self.store_inputs(self.cmd_twist_convert.twist.linear.x,
-        #                   self.cmd_twist_convert.twist.linear.y)
-
-    def store_inputs(self, vel_cmd_x, vel_cmd_y):
-        '''Stores the two latest inputs that have been applied to the drone,
-        needed when calculating the difference equation.
-        '''
-        self._inputs_applied['jx'] = [self._inputs_applied['jx'][-1]]
-        self._inputs_applied['jy'] = [self._inputs_applied['jy'][-1]]
-
-        self._inputs_applied['jx'].append(vel_cmd_x)
-        self._inputs_applied['jy'].append(vel_cmd_y)
-
-    def safety_brake(self):
-        '''Brake as emergency measure: Bebop brakes automatically when
-            /bebop/cmd_vel topic receives all zeros.
-        '''
-        self.cmd_twist_convert.twist = Twist()
-        self.cmd_vel.publish(self.cmd_twist_convert.twist)
-
-    def calc_vel_cmd(self):
+    def combine_ff_fb(self):
         '''Combines the feedforward and feedback commands to generate a
         velocity command and publishes this command.
         '''
-
-        # Combine feedforward and feedback part
-        # SHOULD BE ADAPTED! OR FEEDBACK WILL BE TAKEN AS PART OF LAST INPUT J
         pos_desired = Point(x=self._traj['x'][self._index + 1],
                             y=self._traj['y'][self._index + 1])
         vel_desired = Point(x=self._traj['v'][self._index + 1],
                             y=self._traj['w'][self._index + 1])
-        feedback_cmd = self.feedback(pos_desired, vel_desired)
-        self.cmd_twist_convert.twist += feedback_cmd
-
-        # FOUT, moet eerst geroteerd worden voordat snelheid in inverse model gestoken wordt!
-
-        # # Transform velocity command to rotated frame
-        # cmd_vel = PointStamped()
-        # cmd_vel.header.frame_id = "world_rot"
-        # cmd_vel.point.x = self.cmd_twist_convert.twist.linear.x
-        # cmd_vel.point.y = self.cmd_twist_convert.twist.linear.y
-        # cmd_vel_rotated = self.transform_point(
-        #                                 cmd_vel, "world", "world_rot")
+        # Transform desired position and velocity from world frame to
+        # world_rot frame
+        feedback_cmd = transform_twist(
+                self.feedback(pos_desired, vel_desired), "world", "world_rot")
+        self.cmd_twist_convert.twist = self.feedforward_cmd + feedback_cmd
 
     def feedback(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
         desired end position to remain in the correct spot and compensate for
         drift.
-        Lead compensator
+        Lead compensator/controller?
         '''
         feedback_cmd = Twist()
         feedback_cmd.linear.x = (
@@ -424,6 +395,13 @@ class VelCommander(object):
                             self.K_theta*(self.desired_yaw - self.real_yaw))
 
         return feedback_cmd
+
+    def safety_brake(self):
+        '''Brake as emergency measure: Bebop brakes automatically when
+            /bebop/cmd_vel topic receives all zeros.
+        '''
+        self.cmd_twist_convert.twist = Twist()
+        self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
@@ -473,36 +451,29 @@ class VelCommander(object):
         y_traj = self._traj_strg['y'][:]
         self.publish_desired(x_traj, y_traj)
 
-    def proceed(self):
-        '''Determines whether goal is reached.
-        Returns:
-            not stop: boolean whether goal is reached. If not, controller
-                      proceeds to goal.
+    def transform_twist(self, twist, _from, _to):
+        '''Transforms twist (geometry_msgs/Twist) from frame "_from" to
+        frame "_to".
+        Arguments:
+            - _from, _to = string, name of frame
         '''
-        if len(self._inputs_applied['jx']) == 0:
-            return True
+        cmd_vel = PointStamped()
+        cmd_vel.header.frame_id = "world"
+        cmd_vel.point.x = twist.linear.x
+        cmd_vel.point.y = twist.linear.y
+        cmd_vel.point.z = twist.linear.z
+        cmd_vel_rotated = self.transform_point(cmd_vel, _from, _to)
 
-        stop_linear = True
-        stop = True
+        twist_rotated = Twist()
+        twist_rotated.x = cmd_vel_rotated.x
+        twist_rotated.y = cmd_vel_rotated.y
+        twist_rotated.z = cmd_vel_rotated.z
 
-        pos_nrm = np.linalg.norm(np.array(
-            [self._drone_est_pose.x, self._drone_est_pose.y])
-            - np.array([self._goal.x, self._goal.y]))
-        input_nrm = np.linalg.norm(
-            [self._inputs_applied['jx'][-1],
-                self._inputs_applied['jy'][-1]])
+        return twist_rotated
 
-        stop_linear = (pos_nrm < self.pos_nrm_tol) and (
-                            input_nrm < self.input_nrm_tol)
-
-        if (stop_linear):
-            self.target_reached = True
-            print '-------------------'
-            print '- Target Reached! -'
-            print '-------------------'
-        stop *= (stop_linear)
-
-        return not stop
+#######################################
+# Functions for plotting Rviz markers #
+#######################################
 
     def marker_setup(self):
         '''Setup markers to display the desired and real path of the drone in
