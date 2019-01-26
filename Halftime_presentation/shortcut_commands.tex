@@ -1,0 +1,26 @@
+% eigen gedefinieerde commando's om op typwerk te besparen
+
+\def\bc{ \begin{center} }
+\def\ec{ \end{center}  }
+% hetzelfde met \begin{frame} en \end{frame} werkt niet!
+
+\newcommand{\bframe}[1]{\begin{frame} \frametitle{#1}}
+
+\newcommand{\bit}{\begin{itemize}}
+\newcommand{\eit}{\end{itemize}}
+\newcommand{\ben}{\begin{enumerate}}
+\newcommand{\een}{\end{enumerate}}
+\newcommand{\beq}{\begin{equation}}
+\newcommand{\eeq}{\end{equation}}
+
+
+\newcommand{\fig}[3]{
+	\begin{center}	
+	\begin{figure}
+	\includegraphics[scale=#1]{#2}
+	\caption{#3}
+	\end{figure}	
+	\end{center}}
+	
+\newcommand{\fs}{\footnotesize}
+\newcommand{\encount}[1]{\setcounter{enumi}{#1}}

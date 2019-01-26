@@ -1,0 +1,118 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Optimization case study %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%
+%  PREAMBLE  %
+%%%%%%%%%%%%%%
+
+% beamer = presentatie (andere opties: article, book,..)
+\documentclass{beamer}
+\include{setup}
+
+%verwijdert de 'navigation' knopkes rechtsonder op elke slide:
+\beamertemplatenavigationsymbolsempty
+
+
+% Here you can add usepackages according to your requirements
+% -----------------------------------------------------------
+\usepackage{graphicx}
+\usepackage{dsfont}
+\usepackage{mathtools}
+\usepackage{amssymb}
+\usepackage{nameref}
+\usepackage{enumitem}
+\usepackage{gensymb}
+\usepackage{amsmath}
+% TIKZ Figures
+\usepackage{tikz}
+\usetikzlibrary{arrows}
+% movie
+% \usepackage{multimedia}
+\usepackage{media9}
+% -----------------------------------------------------------
+
+% Shorter commands:
+% -----------------------------------------------------------
+\input shortcut_commands.tex
+% -----------------------------------------------------------
+
+
+% Document settings
+%------------------------------------------------------------
+\usetheme{CambridgeUS}
+\usecolortheme{seahorse}
+\usefonttheme[onlymath]{serif}
+\AtBeginSection{\frame{\sectionpage}}
+\AtBeginSection[]
+{
+  \begin{frame}<beamer>
+    \frametitle{Outline section \thesection}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+% \AtBeginSubsection{\frame{\subsectionpage}}
+% \AtBeginSubsection[]
+% {
+%   \begin{frame}<beamer>
+%     \frametitle{Outline subsection \thesubsection}
+%     \tableofcontents[currentsubsection]
+%   \end{frame}
+% }
+\setbeamertemplate{caption}[numbered]
+%------------------------------------------------------------
+
+%------------------
+% Document details
+%------------------------------------------
+\title[Thesis presentation halftime]{Interactive demo on the indoor localization, control and navigation of drones}
+% \title{Interactive demo on the indoor localization, control and navigation of drones}
+%------------------------------------------
+\author[Rian Beck \and Mathias Bos]{Rian Beck  \and Mathias Bos\\
+\hspace{-2mm}\fs{r0585849 \hspace{0.9cm} r0582602}}
+\date{\today}      %datum zowel op titelpagina als beneden
+\date[]{December 18, 2018} %enkel op titelpagina datum
+%\date[\today]{}   %enkel beneden datum, nt op titelpagina
+
+% Figuur toevoegen op titelslide:
+\titlegraphic{\includegraphics[width=0.5\textwidth]{Figures/KUL_dep_mech_logo.png}}
+
+%%%%%%%%%%%%%%%%%%%%%
+%  Document inhoud  %
+%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+
+% -----------------------------
+% Here you add the slides
+% -----------------------------
+\begin{frame}
+	\titlepage
+\end{frame}
+\begin{frame}
+\frametitle{Outline}
+  \tableofcontents[hideallsubsections]
+\end{frame}
+
+\input Introduction
+
+\section{Hardware}
+\input Hardware_selection
+\input Tracker_suspension
+
+\section{Software}
+\input Implementation_approach
+\input Vive_localization
+\input Identification
+\input Asynchronous_kalman
+\input Omg_tools
+
+\input Conclusion
+
+
+
+% ---------------------------------
+
+
+\end{document}
