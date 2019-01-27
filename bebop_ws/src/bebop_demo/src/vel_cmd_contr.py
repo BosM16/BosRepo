@@ -211,7 +211,8 @@ class VelCommander(object):
     def fire_motionplanner(self):
         '''Publishes inputs to motionplanner via Trigger topic.
         '''
-        self._trigger.goal = self._goal
+        self._trigger.goal_pos = self._goal
+        self._trigger.goal_vel = Point()
         self._trigger.pos_state = self._drone_est_pose
         self._trigger.vel_state = self.vhat
         self._trigger.current_time = self._time

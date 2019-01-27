@@ -132,12 +132,13 @@ class MotionPlanner(object):
         """
         # In case goal has changed: set new goal.
         if cmd.goal != self._goal:
-            self._goal = cmd.goal
+            self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
                 [cmd.pos_state.x, cmd.pos_state.y],
                 [cmd.vel_state.x, cmd.vel_state.y])
             self._vehicle.set_terminal_conditions(
-                [self._goal.x, self._goal.y])
+                [self._goal.x, self._goal.y],
+                [cmd.goal_vel.x, cmd.goal_vel.y])
             self._deployer.reset()
             print '-------------------------------------------'
             print 'New Goal - Motionplanner Resetted Deployer!'
