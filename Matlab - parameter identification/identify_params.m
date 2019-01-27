@@ -8,15 +8,22 @@ fprintf('-- Start identification -- \n')
 options.figures = true;
 options.prints = true;
 
-
-% xmodel = identify("data/angle_identification_x",'x',0.02,0.5,options);
-% ymodel = identify("data/angle_identification_y",'y',0.02,0.5,options);
-zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,options);
+% ----------------------------------------------------------------- 
+% SYNTAX: 
+%   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
+% -----------------------------------------------------------------
+% xmodel = identify("data/angle_identification_x",'x',0.02,0.5,0.5,options);
+% ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
+zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,0.8,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
 %       error. Look when oscillations that can't be fitted disappear but
 %       information that CAN be fitted does not disappear.
+%
+% SECOND NOTE: Fc (cutoff for continuous butterworth LPF for inverting
+%       velocity model) is design parameter. Chosen that flat part at high
+%       frequencies is +- 0 dB. 
 
 
 fprintf('\n-- Identification finished -- \n')
@@ -26,7 +33,7 @@ fprintf('\n-- Identification finished -- \n')
 %                                Main function
 %  ========================================================================
 
-function model = identify(data_file, ax, Ts, f0, options)
+function model = identify(data_file, ax, Ts, f0, Fc, options)
 % IDENTIFY - identifies LTI parameters for the drone model based on
 % the data contained in the specified data file.
 %
@@ -44,8 +51,7 @@ function model = identify(data_file, ax, Ts, f0, options)
 %   model - struct with fields
 %       tf_pos
 %       tf_vel
-%       ss_pos
-%       ss_vel
+%       ss_vel_invLPF
 %       params - struct with fields
 %           a_i, b_i (model parameters)
 %       ...
@@ -88,6 +94,9 @@ data.fs = fs;
 data.t = t;
 data.f = f;
 
+
+
+
 % Differentiation of position
 velocity = gradient(output)/Ts;
 data.velocity = velocity;
@@ -98,6 +107,11 @@ if options.figures
     subplot(212), plot(t, velocity), title(strcat(ax,' velocity')), xlabel('time [s]'), ylabel('velocity [m/s]')
     
 end
+
+% Empirical frequency response
+vel_fft = fft(velocity);
+input_fft = fft(input);
+data.FRF_emp = vel_fft./input_fft;
 
 
 %% Cutoff frequency for Butterworth filtering
@@ -137,33 +151,33 @@ end
 
 %% Fitting parameters
 if ax == 'z'
-    [vparams, vtransff] = fit_1st_order(data, ax, Ts, options);
+    [params, tf_vel, data] = fit_1st_order(data, ax, Ts, options);
 else
-    [vparams, vtransff] = fit_2nd_order(data, ax, Ts, options);
+    [params, tf_vel, data] = fit_2nd_order(data, ax, Ts, options);
 end
 
 %% Integrating velocity models
 
-% transff_pos = 
+[tf_pos, data] = integrate(tf_vel.cont, data, ax, options);
 
 %% Invert velocity model + LPF, state space for feedforward control
 
+ss_vel_invLPF = invert_LPF_ss(tf_vel, ax, data, Fc, options);
 
 
 %% Return results
-model.vparams = vparams;
-model.vtransff = vtransff;
-% model.pparams = pparams
-% model.ptransff = ptransff;
-% model.ss_invLPF = 
+model.params = params;
+model.tf_vel = tf_vel;
+model.tf_pos = tf_pos;
+model.ss_vel_invLPF = ss_vel_invLPF;
 
 end
 
 %% ========================================================================
-%%                             Helper functions 
+%                              Helper functions 
 %  ========================================================================
 
-function [params, transff] = fit_1st_order(data, ax, Ts, options)
+function [params, transff, data] = fit_1st_order(data, ax, Ts, options)
 % id_1st_order - calculates transfer function parameters for 1st order 
 % transfer function based on least squares fit for supplied in- and
 % outputs.
@@ -211,10 +225,11 @@ params.a = [1, theta_filt(1)];
 transff.discr = tf(params.b, params.a, Ts);
 
 FRF = squeeze(freqresp(transff.discr,2*pi*f));
+data.FRF_vel = FRF;
 
 if options.prints
-   fprintf(strcat("\nDiscrete time transfer function ",ax,' direction:\n'))
-   fprintf('--------------------------------------------')
+   fprintf(strcat("\nDiscrete time velocity transfer function ",ax,' direction:\n'))
+   fprintf('-----------------------------------------------------')
    display(transff.discr) 
 end
 
@@ -266,10 +281,11 @@ end
 %% Continuous time system
 transff.cont = d2c(transff.discr,'matched');
 FRFc = squeeze(freqresp(transff.cont,2*pi*f));
+data.FRFc_vel = FRFc;
 
 if options.prints
-   fprintf(strcat("Continuous time transfer function ",ax,' direction:\n'))
-   fprintf('----------------------------------------------')
+   fprintf(strcat("Continuous time velocity transfer function ",ax,' direction:\n'))
+   fprintf('-------------------------------------------------------')
    display(transff.cont) 
 end
 
@@ -328,8 +344,9 @@ end
 
 end
 
+% -------------------------------------------------------------------------
 
-function [params, transff] = fit_2nd_order(data, ax, Ts, options)
+function [params, transff, data] = fit_2nd_order(data, ax, Ts, options)
 % id_2nd_order - calculates transfer function parameters for 2nd order 
 % transfer function based on least squares fit for supplied in- and
 % outputs.
@@ -375,10 +392,11 @@ params.a = [1, theta_filt(1) theta_filt(2)];
 transff.discr = tf(params.b, params.a, Ts);
 
 FRF = squeeze(freqresp(transff.discr,2*pi*f));
+data.FRF_vel = FRF;
 
 if options.prints
-   fprintf(strcat("\nDiscrete time transfer function ",ax,' direction:\n'))
-   fprintf('--------------------------------------------')
+   fprintf(strcat("\nDiscrete time velocity transfer function ",ax,' direction:\n'))
+   fprintf('-----------------------------------------------------')
    display(transff.discr) 
 end
 
@@ -430,10 +448,11 @@ end
 %% Continuous time system
 transff.cont = d2c(transff.discr,'matched');
 FRFc = squeeze(freqresp(transff.cont,2*pi*f));
+data.FRFc_vel = FRFc;
 
 if options.prints
-   fprintf(strcat("Continuous time transfer function ",ax,' direction:\n'))
-   fprintf('----------------------------------------------')
+   fprintf(strcat("Continuous time velocity transfer function ",ax,' direction:\n'))
+   fprintf('-------------------------------------------------------')
    display(transff.cont) 
 end
 
@@ -492,3 +511,205 @@ end
 
 end
 
+% -------------------------------------------------------------------------
+
+function [tf_pos, data] = integrate(tf_vel, data, ax, options)
+s = tf('s');
+tf_pos = 1/s*tf_vel;
+
+input = data.input;
+output = data.output;
+t = data.t;
+f = data.f;
+
+FRF = squeeze(freqresp(tf_pos,2*pi*f));
+data.FRFc_pos = FRF;
+
+if options.prints
+   fprintf(strcat("Continuous time position transfer function ",ax,' direction:\n'))
+   fprintf('-------------------------------------------------------')
+   display(tf_pos) 
+end
+
+if options.figures
+
+
+    figure('Name','3d order, filtered, strictly proper - Freq. Resp.'), subplot(211)
+    semilogx(f, 20*log10(abs(FRF)))
+    grid on
+    xlim([f(1) f(end)])
+    xlabel('f  [Hz]')
+    ylabel('|FRF|  [m]')
+    subplot(212),semilogx(f, 180/pi*unwrap(angle(FRF)))
+    grid on
+    xlim([f(1) f(end)])
+    xlabel('f  [Hz]')
+    ylabel('\phi(FRF)  [^\circ]')
+
+    x = lsim(tf_pos,input,t);
+
+    figure('Name','3d order, filtered, strictly proper - Simulation')
+    subplot(211)
+    hold on
+    plot(t, output,'g')
+    plot(t, x)
+    title('3d order, filtered, strictly proper - Simulation VS Measurement')
+    legend(strcat('pos_{',ax,',meas}'), strcat('pos_{',ax,',sim}'))
+    xlabel('Time [s]')
+    ylabel('Displacement [m]')
+    axis tight
+    subplot(212)
+    plot(t,output - x)
+    title('Difference between simulation and measurement')
+    legend(strcat('pos_{',ax,',meas} - pos_{',ax,',sim}'))
+    xlabel('Time [s]')
+    ylabel('Displacement [m]')
+    axis tight
+
+    figure('Name','3d order, filtered, strictly proper - Pole Zero Map'),pzmap(tf_pos)
+end
+
+end
+
+% -------------------------------------------------------------------------
+
+function [ss_vel_invLPF, data] = invert_LPF_ss(tf_vel, ax, data, Fc, options)
+t = data.t;
+f = data.f;
+dt = data.Ts;
+input = data.input;
+
+sys_c = tf_vel.cont;
+
+FRF_emp = data.FRF_emp;
+FRFc = data.FRFc_vel;
+
+% Difference
+FRF_diff = (FRF_emp-FRFc)./FRFc;
+
+
+%% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
+if ax == 'z'
+    nb = 1;
+else
+    nb = 2;
+end
+
+
+[Bpre, Apre] = butter(nb, Fc*2*pi, 's'); % continuous time!
+
+filt = tf(Bpre,Apre);
+FRF_LPF = squeeze(freqresp(filt,2*pi*f));
+
+
+LPF = tf(Bpre,Apre);
+
+
+figure('Name','Low Pass Filter (Butterworth)')
+bode(LPF)
+
+sys_LPF = sys_c/LPF;
+
+
+if options.figures
+    figure('Name','Inverse filtered continuous time system')
+    bode(sys_c)
+    hold on
+    bode(sys_LPF)
+    legend('Identified system before filtering','Filtered system')
+
+    figure('Name','Difference Empirical - Continuous VS inverse filter')
+    subplot(2,1,1)
+    semilogx(f, 20*log10(abs(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
+    hold on
+    semilogx(f, 20*log10(abs(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
+    grid on 
+    xlim([f(1) f(end)])
+    xlabel('f  [Hz]')
+    ylabel('H(f)|  [m]')
+    legend('FRF_{diff}', 'LPF')
+    axis tight
+    subplot(2,1,2)
+    semilogx(f, 180/pi*unwrap(angle(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
+    hold on
+    semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
+    grid on
+    xlim([f(1) f(end)])
+    xlabel('f  [Hz]')
+    ylabel('\phi(H(f))  [^\circ]')
+    legend('FRF_{diff}', 'LPF')
+end
+
+
+%% Discretize filtered system to 100Hz
+
+sys_dLPF = c2d(sys_LPF,0.01,'tustin');
+
+figure('Name','Inverse low pass filtered, discretized (100Hz) system: Freq resp')
+bode(sys_dLPF)
+
+figure('Name', 'Inverse low pass filtered, discretized (100Hz) system: Pole Zero Map')
+pzmap(sys_dLPF)
+
+
+%% Discretize filtered system
+sys_dLPF = c2d(sys_LPF,0.01,'tustin');
+
+if options.figures
+     %% Simulate filtered system
+    dt100Hz = .01;
+    t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
+
+
+
+end
+
+%% State space representation of the filtered system and simulation
+
+[b_dLPFi, a_dLPFi] = tfdata(sys_dLPF^(-1), 'v');
+[A_dLPFi, B_dLPFi, C_dLPFi, D_dLPFi] = tf2ss(b_dLPFi, a_dLPFi);
+ss_vel_invLPF = ss(A_dLPFi,B_dLPFi,C_dLPFi,D_dLPFi,0.01);
+    
+if options.figures
+    % Simulate on realistic desired speed signal: interpolated simulation result
+
+    % - lsim simulation
+    x_50Hz = lsim(tf_vel.discr,input,t);
+    x_100Hz = interp1(t,x_50Hz,t100Hz);
+    sim_ss = lsim(ss_vel_invLPF, x_100Hz, t100Hz);
+    figure('Name', 'Realistic desired velocity - Result of lsim')
+    plot(t100Hz, sim_ss)
+
+    % - manual simulation
+    if ax == 'z'
+        xsim = zeros(1, length(t100Hz));
+        xstep = zeros(1, length(t100Hz));
+    else
+        xsim = zeros(2, length(t100Hz));
+        xstep = zeros(2, length(t100Hz));
+    end
+    ysim = zeros(1, length(t100Hz));
+    for i = 1:length(t100Hz)
+        xsim(:,i+1) = A_dLPFi*xsim(:,i) + B_dLPFi*x_100Hz(i);
+        ysim(i) = C_dLPFi*xsim(:,i) + D_dLPFi*x_100Hz(i);
+    end
+
+    figure('Name','Realistic desired velocity - Result of manual state space simulation')
+    plot(t100Hz, ysim)
+
+    % step response:
+    vstep = 0.2*ones(length(t100Hz),1);
+    
+    ystep = zeros(1, length(t100Hz));
+    for i = 1:length(t100Hz)
+        xstep(:,i+1) = A_dLPFi*xstep(:,i) + B_dLPFi*vstep(i);
+        ystep(i) = C_dLPFi*xstep(:,i) + D_dLPFi*vstep(i);
+    end
+
+    figure('Name','Result of manual state space simulation - Step input')
+    plot(t100Hz, ystep, t100Hz, vstep)
+    legend('step response','step input')
+end
+
+
+end
