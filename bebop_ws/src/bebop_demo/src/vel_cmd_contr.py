@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, TwistStamped, Point, Pose2D, PoseStamped
+from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
+                               Pose2D, PoseStamped)
 from std_msgs.msg import Bool, Empty
 from visualization_msgs.msg import Marker
 
@@ -11,6 +12,8 @@ from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 import rospy
 import numpy as np
 import tf
+import tf2_ros
+import tf2_geometry_msgs as tf2_geom
 
 
 class VelCommander(object):
@@ -77,6 +80,9 @@ class VelCommander(object):
         self._traj = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
         self._traj_strg = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
         self._inputs_applied = {'jx': [0.0, 0.0], 'jy': [0.0, 0.0]}
+
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
         self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
@@ -176,7 +182,7 @@ class VelCommander(object):
                                 y=self._goal.y)
             vel_desired = Point(x=0.0,
                                 y=0.0)
-            feedback_cmd = transform_twist(
+            feedback_cmd = self.transform_twist(
                 self.feedback(pos_desired, vel_desired), "world", "world_rot")
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
@@ -374,9 +380,17 @@ class VelCommander(object):
                             y=self._traj['w'][self._index + 1])
         # Transform desired position and velocity from world frame to
         # world_rot frame
-        feedback_cmd = transform_twist(
-                self.feedback(pos_desired, vel_desired), "world", "world_rot")
-        self.cmd_twist_convert.twist = self.feedforward_cmd + feedback_cmd
+        feedback_cmd = self.transform_twist(
+                self.feedback(pos_desired, vel_desired), "world", "world_rot)
+
+        self.cmd_twist_convert.twist.linear.x = (
+                        self.feedforward_cmd.linear.x + feedback_cmd.linear.x)
+        self.cmd_twist_convert.twist.linear.y = (
+                        self.feedforward_cmd.linear.y + feedback_cmd.linear.y)
+        self.cmd_twist_convert.twist.linear.z = (
+                        self.feedforward_cmd.linear.z + feedback_cmd.linear.z)
+        self.cmd_twist_convert.twist.angular.z = (
+                    self.feedforward_cmd.angular.z + feedback_cmd.angular.z)
 
     def feedback(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
@@ -392,7 +406,7 @@ class VelCommander(object):
                             self.K_x*(pos_desired.y - self._drone_est_pose.y) -
                             self.K_v*(vel_desired.y - self.vhat.y))
         # Add theta feedback to remain at zero yaw angle
-        fedback_cmd.angular.z = (
+        feedback_cmd.angular.z = (
                             self.K_theta*(self.desired_yaw - self.real_yaw))
 
         return feedback_cmd
@@ -466,11 +480,20 @@ class VelCommander(object):
         cmd_vel_rotated = self.transform_point(cmd_vel, _from, _to)
 
         twist_rotated = Twist()
-        twist_rotated.x = cmd_vel_rotated.x
-        twist_rotated.y = cmd_vel_rotated.y
-        twist_rotated.z = cmd_vel_rotated.z
+        twist_rotated.linear.x = cmd_vel_rotated.point.x
+        twist_rotated.linear.y = cmd_vel_rotated.point.y
+        twist_rotated.linear.z = cmd_vel_rotated.point.z
 
         return twist_rotated
+
+    def transform_point(self, point, _from, _to):
+        '''Transforms point from _from frame to _to frame.
+        '''
+        transform = self.tfBuffer.lookup_transform(
+            _to, _from, rospy.Time(0), rospy.Duration(0.1))
+        point_transformed = tf2_geom.do_transform_point(point, transform)
+
+        return point_transformed
 
 #######################################
 # Functions for plotting Rviz markers #
