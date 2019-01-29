@@ -1,12 +1,12 @@
 clear variables
 close all
 clc
-fprintf('-- Start identification -- \n')
+fprintf('-------- Start identification --------- \n')
 
 
 %% Settings & Execution
-options.figures = true;
-options.prints = true;
+options.figures = false;
+options.prints = false;
 
 % ----------------------------------------------------------------- 
 % SYNTAX: 
@@ -26,7 +26,7 @@ xmodel = identify("data/angle_identification_x",'x',0.02,0.5,0.5,options);
 %       frequencies is +- 0 dB. 
 
 
-fprintf('\n-- Identification finished -- \n')
+fprintf('\n------- Identification finished ------- \n')
 
 
 %% ========================================================================
@@ -67,7 +67,7 @@ function model = identify(data_file, ax, Ts, f0, Fc, options)
 % Website: https://github.com/BosMathias/BosRepo
 % 2018-2019;
 
-fprintf(strcat("\n========================== ",ax, ' direction ==========================\n'))
+fprintf(strcat("\n============= ",ax, ' direction =============\n'))
 
 
 %% Load requested data file
@@ -566,7 +566,8 @@ if options.figures
     ylabel('Displacement [m]')
     axis tight
 
-    figure('Name','3d order, filtered, strictly proper - Pole Zero Map'),pzmap(tf_pos)
+    figure('Name','3d order, filtered, strictly proper - Pole Zero Map')
+    pzmap(tf_pos)
 end
 
 end
@@ -604,14 +605,13 @@ FRF_LPF = squeeze(freqresp(filt,2*pi*f));
 
 LPF = tf(Bpre,Apre);
 
-
-figure('Name','Low Pass Filter (Butterworth)')
-bode(LPF)
-
 sys_LPF = sys_c/LPF;
 
 
 if options.figures
+    figure('Name','Low Pass Filter (Butterworth)')
+    bode(LPF)
+
     figure('Name','Butterworth filtered continuous time system')
     bode(sys_c)
     hold on
@@ -645,24 +645,17 @@ end
 
 sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 
-figure('Name','Butterworth filtered, discretized (100Hz) system: Freq resp')
-bode(sys_dLPF)
+if options.figures
+    figure('Name','Butterworth filtered, discretized (100Hz) system: Freq resp')
+    bode(sys_dLPF)
 
-figure('Name', 'Butterworth filtered, discretized (100Hz) system: Pole Zero Map')
-pzmap(sys_dLPF)
-
+    figure('Name', 'Butterworth filtered, discretized (100Hz) system: Pole Zero Map')
+    pzmap(sys_dLPF)
+end
 
 %% Discretize filtered system
 sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 
-if options.figures
-     %% Simulate filtered system
-    dt100Hz = .01;
-    t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
-
-
-
-end
 
 %% State space representation of the filtered system and simulation
 
@@ -672,8 +665,9 @@ ss_vel_invLPF = ss(A_dLPFi,B_dLPFi,C_dLPFi,D_dLPFi,0.01);
     
 if options.figures
     % Simulate on realistic desired speed signal: interpolated simulation result
-
-    % - lsim simulation
+    dt100Hz = .01;
+    t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
+    % - lsim simulation    
     x_50Hz = lsim(tf_vel.discr,input,t);
     x_100Hz = interp1(t,x_50Hz,t100Hz);
     sim_ss = lsim(ss_vel_invLPF, x_100Hz, t100Hz);
