@@ -12,9 +12,9 @@ options.prints = true;
 % SYNTAX: 
 %   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
 % -----------------------------------------------------------------
-% xmodel = identify("data/angle_identification_x",'x',0.02,0.5,0.5,options);
+xmodel = identify("data/angle_identification_x",'x',0.02,0.5,0.5,options);
 % ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
-zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,0.8,options);
+% zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,1.,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -612,7 +612,7 @@ sys_LPF = sys_c/LPF;
 
 
 if options.figures
-    figure('Name','Inverse filtered continuous time system')
+    figure('Name','Butterworth filtered continuous time system')
     bode(sys_c)
     hold on
     bode(sys_LPF)
@@ -645,10 +645,10 @@ end
 
 sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 
-figure('Name','Inverse low pass filtered, discretized (100Hz) system: Freq resp')
+figure('Name','Butterworth filtered, discretized (100Hz) system: Freq resp')
 bode(sys_dLPF)
 
-figure('Name', 'Inverse low pass filtered, discretized (100Hz) system: Pole Zero Map')
+figure('Name', 'Butterworth filtered, discretized (100Hz) system: Pole Zero Map')
 pzmap(sys_dLPF)
 
 
