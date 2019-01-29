@@ -91,8 +91,6 @@ class VelCommander(object):
             'motionplanner/desired_path', Marker, queue_size=1)
         self.trajectory_real = rospy.Publisher(
             'motionplanner/real_path', Marker, queue_size=1)
-        self.omg_pos_pub = rospy.Publisher(
-            'motionplanner/omg_pos', Marker, queue_size=1)
         self.omg_vel_pub = rospy.Publisher(
             'motionplanner/omg_vel', Marker, queue_size=1)
         self.trajectory_marker = rospy.Publisher(
@@ -291,7 +289,6 @@ class VelCommander(object):
                 return
 
         # publish current pose and velocity calculated by omg-tools
-        self.publish_omg_pos()
         self.publish_omg_vel()
 
         # Transform feedforward command from frame world to world_rotated.
@@ -381,7 +378,7 @@ class VelCommander(object):
         # Transform desired position and velocity from world frame to
         # world_rot frame
         feedback_cmd = self.transform_twist(
-                self.feedback(pos_desired, vel_desired), "world", "world_rot)
+                self.feedback(pos_desired, vel_desired), "world", "world_rot")
 
         self.cmd_twist_convert.twist.linear.x = (
                         self.feedforward_cmd.linear.x + feedback_cmd.linear.x)
@@ -400,10 +397,10 @@ class VelCommander(object):
         '''
         feedback_cmd = Twist()
         feedback_cmd.linear.x = (
-                            self.K_x*(pos_desired.x - self._drone_est_pose.x) -
+                            self.K_x*(pos_desired.x - self._drone_est_pose.x) +
                             self.K_v*(vel_desired.x - self.vhat.x))
         feedback_cmd.linear.y = (
-                            self.K_x*(pos_desired.y - self._drone_est_pose.y) -
+                            self.K_x*(pos_desired.y - self._drone_est_pose.y) +
                             self.K_v*(vel_desired.y - self.vhat.y))
         # Add theta feedback to remain at zero yaw angle
         feedback_cmd.angular.z = (
@@ -547,27 +544,7 @@ class VelCommander(object):
         self._real_path.color.a = 1.0
         self._real_path.lifetime = rospy.Duration(0)
 
-        # omg-tools position
-        self.omg_pos = Marker()
-        self.omg_pos.header.frame_id = 'world'
-        self.omg_pos.ns = "omg_pos"
-        self.omg_pos.id = 2
-        self.omg_pos.type = 1  # Cube
-        self.omg_pos.action = 0
-        self.omg_pos.pose.position.z = 0.
-        self.omg_pos.pose.orientation.x = 0.
-        self.omg_pos.pose.orientation.y = 0.
-        self.omg_pos.pose.orientation.z = 0.
-        self.omg_pos.scale.x = 0.1
-        self.omg_pos.scale.y = 0.1
-        self.omg_pos.scale.z = 0.1
-        self.omg_pos.color.r = 0.0
-        self.omg_pos.color.g = 0.0
-        self.omg_pos.color.b = 1.0
-        self.omg_pos.color.a = 1.0
-        self.omg_pos.lifetime = rospy.Duration(0)
-
-        # omg-tools velocity
+        # omg-tools position and velocity
         self.omg_vel = Marker()
         self.omg_vel.header.frame_id = 'world'
         self.omg_vel.ns = "omg_vel"
@@ -627,16 +604,6 @@ class VelCommander(object):
             self._real_path.points.append(point)
 
         self.trajectory_real.publish(self._real_path)
-
-    def publish_omg_pos(self):
-        '''Publish current position in omg-tools generated position list.
-        '''
-        self.omg_pos.header.stamp = rospy.get_rostime()
-
-        self.omg_pos.pose.position.x = self._traj['x'][self._index]
-        self.omg_pos.pose.position.y = self._traj['y'][self._index]
-
-        self.omg_pos_pub.publish(self.omg_pos)
 
     def publish_omg_vel(self):
         '''Publish current omg-tools velocity input vector.
