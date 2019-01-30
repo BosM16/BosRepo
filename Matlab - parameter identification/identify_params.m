@@ -1,7 +1,7 @@
-clear variables
-close all
+% clear variables
+% close all
 clc
-fprintf('-------- Start identification --------- \n')
+fprintf('============ Start identification ============= \n')
 
 
 %% Settings & Execution
@@ -13,8 +13,8 @@ options.prints = false;
 %   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
 % -----------------------------------------------------------------
 xmodel = identify("data/angle_identification_x",'x',0.02,0.5,0.5,options);
-% ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
-% zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,1.,options);
+ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
+zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,1.,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -26,7 +26,7 @@ xmodel = identify("data/angle_identification_x",'x',0.02,0.5,0.5,options);
 %       frequencies is +- 0 dB. 
 
 
-fprintf('\n------- Identification finished ------- \n')
+fprintf('\n=========== Identification finished =========== \n')
 
 
 %% ========================================================================
@@ -67,7 +67,7 @@ function model = identify(data_file, ax, Ts, f0, Fc, options)
 % Website: https://github.com/BosMathias/BosRepo
 % 2018-2019;
 
-fprintf(strcat("\n============= ",ax, ' direction =============\n'))
+fprintf(strcat("\n----------------- ",ax, ' direction -----------------\n'))
 
 
 %% Load requested data file
@@ -228,8 +228,7 @@ FRF = squeeze(freqresp(transff.discr,2*pi*f));
 data.FRF_vel = FRF;
 
 if options.prints
-   fprintf(strcat("\nDiscrete time velocity transfer function ",ax,' direction:\n'))
-   fprintf('-----------------------------------------------------')
+   fprintf(strcat("\n* Discrete time velocity transfer function ",ax,' direction:\n'))
    display(transff.discr) 
 end
 
@@ -284,8 +283,7 @@ FRFc = squeeze(freqresp(transff.cont,2*pi*f));
 data.FRFc_vel = FRFc;
 
 if options.prints
-   fprintf(strcat("Continuous time velocity transfer function ",ax,' direction:\n'))
-   fprintf('-------------------------------------------------------')
+   fprintf(strcat("\n* Continuous time velocity transfer function ",ax,' direction:\n'))
    display(transff.cont) 
 end
 
@@ -395,8 +393,7 @@ FRF = squeeze(freqresp(transff.discr,2*pi*f));
 data.FRF_vel = FRF;
 
 if options.prints
-   fprintf(strcat("\nDiscrete time velocity transfer function ",ax,' direction:\n'))
-   fprintf('-----------------------------------------------------')
+   fprintf(strcat("\n* Discrete time velocity transfer function ",ax,' direction:\n'))
    display(transff.discr) 
 end
 
@@ -451,8 +448,7 @@ FRFc = squeeze(freqresp(transff.cont,2*pi*f));
 data.FRFc_vel = FRFc;
 
 if options.prints
-   fprintf(strcat("Continuous time velocity transfer function ",ax,' direction:\n'))
-   fprintf('-------------------------------------------------------')
+   fprintf(strcat("* Continuous time velocity transfer function ",ax,' direction:\n'))
    display(transff.cont) 
 end
 
@@ -526,8 +522,7 @@ FRF = squeeze(freqresp(tf_pos,2*pi*f));
 data.FRFc_pos = FRF;
 
 if options.prints
-   fprintf(strcat("Continuous time position transfer function ",ax,' direction:\n'))
-   fprintf('-------------------------------------------------------')
+   fprintf(strcat("\n* Continuous time position transfer function ",ax,' direction:\n'))
    display(tf_pos) 
 end
 

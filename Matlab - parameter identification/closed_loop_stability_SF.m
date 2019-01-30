@@ -1,3 +1,5 @@
+% State feedback controller interpretation
+
 clear variables
 close all
 %% Identify models
@@ -7,7 +9,7 @@ run identify_params
 fprintf('\n-- Start closed loop stability check --')
 % Control parameters
 %   - x direction
-xctrl_params.Kx = 0.03;
+xctrl_params.Kx = 0.3;
 % xctrl_params.Td = 0.4;
 % xctrl_params.Kv = xctrl_params.Kx * xctrl_params.Td;
 %   - y direction
@@ -44,7 +46,7 @@ bode(H);
 
 %% Determine Td
 %  Td chosen such that 10/Td = w_c of position model.
-[~,~,~,w_c] = margin(H(2));
+[~,~,~,w_c] = margin(H(1));
 Td = 10/w_c;
 
 
@@ -65,7 +67,7 @@ k=1;
 for i = 1:2
     for j = 1:2
     subplot(2,2,k)
-    margin(sys_cl(i,j));
+    margin(sys_ol(i,j));
     k=k+1;
     end
 end
@@ -112,7 +114,7 @@ set(a(3),'markersize',10)
 hold on
 for Kx = 10^-4:1:10
     K = Kx*[1 Td];
-    sys_cl = H*K*(1+K*H)^(-1);
+    sys_cl = H*K*(1+H*K)^(-1);
     pzmap(sys_cl)
    
 end
