@@ -33,8 +33,8 @@ class VelCommander(object):
         self.target_reached = False
         self._index = 1
 
-        self.K_x = rospy.get_param('vel_cmd/K_x', 0.3)
-        self.K_v = rospy.get_param('vel_cmd/K_v', 0.1)
+        self.K_x = rospy.get_param('vel_cmd/K_x', 0.6864)
+        self.K_v = rospy.get_param('vel_cmd/K_v', 1.5792)
         self.K_theta = rospy.get_param('vel_cmd/K_theta', 0.3)
         self.safety_treshold = rospy.get_param('vel_cmd/safety_treshold', 0.5)
         self.pos_nrm_tol = rospy.get_param(
@@ -141,7 +141,8 @@ class VelCommander(object):
         '''
 
         # List containing obstacles of type Obstacle()
-        self.obstacles = []
+        Sjaaakie = Obstacle(shape=[0.5], pose=[2.0, 2.0])
+        self.obstacles = [Sjaaakie]
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
