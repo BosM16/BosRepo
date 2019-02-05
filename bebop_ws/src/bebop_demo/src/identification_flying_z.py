@@ -12,13 +12,13 @@ class Ident(object):
     def __init__(self):
         """
         """
-        self.ident_length = 3
+        self.ident_length = 10
         self.index = 0
         self.rate = 10
         self.wait1 = 0.062
         self.wait2 = 0.06
         self.wait3 = 0.11
-        span = int(3*(self.wait1*5 + self.wait2*5)*self.rate*50 + 10)
+        span = int(self.ident_length*(self.wait1*5 + self.wait2*5)*self.rate*50 + 15)
         self.input = np.zeros(span)
         self.output_x = np.zeros(span)
         self.output_y = np.zeros(span)
