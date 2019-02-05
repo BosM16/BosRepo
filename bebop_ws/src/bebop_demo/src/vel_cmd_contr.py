@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
-                               Pose2D, PoseStamped)
+                               Pose, PoseStamped)
 from std_msgs.msg import Bool, Empty
 from visualization_msgs.msg import Marker
 
@@ -34,6 +34,7 @@ class VelCommander(object):
         self._index = 1
 
         self.K_x = rospy.get_param('vel_cmd/K_x', 0.6864)
+        self.K_z = rospy.get_param('vel_cmd/K_z', 0.5)
         self.K_v = rospy.get_param('vel_cmd/K_v', 1.5792)
         self.K_theta = rospy.get_param('vel_cmd/K_theta', 0.3)
         self.safety_treshold = rospy.get_param('vel_cmd/safety_treshold', 0.5)
@@ -48,15 +49,16 @@ class VelCommander(object):
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
 
-        self.X = np.array([[0.0], [0.0], [0.0], [0.0]])
+        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
         self.desired_yaw = 0.0
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.x_error = 0.
         self.y_error = 0.
+        self.z_error = 0.
         self.measurement_valid = False
         self.safe = False
-        self._goal = Pose2D()
+        self._goal = Pose()
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -71,15 +73,13 @@ class VelCommander(object):
         # Coefficients for inverted model of velocity to input angle
         self.initialize_vel_model()
 
-        self._drone_est_pose = Pose2D()
-        self._drone_est_pose.x = 0.
-        self._drone_est_pose.y = 0.
-
+        self._drone_est_pose = Pose()
         self.vive_frame_pose = PoseStamped()
 
-        self._traj = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
-        self._traj_strg = {'v': [0.0], 'w': [0.0], 'x': [0.0], 'y': [0.0]}
-        self._inputs_applied = {'jx': [0.0, 0.0], 'jy': [0.0, 0.0]}
+        self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
+                      'x': [0.0], 'y': [0.0], 'z': [0.0]}
+        self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
+                           'x': [0.0], 'y': [0.0], 'z': [0.0]}
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
@@ -115,21 +115,26 @@ class VelCommander(object):
                        [1.0000, 0.]])
         Ay = np.array([[1.9556, -0.9565],
                        [1.0000, 0.]])
+        Az = np.array([[1.9556]])
 
         self.A = np.zeros([4, 4])
         self.A[0:2, 0:2] = Ax
         self.A[2:4, 2:4] = Ay
+        self.A[4:5, 4.5] = Az
 
-        self.B = np.zeros([4, 2])
+        self.B = np.zeros([5, 3])
         self.B[0, 0] = 1
         self.B[2, 1] = 1
+        self.B[4, 2] = 1
 
-        self.C = np.zeros([2, 4])
+        self.C = np.zeros([3, 5])
         self.C[0, 0:2] = [0.0016, -0.0020]
         self.C[1, 2:4] = [0.0028, - 0.0032]
+        self.C[2, 4:5] = [0.0028]
 
-        self.D = np.array([[0.5846, 0.0],
-                           [0.0, 0.5623]])
+        self.D = np.array([[0.5846, 0.0, 0.0],
+                           [0.0, 0.5623, 0.0],
+                           [0.0, 0.0, 0.5623]])
 
     def configure(self):
         '''Configures the controller by loading in the room and static
@@ -141,8 +146,9 @@ class VelCommander(object):
         '''
 
         # List containing obstacles of type Obstacle()
-        Sjaaakie = Obstacle(shape=[0.5], pose=[2.0, 2.0])
-        self.obstacles = [Sjaaakie]
+        # Sjaaakie = Obstacle(shape=[0.5], pose=[2.0, 2.0, 1.25])
+        # self.obstacles = [Sjaaakie]
+        self.obstacles = []
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
@@ -153,7 +159,7 @@ class VelCommander(object):
             print "Service call failed: %s" % e
             config_success = False
 
-        rospy.Subscriber('motionplanner/goal', Pose2D, self.set_goal)
+        rospy.Subscriber('motionplanner/goal', Pose, self.set_goal)
 
         return config_success
 
@@ -162,7 +168,6 @@ class VelCommander(object):
         Starts the controller's periodical loop.
         '''
         rate = self.rate
-
         configured = self.configure()
         print '-----------------------------------------'
         print '- Controller & Motionplanner Configured -'
@@ -177,10 +182,12 @@ class VelCommander(object):
                 rate.sleep()
             (self._drone_est_pose,
              self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-            pos_desired = Point(x=self._goal.x,
-                                y=self._goal.y)
+            pos_desired = Point(x=self._goal.position.x,
+                                y=self._goal.position.y,
+                                z=self._goal.position.z)
             vel_desired = Point(x=0.0,
-                                y=0.0)
+                                y=0.0,
+                                z=0.0)
             feedback_cmd = self.transform_twist(
                 self.feedback(pos_desired, vel_desired), "world", "world_rot")
             self.cmd_twist_convert.twist = feedback_cmd
@@ -191,7 +198,7 @@ class VelCommander(object):
     def set_goal(self, goal):
         '''Sets the goal and fires motionplanner.
         Args:
-            goal: Pose2D
+            goal: Pose
         '''
         self.target_reached = False
         self._goal = goal
@@ -230,11 +237,13 @@ class VelCommander(object):
             data : calculated trajectories received from 'mp_result' topic,
                    published by motionplanner.
         '''
+        u_traj = data.u_traj
         v_traj = data.v_traj
         w_traj = data.w_traj
         x_traj = data.x_traj
         y_traj = data.y_traj
-        self.store_trajectories(v_traj, w_traj, x_traj, y_traj)
+        z_traj = data.z_traj
+        self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
 
     def update(self):
         '''
@@ -255,15 +264,15 @@ class VelCommander(object):
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
 
         # Publish pose to plot in rviz.
-        self.publish_real(self._drone_est_pose.x, self._drone_est_pose.y)
+        self.publish_real(self._drone_est_pose.x,
+                          self._drone_est_pose.y,
+                          self._drone_est_pose.z)
 
         if not measurement_valid:
             self.safety_brake()
             return
         # Check for new trajectories. Trigger Motionplanner or raise
         # 'overtime'
-        pose0 = [self._drone_est_pose.x, self._drone_est_pose.y]
-
         if self._init:
             if not self._new_trajectories:
                 return
@@ -271,7 +280,7 @@ class VelCommander(object):
             self._init = False
 
         if ((self._index >= int(self._update_time/self._sample_time))
-                or (self._index >= len(self._traj['v'])-2)):
+                or (self._index >= len(self._traj['u'])-2)):
             if self._new_trajectories:
                 # Load fresh trajectories.
                 self.load_trajectories()
@@ -309,18 +318,19 @@ class VelCommander(object):
             not stop: boolean whether goal is reached. If not, controller
                       proceeds to goal.
         '''
-        if len(self._inputs_applied['jx']) == 0:
-            return True
-
         stop_linear = True
         stop = True
 
-        pos_nrm = np.linalg.norm(np.array(
-            [self._drone_est_pose.x, self._drone_est_pose.y])
-            - np.array([self._goal.x, self._goal.y]))
+        pos_nrm = np.linalg.norm(np.array([self._drone_est_pose.x,
+                                           self._drone_est_pose.y,
+                                           self._drone_est_pose.z])
+                                 - np.array([self._goal.x,
+                                             self._goal.y,
+                                             self._goal.z]))
         input_nrm = np.linalg.norm(
-            [self._inputs_applied['jx'][-1],
-                self._inputs_applied['jy'][-1]])
+            np.array(self.cmd_twist_convert.twist.linear.x,
+                     self.cmd_twist_convert.twist.linear.y,
+                     self.cmd_twist_convert.twist.linear.z))
 
         stop_linear = (pos_nrm < self.pos_nrm_tol) and (
                             input_nrm < self.input_nrm_tol)
@@ -342,8 +352,9 @@ class VelCommander(object):
         '''Transforms the velocity commands from the global world frame to the
         rotated world frame world_rot.
         '''
-        self.feedforward_cmd.linear.x = self._traj['v'][self._index + 1]
-        self.feedforward_cmd.linear.y = self._traj['w'][self._index + 1]
+        self.feedforward_cmd.linear.x = self._traj['u'][self._index + 1]
+        self.feedforward_cmd.linear.y = self._traj['v'][self._index + 1]
+        self.feedforward_cmd.linear.z = self._traj['w'][self._index + 1]
         self.feedforward_cmd = self.transform_twist(
                                     self.feedforward_cmd, "world", "world_rot")
 
@@ -351,6 +362,8 @@ class VelCommander(object):
         '''Converts a velocity command to a desired input angle according to
         the state space representation of the inverse velocity model:
 
+
+        R: DIT MOET WEG, HEEFT HET IZN OM STATE SPACE REPRES TE ZETTEN? NIET ECHT DENK IK
         - for second order velocity/input relation (x and y):
             j[k+1] = 1/b1*{ -b0*j[k] + a0*v[k] + a1*v[k+1] + v[k+2] }
                    = 1/b1*(-b0, a0, a1, 1)*(j[k], v[k], v[k+1], v[k+2])'
@@ -362,20 +375,24 @@ class VelCommander(object):
         velocity.
         '''
         u = np.array([[self.feedforward_cmd.linear.x],
-                      [self.feedforward_cmd.linear.y]])
+                      [self.feedforward_cmd.linear.y],
+                      [self.feedforward_cmd.linear.z]])
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
         self.feedforward_cmd.linear.x = Y[0, 0]
         self.feedforward_cmd.linear.y = Y[1, 0]
+        self.feedforward_cmd.linear.z = Y[2, 0]
 
     def combine_ff_fb(self):
-        '''Combines the feedforward and feedback commands to generate a
-        velocity command and publishes this command.
+        '''Combines the feedforward and feedback commands to generate the full
+        input angle command.
         '''
         pos_desired = Point(x=self._traj['x'][self._index + 1],
-                            y=self._traj['y'][self._index + 1])
-        vel_desired = Point(x=self._traj['v'][self._index + 1],
-                            y=self._traj['w'][self._index + 1])
+                            y=self._traj['y'][self._index + 1],
+                            z=self._traj['z'][self._index + 1])
+        vel_desired = Point(x=self._traj['u'][self._index + 1],
+                            y=self._traj['v'][self._index + 1],
+                            z=self._traj['w'][self._index + 1])
         # Transform desired position and velocity from world frame to
         # world_rot frame
         feedback_cmd = self.transform_twist(
@@ -398,11 +415,14 @@ class VelCommander(object):
         '''
         feedback_cmd = Twist()
         feedback_cmd.linear.x = (
-                            self.K_x*(pos_desired.x - self._drone_est_pose.x) +
-                            self.K_v*(vel_desired.x - self.vhat.x))
+                self.K_x*(pos_desired.x - self._drone_est_pose.position.x) +
+                self.K_v*(vel_desired.x - self.vhat.x))
         feedback_cmd.linear.y = (
-                            self.K_x*(pos_desired.y - self._drone_est_pose.y) +
-                            self.K_v*(vel_desired.y - self.vhat.y))
+                self.K_x*(pos_desired.y - self._drone_est_pose.position.y) +
+                self.K_v*(vel_desired.y - self.vhat.y))
+        feedback_cmd.linear.z = (
+                self.K_z*(pos_desired.z - self._drone_est_pose.position.z))
+
         # Add theta feedback to remain at zero yaw angle
         feedback_cmd.angular.z = (
                             self.K_theta*(self.desired_yaw - self.real_yaw))
@@ -427,7 +447,11 @@ class VelCommander(object):
             resp = pose_est(self.cmd_twist_convert)
 
             yhat = resp.pose_est.point
-            pose = Pose2D(x=yhat.x, y=yhat.y)
+            pose = Pose()
+            pose.position.x = yhat.x
+            pose.position.y = yhat.y
+            pose.position.z = yhat.z
+
             vhat = resp.vel_est.point
             yaw = resp.yaw
             measurement_valid = resp.measurement_valid
@@ -439,30 +463,36 @@ class VelCommander(object):
             return
 
     def load_trajectories(self):
+        self._traj['u'] = self._traj_strg['u'][:]
         self._traj['v'] = self._traj_strg['v'][:]
         self._traj['w'] = self._traj_strg['w'][:]
         self._traj['x'] = self._traj_strg['x'][:]
         self._traj['y'] = self._traj_strg['y'][:]
+        self._traj['z'] = self._traj_strg['z'][:]
 
-    def store_trajectories(self, v_traj, w_traj, x_traj, y_traj):
+    def store_trajectories(self, u_traj, v_traj, w_traj,
+                           x_traj, y_traj, z_traj):
         '''Stores the trajectories and indicate that new trajectories have
         been calculated.
 
         Args:
+            u_traj : trajectory speed in z-direction
             v_traj : trajectory speed in x-direction
             w_traj : trajectory speed in y-direction
             x_traj : trajectory position in x-direction
             y_traj : trajectory position in y-direction
+            z_traj : trajectory position in z-direction
         '''
         self._traj_strg = {}
-        self._traj_strg = {
-            'v': v_traj, 'w': w_traj, 'x': x_traj, 'y': y_traj}
+        self._traj_strg = {'u': u_traj, 'v': v_traj, 'w': w_traj,
+                           'x': x_traj, 'y': y_traj, 'z': z_traj}
         self._new_trajectories = True
         print '--------------- NEW TRAJECTORIES AVAILABLE ---------------'
 
         x_traj = self._traj_strg['x'][:]
         y_traj = self._traj_strg['y'][:]
-        self.publish_desired(x_traj, y_traj)
+        z_traj = self._traj_strg['z'][:]
+        self.publish_desired(x_traj, y_traj, z_traj)
 
     def transform_twist(self, twist, _from, _to):
         '''Transforms twist (geometry_msgs/Twist) from frame "_from" to
@@ -509,10 +539,6 @@ class VelCommander(object):
         self._desired_path.id = 0
         self._desired_path.type = 4  # Line List.
         self._desired_path.action = 0
-        # self._desired_path.pose.position.z = 0.
-        # self._desired_path.pose.orientation.x = 0
-        # self._desired_path.pose.orientation.y = 0
-        # self._desired_path.pose.orientation.z = 0
         self._desired_path.scale.x = 0.05
         self._desired_path.scale.y = 0.05
         self._desired_path.scale.z = 0.0
@@ -532,10 +558,6 @@ class VelCommander(object):
         self._real_path.id = 1
         self._real_path.type = 4  # Line List.
         self._real_path.action = 0
-        # self._real_path.pose.position.z = 0.
-        # self._real_path.pose.orientation.x = 0
-        # self._real_path.pose.orientation.y = 0
-        # self._real_path.pose.orientation.z = 0
         self._real_path.scale.x = 0.05
         self._real_path.scale.y = 0.05
         self._real_path.scale.z = 0.0
@@ -552,10 +574,6 @@ class VelCommander(object):
         self.omg_vel.id = 3
         self.omg_vel.type = 0  # Arrow
         self.omg_vel.action = 0
-        # self.omg_vel.pose.position.z = 0.
-        # self.omg_vel.pose.orientation.x = 0.
-        # self.omg_vel.pose.orientation.y = 0.
-        # self.omg_vel.pose.orientation.z = 0.
         self.omg_vel.scale.x = 0.06  # shaft diameter
         self.omg_vel.scale.y = 0.1  # head diameter
         self.omg_vel.scale.z = 0.15  # head length
@@ -565,7 +583,7 @@ class VelCommander(object):
         self.omg_vel.color.a = 1.0
         self.omg_vel.lifetime = rospy.Duration(0)
 
-    def publish_desired(self, x_traj, y_traj):
+    def publish_desired(self, x_traj, y_traj, z_traj):
         '''Publish planned x and y trajectory to topic for visualisation in
         rviz.
         '''
@@ -586,18 +604,18 @@ class VelCommander(object):
         # Add new calculated pos list to old one.
         new_pos = [0]*len(x_traj)
         for k in range(len(x_traj)):
-            new_pos[k] = Point(x=x_traj[k], y=y_traj[k])
+            new_pos[k] = Point(x=x_traj[k], y=y_traj[k], z=z_traj[k])
         self._desired_path.points += new_pos
 
         self.trajectory_desired.publish(self._desired_path)
 
-    def publish_real(self, x_pos, y_pos):
+    def publish_real(self, x_pos, y_pos, z_pos):
         '''Publish real x and y trajectory to topic for visualisation in
         rviz.
         '''
         self._real_path.header.stamp = rospy.get_rostime()
 
-        point = Point(x=x_pos, y=y_pos)
+        point = Point(x=x_pos, y=y_pos, z=z_pos)
         # After a while list becomes really long so only keep last XXXX values.
         if len(self._real_path.points) > 1000:
             self._real_path.points = self._real_path.points[1:] + [point]
@@ -607,17 +625,20 @@ class VelCommander(object):
         self.trajectory_real.publish(self._real_path)
 
     def publish_omg_vel(self):
-        '''Publish current omg-tools velocity input vector.
+        '''Publish current omg-tools velocity input vector where origin of the
+        vector is equal to current omg-tools position.
         '''
         self.omg_vel.header.stamp = rospy.get_rostime()
 
         x_pos = self._traj['x'][self._index]
         y_pos = self._traj['y'][self._index]
-        x_vel = self._traj['v'][self._index]
-        y_vel = self._traj['w'][self._index]
+        z_pos = self._traj['z'][self._index]
+        x_vel = self._traj['u'][self._index]
+        y_vel = self._traj['v'][self._index]
+        z_vel = self._traj['w'][self._index]
 
-        point_start = Point(x=x_pos, y=y_pos)
-        point_end = Point(x=(x_pos + 2.5*x_vel), y=(y_pos + 2.5*y_vel))
+        point_start = Point(x=x_pos, y=y_pos, z=z_pos)
+        point_end = Point(x=(x_pos + 2.5*x_vel), y=(y_pos + 2.5*y_vel), z=(z_pos + 2.5*z_vel))
         self.omg_vel.points = [point_start, point_end]
 
         self.omg_vel_pub.publish(self.omg_vel)

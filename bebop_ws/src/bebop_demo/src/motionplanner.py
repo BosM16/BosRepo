@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Pose2D
+from geometry_msgs.msg import Pose
 from std_msgs.msg import Bool
 
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
@@ -54,36 +54,37 @@ class MotionPlanner(object):
         print '----------------------------'
         mp_configured = False
 
-        self._vehicle = omg.Holonomic(
-            shapes=omg.Circle(self.drone_radius),
+        self._vehicle = omg.Holonomic3D(
+            shapes=omg.Sphere(self.drone_radius),
             bounds={'vmax': self.vmax, 'vmin': -self.vmax,
                     'amax': self.amax, 'amin': -self.amax})
         self._vehicle.define_knots(knot_intervals=self.knots)
         self._vehicle.set_options({'safety_distance': self.safety_margin})
-        self._vehicle.set_initial_conditions([0., 0.])
-        self._vehicle.set_terminal_conditions([0., 0.])
+        self._vehicle.set_initial_conditions([0., 0., 0.])
+        self._vehicle.set_terminal_conditions([0., 0., 0.])
 
         # Environment.
         room_origin_x = rospy.get_param('motionplanner/room_origin_x', 0.)
         room_origin_y = rospy.get_param('motionplanner/room_origin_y', 0.)
-        room_origin_theta = rospy.get_param(
-            'motionplanner/room_origin_theta', 0.)
+        room_origin_z = rospy.get_param('motionplanner/room_origin_z', 0.)
         room_width = rospy.get_param('motionplanner/room_width', 1.)
+        room_depth = rospy.get_param('motionplanner/room_depth', 1.)
         room_height = rospy.get_param('motionplanner/room_height', 1.)
 
-        room = {'shape': omg.Rectangle(room_width, room_height),
-                'position': [room_origin_x, room_origin_y]}
+        room = {'shape': omg.Cuboid(room_width, room_depth, room_height),
+                'position': [room_origin_x, room_origin_y, room_origin_z]}
 
         for k, obst in enumerate(obstacles.obst_list):
-            if len(obst.shape) == 1:
-                shape = omg.Circle(obst.shape[0])
-            elif len(obst.shape) == 2:
-                shape = omg.Rectangle(
+            if len(obst.shape) == 2:
+                shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
+            elif len(obst.shape) == 3:
+                shape = omg.Cuboid(
                     width=obst.shape[0],
-                    height=obst.shape[1],
-                    orientation=(obst.pose[2]))
-            self._obstacles.append(omg.Obstacle(
-                {'position': [obst.pose[0], obst.pose[1]]}, shape=shape))
+                    depth=obst.shape[1],
+                    height=obst.shape[2])
+                    # orientation=(obst.pose[2]))
+            self._obstacles.append(omg.Obstacle({'position': [
+                    obst.pose[0], obst.pose[1], obst.pose[2]]}, shape=shape))
 
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
@@ -115,7 +116,10 @@ class MotionPlanner(object):
         """Starts the motionplanner by initializing the motionplanner ROS-node.
         """
         rospy.init_node('motionplanner')
-        self._goal = Pose2D(x=np.inf, y=np.inf, theta=np.inf)
+        self._goal = Pose()
+        self._goal.position.x = np.inf
+        self._goal.position.y = np.inf
+        self._goal.position.z = np.inf
 
         print '---------------------------'
         print '- Motionplanner Listening -'
@@ -134,24 +138,26 @@ class MotionPlanner(object):
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
-                [cmd.pos_state.x, cmd.pos_state.y],
-                [cmd.vel_state.x, cmd.vel_state.y])
+                [cmd.pos_state.x, cmd.pos_state.y, cmd.pos_state.z],
+                [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z])
             self._vehicle.set_terminal_conditions(
-                [self._goal.x, self._goal.y])  # [cmd.goal_vel.x, cmd.goal_vel.y]
+                [self._goal.x, self._goal.y, self._goal.z])
             self._deployer.reset()
             print '-------------------------------------------'
             print 'New Goal - Motionplanner Resetted Deployer!'
             print '-------------------------------------------'
 
-        state0 = [cmd.pos_state.x, cmd.pos_state.y]
-        input0 = [cmd.vel_state.x, cmd.vel_state.y]
+        state0 = [cmd.pos_state.x, cmd.pos_state.y, cmd.pos_state.z]
+        input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
 
         trajectories = self._deployer.update(cmd.current_time, state0, input0)
         self._result = Trajectories(
-            v_traj=trajectories['input'][0, :],
-            w_traj=trajectories['input'][1, :],
+            u_traj=trajectories['input'][0, :],
+            v_traj=trajectories['input'][1, :],
+            w_traj=trajectories['input'][2, :],
             x_traj=trajectories['state'][0, :],
-            y_traj=trajectories['state'][1, :])
+            y_traj=trajectories['state'][1, :],
+            z_traj=trajectories['state'][2, :],)
         self._mp_result_topic.publish(self._result)
 
 
