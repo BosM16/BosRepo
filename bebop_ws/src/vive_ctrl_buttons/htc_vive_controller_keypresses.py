@@ -3,6 +3,7 @@
 import time
 import pprint
 import openvr
+from std_msgs.msg import Bool
 
 
 """
@@ -93,6 +94,8 @@ def from_controller_state_to_dict(pControllerState):
 if __name__ == '__main__':
     max_init_retries = 4
     retries = 0
+    button_pressed = rospy.Publisher('htc_ctrl_button', Bool, queue_size=1)
+
     print("===========================")
     print("Initializing OpenVR...")
     while retries < max_init_retries:
@@ -160,6 +163,10 @@ if __name__ == '__main__':
                 last_unPacketNum_right = d['unPacketNum']
                 print("Right controller:")
                 pp.pprint(d)
+
+            # Publish when trigger button has been pushed
+            if False:
+                button_pressed.publish(True)
 
     except KeyboardInterrupt:
         print("Control+C pressed, shutting down...")
