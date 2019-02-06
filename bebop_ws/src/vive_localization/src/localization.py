@@ -98,8 +98,8 @@ class ViveLocalization(object):
                                                         pitch_d_in_t,
                                                         yaw_d_in_t)
         self.tf_d_in_t.transform.translation.x = 0.
-        self.tf_d_in_t.transform.translation.y = 0.015  # 0.025
-        self.tf_d_in_t.transform.translation.z = 0.1
+        self.tf_d_in_t.transform.translation.y = 0.015 
+        self.tf_d_in_t.transform.translation.z = 0.075
         self.tf_d_in_t.transform.rotation.x = quat[0]
         self.tf_d_in_t.transform.rotation.y = quat[1]
         self.tf_d_in_t.transform.rotation.z = quat[2]
