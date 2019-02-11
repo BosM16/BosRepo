@@ -1,20 +1,20 @@
 % clear variables
-% close all
+close all
 clc
 fprintf('============ Start identification ============= \n')
 
 
 %% Settings & Execution
-options.figures = false;
-options.prints = false;
+% options.figures = true;
+options.prints = true;
 
 % ----------------------------------------------------------------- 
 % SYNTAX: 
 %   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
 % -----------------------------------------------------------------
-xmodel = identify("data/angle_identification_x",'x',0.02,0.5,0.5,options);
-ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
-zmodel = identify("data/vel_identification_z_short",'z',0.02,0.3,1.,options);
+xmodel = identify("data/angle_identification_x",'x',0.02,0.53,0.6,options);
+% ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
+% zmodel = identify("data/vel_identification_z",'z',0.02,0.3,1.,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -252,7 +252,7 @@ if options.figures
 
     x = lsim(transff.discr,input,t);
 
-    figure('Name','2nd - filtered - strictly proper - Minimum Phase: Simulation')
+    figure('Name','1st - filtered - strictly proper - Minimum Phase: Simulation')
     subplot(211)
     hold on
     plot(t, velocity)
@@ -529,7 +529,7 @@ end
 if options.figures
 
 
-    figure('Name','3d order, filtered, strictly proper - Freq. Resp.'), subplot(211)
+    figure('Name','Integrated, filtered, strictly proper - Freq. Resp.'), subplot(211)
     semilogx(f, 20*log10(abs(FRF)))
     grid on
     xlim([f(1) f(end)])
@@ -543,12 +543,12 @@ if options.figures
 
     x = lsim(tf_pos,input,t);
 
-    figure('Name','3d order, filtered, strictly proper - Simulation')
+    figure('Name','Integrated, filtered, strictly proper - Simulation')
     subplot(211)
     hold on
     plot(t, output,'g')
     plot(t, x)
-    title('3d order, filtered, strictly proper - Simulation VS Measurement')
+    title('Integrated, filtered, strictly proper - Simulation VS Measurement')
     legend(strcat('pos_{',ax,',meas}'), strcat('pos_{',ax,',sim}'))
     xlabel('Time [s]')
     ylabel('Displacement [m]')
@@ -561,7 +561,7 @@ if options.figures
     ylabel('Displacement [m]')
     axis tight
 
-    figure('Name','3d order, filtered, strictly proper - Pole Zero Map')
+    figure('Name','Integrated, filtered, strictly proper - Pole Zero Map')
     pzmap(tf_pos)
 end
 
