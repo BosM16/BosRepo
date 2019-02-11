@@ -1,20 +1,20 @@
-% clear variables
+clear variables
 close all
 clc
 fprintf('============ Start identification ============= \n')
 
 
 %% Settings & Execution
-% options.figures = true;
-options.prints = true;
+options.figures = false;
+options.prints = false;
 
 % ----------------------------------------------------------------- 
 % SYNTAX: 
 %   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
 % -----------------------------------------------------------------
 xmodel = identify("data/angle_identification_x",'x',0.02,0.53,0.6,options);
-% ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
-% zmodel = identify("data/vel_identification_z",'z',0.02,0.3,1.,options);
+ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
+zmodel = identify("data/vel_identification_z",'z',0.02,0.3,1.,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -279,6 +279,7 @@ end
 
 %% Continuous time system
 transff.cont = d2c(transff.discr,'matched');
+% transff.cont = d2c(transff.discr,'tustin');
 FRFc = squeeze(freqresp(transff.cont,2*pi*f));
 data.FRFc_vel = FRFc;
 
@@ -444,6 +445,8 @@ end
 
 %% Continuous time system
 transff.cont = d2c(transff.discr,'matched');
+% transff.cont = d2c(transff.discr,'tustin');
+
 FRFc = squeeze(freqresp(transff.cont,2*pi*f));
 data.FRFc_vel = FRFc;
 
