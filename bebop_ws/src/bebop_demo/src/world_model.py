@@ -59,20 +59,20 @@ class Model(object):
         depending on varying Ts.
         '''
 
-        a2x = 5.458
-        a1x = 2.467
-        a0x = -0.03519
+        a2x = 6.167
+        a1x = 1.523
+        a0x = 0.0
         Ax = np.array([[0., 1., 0.],
                        [0., 0., 1.],
                        [-a0x, -a1x, -a2x]])
-        a2y = 5.921
-        a1y = 2.469
-        a0y = 0.02513
+        a2y = 4.948
+        a1y = 2.127
+        a0y = 0.0
         Ay = np.array([[0., 1., 0.],
                        [0., 0., 1.],
                        [-a0y, -a1y, -a2y]])
-        a1z = 1.515
-        a0z = 0.02072
+        a1z = 3.23
+        a0z = 0.0
         Az = np.array([[0., 1.],
                        [-a0z, -a1z]])
 
@@ -86,16 +86,16 @@ class Model(object):
         self.B[5, 1] = 1
         self.B[7, 2] = 1
 
-        b2x = -0.01447
-        b1x = -1.008
-        b0x = 18.32
+        b2x = 0.0
+        b1x = 0.0
+        b0x = 22.51
         Bx = np.array([b0x, b1x, b2x])
-        b2y = -0.008856
-        b1y = -1.063
-        b0y = 19.74
+        b2y = 0.0
+        b1y = 0.0
+        b0y = 18.4
         By = np.array([b0y, b1y, b2y])
-        b1z = 0.6266
-        b0z = 1.597
+        b1z = 0.0
+        b0z = 6.066
         Bz = np.array([b0z, b1z])
         self.C = np.zeros([3, 8])
         self.C[0, 0:3] = Bx

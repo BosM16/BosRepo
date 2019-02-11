@@ -28,7 +28,7 @@ class MotionPlanner(object):
         self.amax = rospy.get_param('motionplanner/amax', 0.3)
         self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
         self.safety_margin = rospy.get_param(
-                    'motionplanner/safety_margin', 0.1)
+                    'motionplanner/safety_margin', 0.2)
 
         self._result = Trajectories()
         self._obstacles = []
@@ -103,6 +103,7 @@ class MotionPlanner(object):
             'verbose': 1.})
 
         problem.init()
+        problem.fullstop = True
 
         self._deployer = omg.Deployer(
             problem, self._sample_time, self._update_time)

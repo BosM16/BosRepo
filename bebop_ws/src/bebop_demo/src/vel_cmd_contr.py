@@ -111,9 +111,9 @@ class VelCommander(object):
 
         with sampling time equal to vel_cmd_Ts (0.01s).
         '''
-        Ax = np.array([[1.9556, -0.9565],
+        Ax = np.array([[1.947, -0.9481],
                        [1.0000, 0.]])
-        Ay = np.array([[1.9556, -0.9565],
+        Ay = np.array([[1.947, -0.9481],
                        [1.0000, 0.]])
         Az = np.array([[1.9556]])
 
@@ -128,12 +128,12 @@ class VelCommander(object):
         self.B[4, 2] = 1
 
         self.C = np.zeros([3, 5])
-        self.C[0, 0:2] = [0.0016, -0.0020]
-        self.C[1, 2:4] = [0.0028, - 0.0032]
+        self.C[0, 0:2] = [0.004232, -0.005015]
+        self.C[1, 2:4] = [-0.003704, 0.002797]
         self.C[2, 4:5] = [0.0028]
 
-        self.D = np.array([[0.5846, 0.0, 0.0],
-                           [0.0, 0.5623, 0.0],
+        self.D = np.array([[0.6338, 0.0, 0.0],
+                           [0.0, 0.7709, 0.0],
                            [0.0, 0.0, 0.5623]])
 
     def configure(self):
