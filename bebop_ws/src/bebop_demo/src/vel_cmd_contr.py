@@ -49,7 +49,7 @@ class VelCommander(object):
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
 
-        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
         self.desired_yaw = 0.0
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
@@ -66,6 +66,9 @@ class VelCommander(object):
         self.feedforward_cmd = Twist()
         self.vhat = Point()
         self._trigger = Trigger()
+
+        # Obstacle setup
+        self.Sjaaakie = [0.35, 1.5, 1.5, 1.5, 0.75]
 
         # Marker setup
         self.marker_setup()
@@ -93,11 +96,12 @@ class VelCommander(object):
             'motionplanner/real_path', Marker, queue_size=1)
         self.omg_vel_pub = rospy.Publisher(
             'motionplanner/omg_vel', Marker, queue_size=1)
-        self.trajectory_marker = rospy.Publisher(
-            'motionplanner_traj_marker', Marker, queue_size=1)
+        self.obst_pub = rospy.Publisher(
+            'motionplanner/rviz_obst', Marker, queue_size=1)
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
+        rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst)
 
     def initialize_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
@@ -117,10 +121,10 @@ class VelCommander(object):
                        [1.0000, 0.]])
         Az = np.array([[0.9391]])
 
-        self.A = np.zeros([4, 4])
+        self.A = np.zeros([5, 5])
         self.A[0:2, 0:2] = Ax
         self.A[2:4, 2:4] = Ay
-        self.A[4:5, 4.5] = Az
+        self.A[4:5, 4:5] = Az
 
         self.B = np.zeros([5, 3])
         self.B[0, 0] = 1
@@ -146,9 +150,8 @@ class VelCommander(object):
         '''
 
         # List containing obstacles of type Obstacle()
-        # Sjaaakie = Obstacle(shape=[0.5], pose=[2.0, 2.0, 1.25])
-        # self.obstacles = [Sjaaakie]
-        self.obstacles = []
+        Sjaaakie = Obstacle(shape=self.Sjaaakie[0:2], pose=self.Sjaaakie[2:])
+        self.obstacles = [Sjaaakie]
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
@@ -264,9 +267,9 @@ class VelCommander(object):
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
 
         # Publish pose to plot in rviz.
-        self.publish_real(self._drone_est_pose.x,
-                          self._drone_est_pose.y,
-                          self._drone_est_pose.z)
+        self.publish_real(self._drone_est_pose.position.x,
+                          self._drone_est_pose.position.y,
+                          self._drone_est_pose.position.z)
 
         if not measurement_valid:
             self.safety_brake()
@@ -321,16 +324,17 @@ class VelCommander(object):
         stop_linear = True
         stop = True
 
-        pos_nrm = np.linalg.norm(np.array([self._drone_est_pose.x,
-                                           self._drone_est_pose.y,
-                                           self._drone_est_pose.z])
-                                 - np.array([self._goal.x,
-                                             self._goal.y,
-                                             self._goal.z]))
+        pos_nrm = np.linalg.norm(np.array([self._drone_est_pose.position.x,
+                                           self._drone_est_pose.position.y,
+                                           self._drone_est_pose.position.z])
+                                 - np.array([self._goal.position.x,
+                                             self._goal.position.y,
+                                             self._goal.position.z]))
+
         input_nrm = np.linalg.norm(
-            np.array(self.cmd_twist_convert.twist.linear.x,
+            np.array([self.cmd_twist_convert.twist.linear.x,
                      self.cmd_twist_convert.twist.linear.y,
-                     self.cmd_twist_convert.twist.linear.z))
+                     self.cmd_twist_convert.twist.linear.z]))
 
         stop_linear = (pos_nrm < self.pos_nrm_tol) and (
                             input_nrm < self.input_nrm_tol)
@@ -583,6 +587,23 @@ class VelCommander(object):
         self.omg_vel.color.a = 1.0
         self.omg_vel.lifetime = rospy.Duration(0)
 
+        # Obstacle
+        self.rviz_obst = Marker()
+        self.rviz_obst.header.frame_id = 'world'
+        self.rviz_obst.ns = "obstacle"
+        self.rviz_obst.id = 3
+        self.rviz_obst.type = 3  # Cylinder
+        self.rviz_obst.action = 0
+        self.rviz_obst.scale.x = self.Sjaaakie[0] * 2  # x-diameter
+        self.rviz_obst.scale.y = self.Sjaaakie[0] * 2  # y-diameter
+        self.rviz_obst.scale.z = self.Sjaaakie[1]  # height
+        self.rviz_obst.pose.orientation.w = 1.0
+        self.rviz_obst.color.r = 1.0
+        self.rviz_obst.color.g = 1.0
+        self.rviz_obst.color.b = 1.0
+        self.rviz_obst.color.a = 0.5
+        self.rviz_obst.lifetime = rospy.Duration(0)
+
     def publish_desired(self, x_traj, y_traj, z_traj):
         '''Publish planned x and y trajectory to topic for visualisation in
         rviz.
@@ -638,10 +659,23 @@ class VelCommander(object):
         z_vel = self._traj['w'][self._index]
 
         point_start = Point(x=x_pos, y=y_pos, z=z_pos)
-        point_end = Point(x=(x_pos + 2.5*x_vel), y=(y_pos + 2.5*y_vel), z=(z_pos + 2.5*z_vel))
+        point_end = Point(x=(x_pos + 2.5*x_vel),
+                          y=(y_pos + 2.5*y_vel),
+                          z=(z_pos + 2.5*z_vel))
         self.omg_vel.points = [point_start, point_end]
 
         self.omg_vel_pub.publish(self.omg_vel)
+
+    def publish_obst(self, empty):
+        '''Publish static obstacles.
+        '''
+        self.rviz_obst.header.stamp = rospy.get_rostime()
+
+        point = Point(
+                    x=self.Sjaaakie[2], y=self.Sjaaakie[3], z=self.Sjaaakie[4])
+        self.rviz_obst.pose.position = point
+
+        self.obst_pub.publish(self.rviz_obst)
 
 
 if __name__ == '__main__':

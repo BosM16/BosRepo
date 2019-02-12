@@ -139,16 +139,22 @@ class MotionPlanner(object):
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
-                [cmd.pos_state.x, cmd.pos_state.y, cmd.pos_state.z],
+                [cmd.pos_state.position.x,
+                 cmd.pos_state.position.y,
+                 cmd.pos_state.position.z],
                 [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z])
             self._vehicle.set_terminal_conditions(
-                [self._goal.x, self._goal.y, self._goal.z])
+                [self._goal.position.x,
+                 self._goal.position.y,
+                 self._goal.position.z])
             self._deployer.reset()
             print '-------------------------------------------'
             print 'New Goal - Motionplanner Resetted Deployer!'
             print '-------------------------------------------'
 
-        state0 = [cmd.pos_state.x, cmd.pos_state.y, cmd.pos_state.z]
+        state0 = [cmd.pos_state.position.x,
+                  cmd.pos_state.position.y,
+                  cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
 
         trajectories = self._deployer.update(cmd.current_time, state0, input0)

@@ -5,7 +5,7 @@
 
   <param name="vel_cmd/update_time" value="0.5" />
   <param name="vel_cmd/sample_time" value="0.01" />
-  <param name='vel_cmd/goal_reached_pos_tol' value="0.1" />
+  <param name='vel_cmd/goal_reached_pos_tol' value="0.05" />
   <param name='vel_cmd/goal_reached_angle_tol' value="0.05" />
   <param name='vel_cmd/goal_reached_input_tol' value="0.03" />
   <param name='vel_cmd/K_x' value="0.6864" />
@@ -16,8 +16,8 @@
 
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="10.0" />
-  <param name='motionplanner/vmax' value="0.4" />
-  <param name='motionplanner/amax' value="0.5" />
+  <param name='motionplanner/vmax' value="0.3" />
+  <param name='motionplanner/amax' value="0.3" />
   <param name='motionplanner/drone_radius' value="0.20" />
   <param name='motionplanner/safety_margin' value="0.20" />
   <param name='motionplanner/room_origin_x' value="3." />
