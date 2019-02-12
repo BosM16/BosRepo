@@ -1,0 +1,5 @@
+<launch>
+
+  <node name="ctrl_keypress" pkg="vive_ctrl_buttons" type="htc_vive_controller_keypresses.py" output="screen"/>
+
+</launch>
