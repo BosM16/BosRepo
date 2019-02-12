@@ -71,7 +71,7 @@ class Model(object):
         Ay = np.array([[0., 1., 0.],
                        [0., 0., 1.],
                        [-a0y, -a1y, -a2y]])
-        a1z = 3.23
+        a1z = 6.26
         a0z = 0.0
         Az = np.array([[0., 1.],
                        [-a0z, -a1z]])

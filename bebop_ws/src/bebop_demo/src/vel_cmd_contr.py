@@ -115,7 +115,7 @@ class VelCommander(object):
                        [1.0000, 0.]])
         Ay = np.array([[1.947, -0.9481],
                        [1.0000, 0.]])
-        Az = np.array([[1.9556]])
+        Az = np.array([[0.9391]])
 
         self.A = np.zeros([4, 4])
         self.A[0:2, 0:2] = Ax
@@ -130,11 +130,11 @@ class VelCommander(object):
         self.C = np.zeros([3, 5])
         self.C[0, 0:2] = [0.004232, -0.005015]
         self.C[1, 2:4] = [-0.003704, 0.002797]
-        self.C[2, 4:5] = [0.0028]
+        self.C[2, 4:5] = [-0.0002301]
 
         self.D = np.array([[0.6338, 0.0, 0.0],
                            [0.0, 0.7709, 0.0],
-                           [0.0, 0.0, 0.5623]])
+                           [0.0, 0.0, 1.036]])
 
     def configure(self):
         '''Configures the controller by loading in the room and static
