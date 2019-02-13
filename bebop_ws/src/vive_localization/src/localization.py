@@ -2,6 +2,7 @@
 
 from geometry_msgs.msg import PoseStamped, TransformStamped
 from std_msgs.msg import Empty
+from vive_localization.msg import PoseMeas
 
 import numpy as np
 import rospy
@@ -36,7 +37,7 @@ class ViveLocalization(object):
         self.pose_c2_in_w.header.frame_id = "world"
 
         self.pos_update = rospy.Publisher(
-            'vive_localization/pose', PoseStamped, queue_size=1)
+            'vive_localization/pose', PoseMeas, queue_size=1)
         # Note that the following could made more general for any number of
         # tracked objects.
         self.c1_pos_update = rospy.Publisher(
@@ -128,9 +129,8 @@ class ViveLocalization(object):
 
     def start(self):
         '''
-        Starts running of bebop_demo node.
+        Starts running of localization node.
         '''
-        print 'Localization test is ON'
         sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
         self.rate = rospy.Rate(1./sample_time)
 
@@ -146,6 +146,7 @@ class ViveLocalization(object):
         self.init_transforms()
 
         if not self.calib:
+            # Start periodic publishing of measurements.
             self.publish_pose_est(Empty)
 
         rospy.spin()
@@ -159,6 +160,7 @@ class ViveLocalization(object):
         self.tf_t_in_v = self.pose_to_tf(pose_t_in_v, "tracker")
         self.broadc.sendTransform(self.tf_t_in_v)
         # self.stbroadc.sendTransform(self.tf_d_in_t)
+        # Dirty fix to make sure every transform is broadcasted & received.
         rospy.sleep(2.)
 
         # Calibrate: fix current drone pose as pose of world frame.
@@ -191,17 +193,21 @@ class ViveLocalization(object):
             self.broadc.sendTransform(self.tf_t_in_v)
             self.stbroadc.sendTransform(self.tf_d_in_t)
 
-            # Calculate and publish pose of drone in world frame.
+            # Calculate and publish pose of drone in world frame and also
+            # include yaw.
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
             pose_t_in_w = self.tf_to_pose(tf_d_in_w)
-            self.pos_update.publish(pose_t_in_w)
 
             # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
+
+            data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
+            self.pos_update.publish(data)
+
             # - Yaw only (roll and pitch 0.0) to quaternions.
             quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
             self.tf_r_in_w.transform.rotation.x = quat[0]
