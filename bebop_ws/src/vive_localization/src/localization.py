@@ -224,7 +224,7 @@ class ViveLocalization(object):
                 pose_c_in_v = self.get_pose_vive(self.tracked_objects[i])
                 pose_c_in_w = self.transform_pose(pose_c_in_v, "vive", "world")
 
-                self.c_publishers[i-1].publish(pose_c_in_v)
+                self.c_publishers[i-1].publish(pose_c_in_w)
 
             self.rate.sleep()
 
