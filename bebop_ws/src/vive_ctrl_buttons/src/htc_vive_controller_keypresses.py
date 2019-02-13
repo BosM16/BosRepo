@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
+from std_msgs.msg import Bool
+
 import time
-import self.pprint
+import pprint
 import openvr
 import rospy
 
-from std_msgs.msg import Bool
-
 
 class KeyPress(object):
-    """
+    '''
     Get the HTC Vive controllers keypresses and print them to screen.
 
     You need to do:
-    export LD_LIBRARY_PATH=$HOME/.steam/steam/steamaself.pps/common/SteamVR/bin/
-        linux64:$HOME/.steam/steam/steamaself.pps/common/tools/bin/linux64:$LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH=$HOME/.steam/steam/steamapps/common/SteamVR/bin/
+        linux64:$HOME/.steam/steam/steamapps/common/tools/bin/linux64:$LD_LIBRARY_PATH
 
     before executing it.
 
@@ -43,42 +43,51 @@ class KeyPress(object):
         'unPacketNum': 1146L}
 
 
-    Author: Sammy Pfeiffer <Sammy.Pfeiffer at student.uts.edu.au>
-    """
-    def __init__(self):
+    Original source code author:
+    Sammy Pfeiffer <Sammy.Pfeiffer at student.uts.edu.au>
+    '''
 
+    def __init__(self):
+        '''
+        Initialization of KeyPress object.
+        '''
         rospy.init_node('ctrl_keypress')
 
-        self.reading_rate_hz = 100
+        self.reading_rate_hz = 10
         self.show_only_new_events = True
         self.last_unPacketNum_left = 0
         self.last_unPacketNum_right = 0
+
+        self.rtrigger_pressed = rospy.Publisher(
+            'ctrl_keypress/rtrigger', Bool, queue_size=1)
+        self.ltrigger_pressed = rospy.Publisher(
+            'ctrl_keypress/ltrigger', Bool, queue_size=1)
 
         print("===========================")
         print("Initializing OpenVR...")
 
         try:
-            # was: openvr.init(openvr.VRAself.pplication_Scene),
+            # was: openvr.init(openvr.VRApplication_Scene),
             # but that gives 306 error. Don't need HMD.
-            openvr.init(openvr.VRAself.pplication_Other)
-            break
+            openvr.init(openvr.VRApplication_Other)
+
         except openvr.OpenVRError as e:
             print("Error when initializing OpenVR (try {} / {})".format(
                   retries + 1, max_init_retries))
             print(e)
-            retries += 1
             time.sleep(2.0)
 
         print("Success!")
         print("===========================")
-        self.vrsystem = openvr.self.vrsystem()
+        self.vrsystem = openvr.VRSystem()
 
         self.left_id, self.right_id = None, None
         print("===========================")
         print("Waiting for controllers...")
         try:
-            while self.left_id is None or self.right_id is None:
-                self.left_id, self.right_id = get_controller_ids(self.vrsystem)
+            while (self.left_id is None) or (self.right_id is None):
+                self.left_id, self.right_id = (
+                    self.get_controller_ids(self.vrsystem))
                 if self.left_id and self.right_id:
                     break
                 print("Waiting for controllers...")
@@ -91,36 +100,45 @@ class KeyPress(object):
         print("Right controller ID: " + str(self.right_id))
         print("===========================")
 
-        self.pp = self.pprint.PrettyPrinter(indent=4)
+        self.pp = pprint.PrettyPrinter(indent=4)
 
     def print_events(self):
         print("===========================")
         print("Printing controller events!")
         try:
-            while True:
+            while not rospy.is_shutdown():
                 time.sleep(1.0 / self.reading_rate_hz)
+
                 (result, pControllerState) = (
                     self.vrsystem.getControllerState(self.left_id))
-                d = from_controller_state_to_dict(pControllerState)
-                if (self.show_only_new_events and self.last_unPacketNum_left !=
-                        d['unPacketNum']):
+                d = self.from_controller_state_to_dict(pControllerState)
+
+                if (self.show_only_new_events and self.last_unPacketNum_left
+                        != d['unPacketNum']):
                     self.last_unPacketNum_left = d['unPacketNum']
-                    print("Left controller:")
-                    self.pp.self.pprint(d)
+                    # print("Left controller:")
+                    # self.pp.pprint(d)
+                    if d['trigger'] == 1.0:
+                        print 'left trigger'
+                        self.ltrigger_pressed.publish(True)
 
                 (result, pControllerState) = (
                     self.vrsystem.getControllerState(self.right_id))
-                d = from_controller_state_to_dict(pControllerState)
-                if (self.show_only_new_events and self.last_unPacketNum_right !=
-                        d['unPacketNum']):
+                d = self.from_controller_state_to_dict(pControllerState)
+
+                if (self.show_only_new_events and self.last_unPacketNum_right
+                        != d['unPacketNum']):
                     self.last_unPacketNum_right = d['unPacketNum']
-                    print("Right controller:")
-                    self.pp.self.pprint(d)
+                    # print("Right controller:")
+                    # self.pp.pprint(d)
+                    if d['trigger'] == 1.0:
+                        print 'right trigger'
+                        self.rtrigger_pressed.publish(True)
+        except KeyboardInterrupt:
+            print("Control+C pressed, shutting down...")
+            openvr.shutdown()
 
-                # Publish when trigger button has been pushed
-                trigger_pressed.publish(True)
-
-    def get_controller_ids(vrsys=None):
+    def get_controller_ids(self, vrsys=None):
         if vrsys is None:
             vrsys = openvr.self.vrsystem()
         else:
@@ -137,7 +155,7 @@ class KeyPress(object):
                     left = i
         return left, right
 
-    def from_controller_state_to_dict(pControllerState):
+    def from_controller_state_to_dict(self, pControllerState):
         # docs: https://github.com/ValveSoftware/openvr/wiki/Iself.vrsystem::GetControllerState
         d = {}
         d['unPacketNum'] = pControllerState.unPacketNum
