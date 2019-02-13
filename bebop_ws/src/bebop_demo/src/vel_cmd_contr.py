@@ -69,7 +69,7 @@ class VelCommander(object):
         self._trigger = Trigger()
 
         # Obstacle setup
-        self.Sjaaakie = [0.35, 1.5, 1.5, 1.5, 0.75]
+        self.Sjaaakie = [0.35, 1.3, 1.5, 1.5, 0.75]
 
         # Marker setup
         self.marker_setup()
