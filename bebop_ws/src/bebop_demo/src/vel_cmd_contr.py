@@ -700,21 +700,20 @@ class VelCommander(object):
 
         self.obst_pub.publish(self.rviz_obst)
 
-    # def draw_ctrl_path(self, x_pos, y_pos, z_pos):
-    #     '''Publish real x and y trajectory to topic for visualisation in
-    #     rviz.
-    #     '''
-    #     self.drawn_path.header.stamp = rospy.get_rostime()
-    #
-    #     point = Point(x=x_pos, y=y_pos, z=z_pos)
-    #     if len(self._real_path.points) > 1000:
-    #         self.drawn_path.points = self._real_path.points[1:] + [point]
-    #     else:
-    #         self.drawn_path.points.append(point)
-    #
-    #     only start drawing when button is pressed
-    #
-    #     self.trajectory_real.publish(self.drawn_path)
+    def draw_ctrl_path(self):
+        '''Publish real x and y trajectory to topic for visualisation in
+        rviz.
+        '''
+        self.drawn_path.header.stamp = rospy.get_rostime()
+
+        point = Point(x=self.ctrl_r_pos.position.x,
+                      y=self.ctrl_r_pos.position.y,
+                      z=self.ctrl_r_pos.position.z)
+        self.drawn_path.points.append(point)
+
+        # only start drawing when button is pressed
+
+        self.trajectory_real.publish(self.drawn_path)
 
 
 if __name__ == '__main__':
