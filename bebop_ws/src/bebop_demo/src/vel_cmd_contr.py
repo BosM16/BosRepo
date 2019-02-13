@@ -115,9 +115,9 @@ class VelCommander(object):
         State space model x[k+1] = A*x[k] + B*u[k] in observable canonical
         form, corresponding to discrete time transfer function
 
-                   b1*z + b0
+                      b0
         G(z) = -----------------
-                z^2 + a1*z + a0
+                s^2 + a1*s + a0
 
         with sampling time equal to vel_cmd_Ts (0.01s).
         '''
@@ -546,7 +546,7 @@ class VelCommander(object):
         goal.position.x = self.ctrl_r_pos.position.x
         goal.position.y = self.ctrl_r_pos.position.y
         goal.position.z = self.ctrl_r_pos.position.z
-
+        print 'Goal\n', goal
         self.trigger_goal.publish(goal)
 
 
