@@ -59,6 +59,7 @@ class VelCommander(object):
         self.measurement_valid = False
         self.safe = False
         self._goal = Pose()
+        self.ctrl_r_pos = Pose()
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -98,10 +99,15 @@ class VelCommander(object):
             'motionplanner/omg_vel', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', Marker, queue_size=1)
+        self.trigger_goal = rospy.Publisher(
+            'motionplanner/goal', Pose, queue_size=1)
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
         rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst)
+        rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
+        rospy.Subscriber(
+            'vive_localization/c1_pose', PoseStamped, self.get_ctrl_r_pos)
 
     def initialize_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
@@ -527,6 +533,23 @@ class VelCommander(object):
 
         return point_transformed
 
+    def get_ctrl_r_pos(self, ctrl_pose):
+        '''Retreives the position of the right hand controller.
+        '''
+        self.ctrl_r_pos = ctrl_pose.pose
+
+    def r_trigger(self, button_pushed):
+        '''When button is pushed on the right hand controller, sets goal to be
+        equal to the position of the controller.
+        '''
+        goal = Pose()
+        goal.position.x = self.ctrl_r_pos.position.x
+        goal.position.y = self.ctrl_r_pos.position.y
+        goal.position.z = self.ctrl_r_pos.position.z
+
+        self.trigger_goal.publish(goal)
+
+
 #######################################
 # Functions for plotting Rviz markers #
 #######################################
@@ -676,6 +699,22 @@ class VelCommander(object):
         self.rviz_obst.pose.position = point
 
         self.obst_pub.publish(self.rviz_obst)
+
+    # def draw_ctrl_path(self, x_pos, y_pos, z_pos):
+    #     '''Publish real x and y trajectory to topic for visualisation in
+    #     rviz.
+    #     '''
+    #     self.drawn_path.header.stamp = rospy.get_rostime()
+    #
+    #     point = Point(x=x_pos, y=y_pos, z=z_pos)
+    #     if len(self._real_path.points) > 1000:
+    #         self.drawn_path.points = self._real_path.points[1:] + [point]
+    #     else:
+    #         self.drawn_path.points.append(point)
+    #
+    #     only start drawing when button is pressed
+    #
+    #     self.trajectory_real.publish(self.drawn_path)
 
 
 if __name__ == '__main__':
