@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <package format="2">
-  <name>vive_localization</name>
+  <name>vive_ctrl_buttons</name>
   <version>0.0.1</version>
   <description>
-  localization test
+  reading out buttons of HTC Vive controllers
   </description>
 
-  <maintainer email="bos.mathias16@gmail.com">blabla</maintainer>
+  <maintainer email="bos.mathias16@gmail.com"></maintainer>
 
   <license>Closed</license>
 
