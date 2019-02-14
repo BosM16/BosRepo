@@ -24,8 +24,8 @@
   <param name='motionplanner/room_origin_y' value="1.5" />
   <param name='motionplanner/room_origin_z' value="1.25" />
   <param name='motionplanner/room_width' value="6.0" />
-  <param name='motionplanner/room_depth' value="2.5" />
-  <param name='motionplanner/room_height' value="3.0" />
+  <param name='motionplanner/room_depth' value="3.0" />
+  <param name='motionplanner/room_height' value="2.5" />
 
 
 </launch>
