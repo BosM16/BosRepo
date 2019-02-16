@@ -3,6 +3,7 @@
 from geometry_msgs.msg import (
     Twist, PoseStamped, Point, PointStamped, TwistStamped)
 from vive_localization.msg import PoseMeas
+from std_msgs.msg import String, Empty
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 
 import numpy as np
@@ -32,13 +33,28 @@ class Demo(object):
             "/world_model/yhat", PointStamped, queue_size=1)
         self.pose_r_pub = rospy.Publisher(
             "/world_model/yhat_r", PointStamped, queue_size=1)
+        self.fsm_state = rospy.Publisher(
+            "/fsm/state", String, queue_size=1)
 
         rospy.Subscriber(
             'vive_localization/ready', Empty, self.vive_ready)
         rospy.Subscriber(
             'vive_localization/pose', PoseMeas, self.new_measurement)
+        rospy.Subscriber(
+            'fsm/task', String, self.switch_task)
+        rospy.Subscriber('ctrl_keypress/rtake_off', Bool, self.take_off)
+        rospy.Subscriber('ctrl_keypress/rland', Bool, self.land)
 
+        self.state = "initialization"
+        self.fsm_state.publish("initialization")  # Finished when pushing controller buttons
+        self.state_sequence = ["standby"]
         self._get_pose_service = None
+        self.task_list = {"standby": [],
+                          "take-off": ["take_off"],
+                          "land": ["land"],
+                          "point to point": ["omg_fly"],
+                          "draw follow traj": ["draw path", "calculate path",
+                                               "follow path"]}
 
     def start(self):
         '''
@@ -110,6 +126,54 @@ class Demo(object):
             self.wm.yhat = self.transform_point(
                 self.wm.yhat_r, "world_rot", "world")
             self.pose_pub.publish(self.wm.yhat)
+
+    def switch_task(self, task):
+        '''Reads out the task topic and switches to the desired task.
+        '''
+        if task not in self.task_list:
+            print "Not a valid task, drone will remain in standby state."
+
+        self.state_sequence = self.task_list.get(task, ["standby"])
+
+    def send_states(self):
+        '''Runs along the state sequence, sends out the current state and
+        returns to the standby state when task is completed.
+        '''
+        if self.state_sequence != ["standby"]:
+            for state in self.state_sequence:
+                self.fsm_state.publish(state)
+
+                # Check if previous state is finished to switch to next state.
+                state_finish = False
+                while not state_finish:
+                    state_finish = check_state_finish()
+                    rospy.sleep(0.1)
+
+            self.fsm_state.publish("standby")
+
+        rospy.sleep(0.1)
+
+
+####################
+# Task functions #
+####################
+
+    def take_off(self, empty):
+        '''Check if take-off button is pressed and switch to take-off sequence.
+        '''
+        self.state_sequence = ["take-off"]
+
+    def land(self, empty):
+        '''Check if land button is pressed and switch to land sequence.
+        '''
+        #  ALS GELAND OOK NAAR STANDBY MODE????
+        # OMG TOOLS MOET AF!
+        self.state_sequence = ["land"]
+
+
+####################
+# Helper functions #
+####################
 
     def transform_point(self, point, _from, _to):
         '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to

@@ -62,6 +62,10 @@ class KeyPress(object):
             'ctrl_keypress/rtrigger', Bool, queue_size=1)
         self.ltrigger_pressed = rospy.Publisher(
             'ctrl_keypress/ltrigger', Bool, queue_size=1)
+        self.rtake_off = rospy.Publisher(
+            'ctrl_keypress/rtake_off', Empty, queue_size=1)
+        self.r_land = rospy.Publisher(
+            'ctrl_keypress/rland', Empty, queue_size=1)
 
         print("===========================")
         print("Initializing OpenVR...")
@@ -134,6 +138,14 @@ class KeyPress(object):
                     if d['trigger'] == 1.0:
                         print 'right trigger'
                         self.rtrigger_pressed.publish(True)
+                    if d['ulButtonPressed'] == 1.0:
+                        print 'right land button'
+                        self.land.publish(Empty())
+                    if d['menu_button'] == 1.0:
+                        print 'right take-off button'
+                        self.rtake_off.publish(Empty())
+
+
         except KeyboardInterrupt:
             print("Control+C pressed, shutting down...")
             openvr.shutdown()
