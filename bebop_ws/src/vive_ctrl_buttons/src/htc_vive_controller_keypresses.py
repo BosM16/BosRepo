@@ -66,6 +66,8 @@ class KeyPress(object):
             'ctrl_keypress/rtake_off', Empty, queue_size=1)
         self.r_land = rospy.Publisher(
             'ctrl_keypress/rland', Empty, queue_size=1)
+        self.rtrackpad = rospy.Publisher(
+            'ctrl_keypress/rtrackpad', Empty, queue_size=1)
 
         print("===========================")
         print("Initializing OpenVR...")
@@ -144,6 +146,9 @@ class KeyPress(object):
                     if d['menu_button'] == 1.0:
                         print 'right take-off button'
                         self.rtake_off.publish(Empty())
+                    if d['trackpad_pressed] == 1.0:
+                        print 'right trackpad'
+                        self.rtrackpad.publish(Empty())
 
 
         except KeyboardInterrupt:

@@ -42,12 +42,14 @@ class Demo(object):
             'vive_localization/pose', PoseMeas, self.new_measurement)
         rospy.Subscriber(
             'fsm/task', String, self.switch_task)
-        rospy.Subscriber('ctrl_keypress/rtake_off', Bool, self.take_off)
-        rospy.Subscriber('ctrl_keypress/rland', Bool, self.land)
+        rospy.Subscriber('ctrl_keypress/rtake_off', Empty, self.take_off)
+        rospy.Subscriber('ctrl_keypress/rland', Empty, self.land)
+        rospy.Subscriber('ctrl_keypress/rtrackpad', Empty, self.switch_state)
 
         self.state = "initialization"
         self.fsm_state.publish("initialization")  # Finished when pushing controller buttons
         self.state_sequence = ["standby"]
+        self.change_state = False
         self._get_pose_service = None
         self.task_list = {"standby": [],
                           "take-off": ["take_off"],
@@ -135,6 +137,12 @@ class Demo(object):
 
         self.state_sequence = self.task_list.get(task, ["standby"])
 
+    def switch_state(self, empty):
+        '''When controller trackpad is pressed changes change_state variable
+        to true to allow fsm to switch states in state sequence.
+        '''
+        self.change_state = True
+
     def send_states(self):
         '''Runs along the state sequence, sends out the current state and
         returns to the standby state when task is completed.
@@ -143,11 +151,14 @@ class Demo(object):
             for state in self.state_sequence:
                 self.fsm_state.publish(state)
 
-                # Check if previous state is finished to switch to next state.
+                # Check if previous state is finished and if allowed to switch
+                # state based on controller input.
                 state_finish = False
-                while not state_finish:
+                while not (state_finish or (self.change_state or (
+                                        state == self.state_sequence[-1]))):
                     state_finish = check_state_finish()
                     rospy.sleep(0.1)
+                self.change_state = False
 
             self.fsm_state.publish("standby")
 
@@ -185,6 +196,11 @@ class Demo(object):
         point_transformed = tf2_geom.do_transform_point(point, transform)
 
         return point_transformed
+
+    def check_state_finish(self):
+        '''
+        '''
+        qd
 
 
 if __name__ == '__main__':
