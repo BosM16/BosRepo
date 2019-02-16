@@ -1,5 +1,13 @@
 % PD controller interpretation
 
+% COLORS FOR FIGURES:
+% Blue
+% 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',2.5
+% Yellow
+% 'Color', [0.9290, 0.6940, 0.1250], 'LineWidth',2.5
+% Red
+% 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5
+
 clear variables
 close all
 clc
@@ -11,8 +19,8 @@ run identify_params
 
 %% Calculate PD controller parameters
 fprintf('\n== Start PD controller parameter calculation ==\n')
-options.figures = false;
-options.prints = true;
+options.figures = true;
+options.prints = false;
 
 % Desired phase margin
 PM_des = 45;
@@ -24,13 +32,13 @@ fprintf('\n----------------- y direction -----------------\n')
 [ysys_cl,yPDparams] = PD_design(ymodel, PM_des, options);
 
 % -------------------------------------------------------------------------
-fprintf('\n----------------- z direction -----------------\n')
-[zsys_cl,zPDparams] = PD_design(zmodel, PM_des, options);
+% fprintf('\n----------------- z direction -----------------\n')
+% [zsys_cl,zPDparams] = PD_design(zmodel, PM_des, options);
 % NOTE - z-direction proportional controller sufficient. 
 %        This procedure doesn't work for z.
 
 
-fprintf('\n===== Closed loop stability check finished ====\n')
+fprintf('\n===== PD controller design finished ====\n')
 
 
 %% ========================================================================
@@ -91,11 +99,28 @@ sys_cl = G*D/(1+G*D);
 [Gm,Pm,Wcg,Wcp] = margin(sys_ol);
 
 if options.figures
+    figure('Name', 'PD controller bode')
+    bode(D)
+    
     figure('Name','Margins of closed loop system for varying control parameter Kx')
     hold on
     margin(G)
     margin(sys_ol);
-    legend('Uncompensated','PD Compensated')
+    % Some dirty manipulating to choose color and line thickness:
+    bodeplot(G,'b');
+    lineHandle = findobj(gcf,'Type','line','-and','Color','b');
+    set(lineHandle,'Color',[0.3010, 0.7450, 0.9330]);
+    bodeplot(sys_ol,'b');
+    lineHandle = findobj(gcf,'Type','line','-and','Color','b');
+    set(lineHandle,'Color',[0.6350, 0.0780, 0.1840])
+    
+    set(findall(gcf,'type','line'),'linewidth',2)
+    
+    h = flipud(findobj(gcf,'type','Axes'));
+    hl1 = flipud(findobj(h(1),'type','Line'));
+    hl2 = flipud(findobj(h(2),'type','Line'));
+ 
+    legend(h(1),hl1(3:4),'Uncompensated','PD Compensated')
 end
 
 % Display margins, poles in command window
