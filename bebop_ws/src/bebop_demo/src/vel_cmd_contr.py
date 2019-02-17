@@ -2,7 +2,7 @@
 
 from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
                                Pose, PoseStamped)
-from std_msgs.msg import Bool, Empty
+from std_msgs.msg import Bool, Empty, String
 from visualization_msgs.msg import Marker
 
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
@@ -32,6 +32,18 @@ class VelCommander(object):
         self.startup = False
         self.target_reached = False
         self._index = 1
+        self.state = "initialization"
+        self.state_list = {"standby": [],  # This state should not really be in
+                                           # the state list since this is the
+                                           # resting state whenever another
+                                           # task is finished.
+                           "take-off": self.wait(),
+                           "land": self.wait(),
+                           "omg fly": self.omg_fly(),
+                           "draw path": self.draw_traj(),
+                           "fly to start": self.omg_fly(),
+                           "follow path": self.follow_traj()}
+        self.state_changed = False
 
         self.K_x = rospy.get_param('vel_cmd/K_x', 0.6864)
         self.K_z = rospy.get_param('vel_cmd/K_z', 0.5)
@@ -101,6 +113,10 @@ class VelCommander(object):
             'motionplanner/rviz_obst', Marker, queue_size=1)
         self.trigger_goal = rospy.Publisher(
             'motionplanner/goal', Pose, queue_size=1)
+        self.ctrl_state_finish = rospy.Publisher(
+            'fsm_state_finish', Empty, queue_size=1)
+        self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
+        self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
@@ -108,6 +124,7 @@ class VelCommander(object):
         rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
         rospy.Subscriber(
             'vive_localization/c1_pose', PoseStamped, self.get_ctrl_r_pos)
+        rospy.Subscriber('fsm/state', String, self.switch_state)
 
     def initialize_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
@@ -176,33 +193,19 @@ class VelCommander(object):
         '''Configures,
         Starts the controller's periodical loop.
         '''
-        rate = self.rate
-        configured = self.configure()
+        self.configure()
         print '-----------------------------------------'
         print '- Controller & Motionplanner Configured -'
         print '-        Velocity Control Started       -'
         print '-----------------------------------------'
 
         while not rospy.is_shutdown():
-            while (self.progress):
-                if (self.startup):
-                    self.update()
-                    self.progress = self.proceed()
-                rate.sleep()
-            (self._drone_est_pose,
-             self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-            pos_desired = Point(x=self._goal.position.x,
-                                y=self._goal.position.y,
-                                z=self._goal.position.z)
-            vel_desired = Point(x=0.0,
-                                y=0.0,
-                                z=0.0)
-            feedback_cmd = self.transform_twist(
-                self.feedback(pos_desired, vel_desired), "world", "world_rot")
-            self.cmd_twist_convert.twist = feedback_cmd
-            self.cmd_twist_convert.header.stamp = rospy.Time.now()
-            self.cmd_vel.publish(self.cmd_twist_convert.twist)
-            rate.sleep()
+            if self.state_changed:
+                self.state_changed = False
+                self.state_list[self.state]
+                self.ctrl_state_finish.publish(Empty)
+            self.standby()
+            self.rate.sleep()
 
     def set_goal(self, goal):
         '''Sets the goal and fires motionplanner.
@@ -354,6 +357,62 @@ class VelCommander(object):
 
         return not stop
 
+
+####################
+# State functions #
+####################
+
+    def switch_state(self, state):
+        '''Switches state according to the general fsm state as received by
+        bebop_core.
+        '''
+        if not state == "standby":
+            self.state_changed = True
+        self.state = state
+
+    def standby(self):
+        '''When state is equal to the standby state, drone keeps itself in same
+        location through a PD controller.
+        '''
+        (self._drone_est_pose,
+         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        pos_desired = Point(x=self._goal.position.x,
+                            y=self._goal.position.y,
+                            z=self._goal.position.z)
+        vel_desired = Point(x=0.0,
+                            y=0.0,
+                            z=0.0)
+        feedback_cmd = self.transform_twist(
+            self.feedback(pos_desired, vel_desired), "world", "world_rot")
+
+        self.cmd_twist_convert.twist = feedback_cmd
+        self.cmd_twist_convert.header.stamp = rospy.Time.now()
+
+        self.cmd_vel.publish(self.cmd_twist_convert.twist)
+
+    def omg_fly(self):
+        '''Fly from start to end point using omg-tools as a motionplanner.
+        '''
+        while self.progress:
+            if self.startup:  # Becomes True when goal is set.
+                self.update()
+                # Determine whether goal has been reached.
+                self.progress = self.proceed()
+            self.rate.sleep()
+
+    def draw_traj(self):
+        '''Start building a trajectory according to the movement of the
+        controller.
+        '''
+        while self.draw:
+            self.draw_ctrl_path()
+            rospy.sleep(0.01)
+
+    def follow_traj(self):
+        '''Lets the drone fly along the drawn path.
+        '''
+
+
 ####################
 # Helper functions #
 ####################
@@ -373,7 +432,7 @@ class VelCommander(object):
         the state space representation of the inverse velocity model:
 
 
-        R: DIT MOET WEG, HEEFT HET IZN OM STATE SPACE REPRES TE ZETTEN? NIET ECHT DENK IK
+        R: DIT MOET WEG, HEEFT HET ZIN OM STATE SPACE REPRES TE ZETTEN? NIET ECHT DENK IK
         - for second order velocity/input relation (x and y):
             j[k+1] = 1/b1*{ -b0*j[k] + a0*v[k] + a1*v[k+1] + v[k+2] }
                    = 1/b1*(-b0, a0, a1, 1)*(j[k], v[k], v[k+1], v[k+2])'
@@ -533,30 +592,54 @@ class VelCommander(object):
 
         return point_transformed
 
+    def wait(self):
+        '''Function needed to wait when taking of or landing to make sure no
+        control inputs are send out.
+        '''
+        self.cmd_vel.publish(Twist())
+
+        if self.state == "take-off":
+            self.take_off.publish(Empty())
+        elif self.state == "land":
+            self.land.publish(Empty())
+
+        rospy.sleep(3.)
+
     def get_ctrl_r_pos(self, ctrl_pose):
         '''Retreives the position of the right hand controller.
         '''
         self.ctrl_r_pos = ctrl_pose.pose
 
     def r_trigger(self, button_pushed):
-        '''When button is pushed on the right hand controller, sets goal to be
-        equal to the position of the controller.
+        '''When button is pushed on the right hand controller, depending on the
+        current state, either sets goal to be equal to the position of the
+        controller, or allows path that the controller describes to be saved.
         '''
-        # Start drawing and saving path
-        if button_pushed:
-            self.draw = True
-            self.construct_traj()
-            print '----------start drawing path while pushing trigger---------'
 
-        # Stop drawing, fly to first point in list with PD controller and then
-        # follow drawn trajectory. Feedforward velocities generated by
-        # differentiating velocities. Is it necessary to check max vel?
-        # Smoothing of path?
-        else:
-            self.draw = False
-            print ('----------trigger button has been released,'
-                   'path will be calculated---------')
-            self.differentiate_traj()
+        if self.state == "omg_fly":
+            goal = Pose()
+            goal.position.x = self.ctrl_r_pos.position.x
+            goal.position.y = self.ctrl_r_pos.position.y
+            goal.position.z = self.ctrl_r_pos.position.z
+            print 'Goal\n', goal
+            self.trigger_goal.publish(goal)
+
+        elif self.state == "draw path":
+            # Start drawing and saving path
+            if button_pushed:
+                self.draw = True
+                print '----start drawing path while keeping trigger pushed----'
+
+            # Stop drawing, fly to first point in list with PD controller and
+            # then follow drawn trajectory. Feedforward velocities generated by
+            # differentiating velocities. Is it necessary to check max vel?
+            # Smoothing of path?
+            else:
+                self.draw = False
+                print ('----trigger button has been released,'
+                       'path will be calculated----')
+                self.differentiate_traj()
+        self
 
     def l_trigger(self, button_pushed):
         '''When button is pushed on the right hand controller, sets goal to be
@@ -565,14 +648,6 @@ class VelCommander(object):
         print ('----------trigger button has been pushed again,'
                'drone will fly along path---------')
         self.follow_path()
-
-    def construct_traj(self):
-        '''Start building a trajectory according to the movement of the
-        controller.
-        '''
-        while self.draw:
-            self.draw_ctrl_path()
-            rospy.sleep(0.01)
 
     def differentiate_traj(self):
         '''Differentiate obtained trajectory to obtain feedforward velocity
@@ -583,9 +658,6 @@ class VelCommander(object):
 
         # Check if max velocity in list is not above max possible velocity.
 
-    def follow_path(self):
-        '''Lets the drone fly along the drawn path.
-        '''
 
 #######################################
 # Functions for plotting Rviz markers #
