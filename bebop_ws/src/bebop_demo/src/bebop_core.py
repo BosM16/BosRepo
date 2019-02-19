@@ -183,10 +183,10 @@ class Demo(object):
     def switch_task(self, task):
         '''Reads out the task topic and switches to the desired task.
         '''
-        if task not in self.task_dict:
+        if task.data not in self.task_dict:
             print "Not a valid task, drone will remain in standby state."
 
-        self.state_sequence = self.task_dict.get(task, [])
+        self.state_sequence = self.task_dict.get(task.data, [])
         self.new_task = True
         print "bebop_core received a new task:", task
 
@@ -212,10 +212,10 @@ class Demo(object):
         '''When controller trackpad is pressed changes change_state variable
         to true to allow fsm to switch states in state sequence.
         '''
-        self.change_state = True
         if self.state == "omg standby":
             self.omg_standby = False
             self.new_task = False
+        self.change_state = True
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
@@ -223,7 +223,7 @@ class Demo(object):
         self.state_finish = True
 
     def r_trigger(self, pressed):
-        if pressed and (self.state == "omg standby"):
+        if pressed.data and (self.state == "omg standby"):
             self.change_state = True
 
     def transform_point(self, point, _from, _to):

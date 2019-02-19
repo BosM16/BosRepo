@@ -180,7 +180,8 @@ class VelCommander(object):
 
         # List containing obstacles of type Obstacle()
         Sjaaakie = Obstacle(shape=self.Sjaaakie[0:2], pose=self.Sjaaakie[2:])
-        self.obstacles = [Sjaaakie]
+        # self.obstacles = [Sjaaakie]
+        self.obstacles = []
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
@@ -210,11 +211,16 @@ class VelCommander(object):
                 self.state_changed = False
                 # Execute state function.
                 self.state_dict[self.state]()
+                print 'PUBLISH FINISHED'
                 self.ctrl_state_finish.publish(Empty())
+
+                # Adjust goal to make sure hover uses PD actions to stay in
+                # current place.
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
                 (self._drone_est_pose,
                  self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
                 self._goal.position = self._drone_est_pose.position
+
             if not self.state == "initialization":
                 self.hover()
             rospy.sleep(0.01)
@@ -406,14 +412,13 @@ class VelCommander(object):
         '''As long as no goal has been set, remain at current position through
         the use of Pd control.
         '''
-        while not self.state_changed:
-            self.hover()
-            self.rate.sleep()
+        self.hover()
 
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
         '''
         while self.progress:
+            print self._init
             if self.startup:  # Becomes True when goal is set.
                 self.update()
                 # Determine whether goal has been reached.
@@ -660,7 +665,8 @@ class VelCommander(object):
         controller, or allows path that the controller describes to be saved.
         '''
 
-        if self.state == "omg_fly":
+        if ((self.state == "omg fly") or (self.state == "omg standby")):
+            self.progress = True
             goal = Pose()
             goal.position.x = self.ctrl_r_pos.position.x
             goal.position.y = self.ctrl_r_pos.position.y
@@ -670,7 +676,7 @@ class VelCommander(object):
 
         elif self.state == "draw path":
             # Start drawing and saving path
-            if button_pushed:
+            if button_pushed.data:
                 self.draw = True
                 print '----start drawing path while keeping trigger pushed----'
 
