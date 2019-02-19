@@ -217,8 +217,8 @@ class VelCommander(object):
                 # Adjust goal to make sure hover uses PD actions to stay in
                 # current place.
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
-                (self._drone_est_pose,
-                 self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+                (self._drone_est_pose, self.vhat,
+                 self.real_yaw, measurement_valid) = self.get_pose_est()
                 self._goal.position = self._drone_est_pose.position
 
             if not self.state == "initialization":
@@ -238,7 +238,9 @@ class VelCommander(object):
         self._new_trajectories = False
 
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self._drone_est_pose = self.get_pose_est()[0]
+        (self._drone_est_pose, self.vhat,
+         self.real_yaw, measurement_valid) = self.get_pose_est()
+
         self.marker_setup()
 
         self._goal = goal
