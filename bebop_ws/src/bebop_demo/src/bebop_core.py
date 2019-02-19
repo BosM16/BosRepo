@@ -3,7 +3,7 @@
 from geometry_msgs.msg import (
     Twist, PoseStamped, Point, PointStamped, TwistStamped)
 from vive_localization.msg import PoseMeas
-from std_msgs.msg import String, Empty
+from std_msgs.msg import String, Empty, Bool
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 
 import numpy as np
@@ -30,11 +30,11 @@ class Demo(object):
         rospy.init_node('bebop_demo')
 
         self.pose_pub = rospy.Publisher(
-            "/world_model/yhat", PointStamped, queue_size=1)
+            'world_model/yhat', PointStamped, queue_size=1)
         self.pose_r_pub = rospy.Publisher(
-            "/world_model/yhat_r", PointStamped, queue_size=1)
+            'world_model/yhat_r', PointStamped, queue_size=1)
         self.fsm_state = rospy.Publisher(
-            "/fsm/state", String, queue_size=1)
+            'fsm/state', String, queue_size=1)
 
         rospy.Subscriber(
             'vive_localization/ready', Empty, self.vive_ready)
@@ -42,28 +42,38 @@ class Demo(object):
             'vive_localization/pose', PoseMeas, self.new_measurement)
         rospy.Subscriber(
             'fsm/task', String, self.switch_task)
-        rospy.Subscriber('ctrl_keypress/rtake_off', Empty, self.take_off)
-        rospy.Subscriber('ctrl_keypress/rland', Empty, self.land)
-        rospy.Subscriber('ctrl_keypress/rtrackpad', Empty, self.switch_state)
+        rospy.Subscriber(
+            'ctrl_keypress/rmenu_button', Empty, self.take_off_land)
+        rospy.Subscriber(
+            'ctrl_fsm_state_finish', Empty, self.ctrl_state_finish)
+        rospy.Subscriber(
+            'ctrl_keypress/rtrackpad', Empty, self.switch_state)
+        rospy.Subscriber(
+            'ctrl_keypress/rtrigger', Bool, self.r_trigger)
 
         self.state = "initialization"
         self.fsm_state.publish("initialization")  # Finished when pushing controller buttons
-        self.state_sequence = ["standby"]
+        self.state_sequence = []
         self.change_state = False
+        self.new_task = False
+        self.state_finish = False
+        self.omg_standby = False
         self._get_pose_service = None
-        self.task_list = {"standby": [],
-                          "take-off": ["take_off"],
+        self.airborne = False
+        # State sequence should never be an empty list!
+        self.task_dict = {"standby": [],
+                          "take-off": ["take-off"],
                           "land": ["land"],
-                          "point to point": ["omg_fly"],
-                          "draw follow traj": ["draw path", "calculate path",
-                                               "follow path"]}
+                          "point to point": ["omg standby", "omg fly"],
+                          "draw follow traj": ["land", "draw path", "take-off",
+                                               "fly to start", "follow path"]}
 
     def start(self):
         '''
         Starts running of bebop_demo node.
         '''
         print '-------------------- \n Demo started \n --------------------'
-        rospy.spin()
+        self.send_states()
 
     def vive_ready(self, *_):
         '''
@@ -81,7 +91,6 @@ class Demo(object):
         # Don't do prediction and transformation calculations if the
         # measurement is invalid.
         if self.measurement_valid:
-
             self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
             self.kalman.latest_vel_cmd = req_vel.vel_cmd
 
@@ -129,62 +138,93 @@ class Demo(object):
                 self.wm.yhat_r, "world_rot", "world")
             self.pose_pub.publish(self.wm.yhat)
 
-    def switch_task(self, task):
-        '''Reads out the task topic and switches to the desired task.
-        '''
-        if task not in self.task_list:
-            print "Not a valid task, drone will remain in standby state."
-
-        self.state_sequence = self.task_list.get(task, ["standby"])
-
-    def switch_state(self, empty):
-        '''When controller trackpad is pressed changes change_state variable
-        to true to allow fsm to switch states in state sequence.
-        '''
-        self.change_state = True
-
     def send_states(self):
         '''Runs along the state sequence, sends out the current state and
         returns to the standby state when task is completed.
         '''
-        if self.state_sequence != ["standby"]:
-            for state in self.state_sequence:
-                self.fsm_state.publish(state)
+        while not rospy.is_shutdown():
+            if self.new_task:
+                self.new_task = False
+                for state in self.state_sequence:
+                    self.state = state
+                    print "bebop_core state changed to:", self.state
+                    self.fsm_state.publish(state)
+                    # Omg tools should return to its own standby status unless
+                    # the controller trackpad has been pressed.
+                    if self.state == "omg standby":
+                        self.omg_standby = True
+                        self.new_task = True
 
-                # Check if previous state is finished and if allowed to switch
-                # state based on controller input.
-                state_finish = False
-                while not (state_finish or (self.change_state or (
-                                        state == self.state_sequence[-1]))):
-                    state_finish = check_state_finish()
-                    rospy.sleep(0.1)
-                self.change_state = False
+                    task_final_state = (self.state == self.state_sequence[-1])
+                    # Check if previous state is finished and if allowed to
+                    # switch state based on controller input.
+                    while not (self.state_finish and (self.change_state or
+                                                      task_final_state)):
 
-            self.fsm_state.publish("standby")
+                        rospy.sleep(0.1)
 
-        rospy.sleep(0.1)
+                    self.change_state = False
+                    self.state_finish = False
+
+                # Only publish standby state when task is finished
+                if not self.omg_standby:
+                    self.fsm_state.publish("standby")
+                    print "bebop_core state changed to:", "standby"
+
+            self.change_state = False
+            self.state_finish = False
+            rospy.sleep(0.1)
 
 
 ####################
 # Task functions #
 ####################
 
-    def take_off(self, empty):
-        '''Check if take-off button is pressed and switch to take-off sequence.
+    def switch_task(self, task):
+        '''Reads out the task topic and switches to the desired task.
         '''
-        self.state_sequence = ["take-off"]
+        if task.data not in self.task_dict:
+            print "Not a valid task, drone will remain in standby state."
 
-    def land(self, empty):
-        '''Check if land button is pressed and switch to land sequence.
+        self.state_sequence = self.task_dict.get(task.data, [])
+        self.new_task = True
+        print "bebop_core received a new task:", task
+
+    def take_off_land(self, empty):
+        '''Check if menu button is pressed and switch to take-off or land
+        sequence depending on last task that was executed.
         '''
-        #  ALS GELAND OOK NAAR STANDBY MODE????
-        # OMG TOOLS MOET AF!
-        self.state_sequence = ["land"]
+        if not ((self.state == "take-off") and (self.state == "land")):
+            if self.airborne:
+                self.state_sequence = self.task_dict.get("land", [])
+            else:
+                self.state_sequence = self.task_dict.get("take-off", [])
+            self.airborne = not self.airborne
+            self.new_task = True
+            print "bebop_core received a new task:", self.state_sequence[0]
 
 
 ####################
 # Helper functions #
 ####################
+
+    def switch_state(self, empty):
+        '''When controller trackpad is pressed changes change_state variable
+        to true to allow fsm to switch states in state sequence.
+        '''
+        if self.state == "omg standby":
+            self.omg_standby = False
+            self.new_task = False
+        self.change_state = True
+
+    def ctrl_state_finish(self, empty):
+        '''Checks whether controller has finished the current state.
+        '''
+        self.state_finish = True
+
+    def r_trigger(self, pressed):
+        if pressed.data and (self.state == "omg standby"):
+            self.change_state = True
 
     def transform_point(self, point, _from, _to):
         '''Transforms point (geometry_msgs/PointStamped) from frame "_from" to
@@ -196,11 +236,6 @@ class Demo(object):
         point_transformed = tf2_geom.do_transform_point(point, transform)
 
         return point_transformed
-
-    def check_state_finish(self):
-        '''
-        '''
-        qd
 
 
 if __name__ == '__main__':

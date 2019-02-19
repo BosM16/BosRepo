@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Empty
 
 import time
 import pprint
@@ -11,13 +11,10 @@ import rospy
 class KeyPress(object):
     '''
     Get the HTC Vive controllers keypresses and print them to screen.
-
     You need to do:
     export LD_LIBRARY_PATH=$HOME/.steam/steam/steamapps/common/SteamVR/bin/
         linux64:$HOME/.steam/steam/steamapps/common/tools/bin/linux64:$LD_LIBRARY_PATH
-
     before executing it.
-
     Expected output (if prints are on):
     Left controller:
     {   'grip_button': False,
@@ -41,8 +38,6 @@ class KeyPress(object):
         'ulButtonPressed': 0L,
         'ulButtonTouched': 0L,
         'unPacketNum': 1146L}
-
-
     Original source code author:
     Sammy Pfeiffer <Sammy.Pfeiffer at student.uts.edu.au>
     '''
@@ -53,7 +48,7 @@ class KeyPress(object):
         '''
         rospy.init_node('ctrl_keypress')
 
-        self.reading_rate_hz = 10
+        self.reading_rate_hz = 4
         self.show_only_new_events = True
         self.last_unPacketNum_left = 0
         self.last_unPacketNum_right = 0
@@ -62,10 +57,8 @@ class KeyPress(object):
             'ctrl_keypress/rtrigger', Bool, queue_size=1)
         self.ltrigger_pressed = rospy.Publisher(
             'ctrl_keypress/ltrigger', Bool, queue_size=1)
-        self.rtake_off = rospy.Publisher(
-            'ctrl_keypress/rtake_off', Empty, queue_size=1)
-        self.r_land = rospy.Publisher(
-            'ctrl_keypress/rland', Empty, queue_size=1)
+        self.rmenu_button = rospy.Publisher(
+            'ctrl_keypress/rmenu_button', Empty, queue_size=1)
         self.rtrackpad = rospy.Publisher(
             'ctrl_keypress/rtrackpad', Empty, queue_size=1)
 
@@ -87,14 +80,21 @@ class KeyPress(object):
         print("===========================")
         self.vrsystem = openvr.VRSystem()
 
+        # Let system choose id's at first to make sure both controllers are
+        # found.
         self.left_id, self.right_id = None, None
         print("===========================")
         print("Waiting for controllers...")
         try:
-            while (self.left_id is None) or (self.right_id is None):
+            while (not rospy.is_shutdown()) and (
+                    self.left_id is None or self.right_id is None):
+
                 self.left_id, self.right_id = (
                     self.get_controller_ids(self.vrsystem))
                 if self.left_id and self.right_id:
+                    # Now both controllers are found, make sure that right
+                    # corresonds to 1.
+                    self.right_id, self.left_id = 1, 2
                     break
                 print("Waiting for controllers...")
                 time.sleep(1.0)
@@ -102,15 +102,55 @@ class KeyPress(object):
             print("Control+C pressed, shutting down...")
             openvr.shutdown()
 
-        print("Left controller ID: " + str(self.left_id))
-        print("Right controller ID: " + str(self.right_id))
+        print '==========================='
+        print " Trigger id's: "
+        print(" * Right controller ID: " + str(self.right_id))
+        print(" * Left controller ID: " + str(self.left_id))
         print("===========================")
 
         self.pp = pprint.PrettyPrinter(indent=4)
 
-    def print_events(self):
-        print("===========================")
-        print("Printing controller events!")
+    def identify_leftright(self):
+        '''
+        Let user identify which is right and which is left controller by
+        pulling triggers. Controller hand is displayed in terminal.
+        '''
+        print '====================='
+        print '* Pull each trigger *'
+        print '====================='
+        identify_right = True
+        identify_left = True
+        while identify_right or identify_left:
+            time.sleep(1.0 / self.reading_rate_hz)
+            (result, pControllerState) = (
+                self.vrsystem.getControllerState(self.left_id))
+            d = self.from_controller_state_to_dict(pControllerState)
+            if (self.show_only_new_events and self.last_unPacketNum_left
+                    != d['unPacketNum']):
+                self.last_unPacketNum_left = d['unPacketNum']
+                # print("Left controller:")
+                # self.pp.pprint(d)
+                if d['trigger'] == 1.0:
+                    print '==============='
+                    print '  Left trigger '
+                    print '==============='
+                    identify_left = False
+
+            (result, pControllerState) = (
+                self.vrsystem.getControllerState(self.right_id))
+            d = self.from_controller_state_to_dict(pControllerState)
+
+            if (self.show_only_new_events and self.last_unPacketNum_right
+                    != d['unPacketNum']):
+                self.last_unPacketNum_right = d['unPacketNum']
+                if d['trigger'] == 1.0:
+                    print '==============='
+                    print ' Right trigger '
+                    print '==============='
+                    identify_right = False
+
+    def publish_events(self):
+        print(" Monitoring controller events! ")
         try:
             while not rospy.is_shutdown():
                 time.sleep(1.0 / self.reading_rate_hz)
@@ -125,7 +165,6 @@ class KeyPress(object):
                     # print("Left controller:")
                     # self.pp.pprint(d)
                     if d['trigger'] == 1.0:
-                        print 'left trigger'
                         self.ltrigger_pressed.publish(True)
 
                 (result, pControllerState) = (
@@ -138,18 +177,11 @@ class KeyPress(object):
                     # print("Right controller:")
                     # self.pp.pprint(d)
                     if d['trigger'] == 1.0:
-                        print 'right trigger'
                         self.rtrigger_pressed.publish(True)
-                    if d['ulButtonPressed'] == 1.0:
-                        print 'right land button'
-                        self.land.publish(Empty())
                     if d['menu_button'] == 1.0:
-                        print 'right take-off button'
-                        self.rtake_off.publish(Empty())
-                    if d['trackpad_pressed] == 1.0:
-                        print 'right trackpad'
+                        self.rmenu_button.publish(Empty())
+                    if d['trackpad_pressed'] == 1.0:
                         self.rtrackpad.publish(Empty())
-
 
         except KeyboardInterrupt:
             print("Control+C pressed, shutting down...")
@@ -173,7 +205,8 @@ class KeyPress(object):
         return left, right
 
     def from_controller_state_to_dict(self, pControllerState):
-        # docs: https://github.com/ValveSoftware/openvr/wiki/Iself.vrsystem::GetControllerState
+        # docs: https://github.com/ValveSoftware/openvr/wiki/...
+        #       Iself.vrsystem::GetControllerState
         d = {}
         d['unPacketNum'] = pControllerState.unPacketNum
         # on trigger .y is always 0.0 says the docs
@@ -192,8 +225,10 @@ class KeyPress(object):
         # Second bit marks menu button
         d['menu_button'] = bool(pControllerState.ulButtonPressed >> 1 & 1)
         # 32 bit marks trackpad
-        d['trackpad_pressed'] = bool(pControllerState.ulButtonPressed >> 32 & 1)
-        d['trackpad_touched'] = bool(pControllerState.ulButtonTouched >> 32 & 1)
+        d['trackpad_pressed'] = bool(
+                                    pControllerState.ulButtonPressed >> 32 & 1)
+        d['trackpad_touched'] = bool(
+                                    pControllerState.ulButtonTouched >> 32 & 1)
         # third bit marks grip button
         d['grip_button'] = bool(pControllerState.ulButtonPressed >> 2 & 1)
         # System button can't be read, if you press it
@@ -204,4 +239,5 @@ class KeyPress(object):
 if __name__ == '__main__':
     # button_pressed = rospy.Publisher('htc_ctrl_button', Bool, queue_size=1)
     keypress = KeyPress()
-    keypress.print_events()
+    keypress.identify_leftright()
+    keypress.publish_events()
