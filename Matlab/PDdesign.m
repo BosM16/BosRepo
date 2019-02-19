@@ -19,7 +19,7 @@ run identify_params
 
 %% Calculate PD controller parameters
 fprintf('\n== Start PD controller parameter calculation ==\n')
-options.figures = true;
+options.figures = false;
 options.prints = false;
 
 % Desired phase margin
@@ -68,21 +68,21 @@ w_c = interp1(Gphase,w,phi);
 
 Td = 10/w_c;
 
-%% PD without Kx:
-% D(s) = Kx * (1 + Td*s)
-% Dk(s) = (1 + Td*s), D(s) = Kx*Dk(s)
+%% PD without Kp:
+% D(s) = Kp * (1 + Td*s)
+% Dk(s) = (1 + Td*s), D(s) = Kp*Dk(s)
 Dk = (1 + Td*s);
 
-%% Determine Kx & Kv
+%% Determine Kp & Kd
 mag = abs((evalfr(G*Dk,1j*w_c)));
-Kx = 1/(mag);
-Kv = Kx*Td;
+Kp = 1/(mag);
+Kd = Kp*Td;
 
 %% Resulting PD-controller
-D = Kx*Dk;
+D = Kp*Dk;
 PDparams.Td = Td;
-PDparams.Kx = Kx;
-PDparams.Kv = Kv;
+PDparams.Kp = Kp;
+PDparams.Kd = Kd;
 
 % Display calculated parameters in command window
 if options.prints
@@ -102,7 +102,7 @@ if options.figures
     figure('Name', 'PD controller bode')
     bode(D)
     
-    figure('Name','Margins of closed loop system for varying control parameter Kx')
+    figure('Name','Margins of closed loop system for varying control parameter Kp')
     hold on
     margin(G)
     margin(sys_ol);
@@ -135,7 +135,7 @@ end
 
 % Plot as function of the varying parameters
 if options.figures
-    figure('Name','Pzmap of closed loop system for varying control parameter Kx')
+    figure('Name','Pzmap of closed loop system for varying control parameter Kp')
     pzplot(sys_cl)
 end
 

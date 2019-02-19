@@ -13,7 +13,7 @@ options.prints = false;
 %   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
 % -----------------------------------------------------------------
 xmodel = identify("data/angle_identification_x",'x',0.02,0.53,0.6,options);
-ymodel = identify("data/angle_identification_y",'y',0.02,0.5,0.6,options);
+ymodel = identify("data/angle_identification_y",'y',0.02,0.53,0.6,options);
 zmodel = identify("data/vel_identification_z",'z',0.02,0.3,1.,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
