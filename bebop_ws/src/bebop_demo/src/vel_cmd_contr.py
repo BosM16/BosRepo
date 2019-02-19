@@ -209,10 +209,10 @@ class VelCommander(object):
         Args:
             goal: Pose
         '''
-        self.target_reached = False
-        self._goal = goal
 
         self.progress = True
+        self.target_reached = False
+
         self._time = 0.
         self._new_trajectories = False
 
@@ -220,6 +220,7 @@ class VelCommander(object):
         self._drone_est_pose = self.get_pose_est()[0]
         self.marker_setup()
 
+        self._goal = goal
         self.fire_motionplanner()
 
         self._init = True
