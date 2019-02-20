@@ -60,7 +60,6 @@ class Demo(object):
         self.omg_standby = False
         self._get_pose_service = None
         self.airborne = False
-        # State sequence should never be an empty list!
         self.task_dict = {"standby": [],
                           "take-off": ["take-off"],
                           "land": ["land"],

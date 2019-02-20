@@ -397,6 +397,7 @@ class VelCommander(object):
         '''When state is equal to the standby state, drone keeps itself in same
         location through a PD controller.
         '''
+        print 'hover'
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
         pos_desired = Point(x=self.hover_setpoint.position.x,
