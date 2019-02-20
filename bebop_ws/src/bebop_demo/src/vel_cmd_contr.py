@@ -169,33 +169,6 @@ class VelCommander(object):
                            [0.0, 0.7709, 0.0],
                            [0.0, 0.0, 1.036]])
 
-    def configure(self):
-        '''Configures the controller by loading in the room and static
-        obstacles.
-        Sends Settings to Motionplanner.
-        Settings constists of
-            - environment
-        Waits for Motionplanner to set mp_status to configured.
-        '''
-
-        # List containing obstacles of type Obstacle()
-        Sjaaakie = Obstacle(shape=self.Sjaaakie[0:2], pose=self.Sjaaakie[2:])
-        # self.obstacles = [Sjaaakie]
-        self.obstacles = []
-        rospy.wait_for_service("/motionplanner/config_motionplanner")
-        config_success = False
-        try:
-            config_mp = rospy.ServiceProxy(
-                "/motionplanner/config_motionplanner", ConfigMotionplanner)
-            config_success = config_mp(self.obstacles)
-        except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
-            config_success = False
-
-        rospy.Subscriber('motionplanner/goal', Pose, self.set_goal)
-
-        return config_success
-
     def start(self):
         '''Configures,
         Starts the controller's periodical loop.
@@ -224,6 +197,33 @@ class VelCommander(object):
             if not self.state == "initialization":
                 self.hover()
             rospy.sleep(0.01)
+
+    def configure(self):
+        '''Configures the controller by loading in the room and static
+        obstacles.
+        Sends Settings to Motionplanner.
+        Settings constists of
+            - environment
+        Waits for Motionplanner to set mp_status to configured.
+        '''
+
+        # List containing obstacles of type Obstacle()
+        Sjaaakie = Obstacle(shape=self.Sjaaakie[0:2], pose=self.Sjaaakie[2:])
+        # self.obstacles = [Sjaaakie]
+        self.obstacles = []
+        rospy.wait_for_service("/motionplanner/config_motionplanner")
+        config_success = False
+        try:
+            config_mp = rospy.ServiceProxy(
+                "/motionplanner/config_motionplanner", ConfigMotionplanner)
+            config_success = config_mp(self.obstacles)
+        except rospy.ServiceException, e:
+            print "Service call failed: %s" % e
+            config_success = False
+
+        rospy.Subscriber('motionplanner/goal', Pose, self.set_goal)
+
+        return config_success
 
     def set_goal(self, goal):
         '''Sets the goal and fires motionplanner.
@@ -378,7 +378,6 @@ class VelCommander(object):
 
         return not stop
 
-
 ####################
 # State functions #
 ####################
@@ -455,7 +454,6 @@ class VelCommander(object):
         '''
 
 
-
 ####################
 # Helper functions #
 ####################
@@ -472,19 +470,7 @@ class VelCommander(object):
 
     def convert_vel_cmd(self):
         '''Converts a velocity command to a desired input angle according to
-        the state space representation of the inverse velocity model:
-
-
-        R: DIT MOET WEG, HEEFT HET ZIN OM STATE SPACE REPRES TE ZETTEN? NIET ECHT DENK IK
-        - for second order velocity/input relation (x and y):
-            j[k+1] = 1/b1*{ -b0*j[k] + a0*v[k] + a1*v[k+1] + v[k+2] }
-                   = 1/b1*(-b0, a0, a1, 1)*(j[k], v[k], v[k+1], v[k+2])'
-
-        (- for first order velocity/input relation (z):
-            j[k+1] = 1/b0*{ a0*v[k+1] + v[k+2] } (later, 3d flight))
-
-        where j is the input signal applied to the bebop and v the desired
-        velocity.
+        the state space representation of the inverse velocity model.
         '''
         u = np.array([[self.feedforward_cmd.linear.x],
                       [self.feedforward_cmd.linear.y],
@@ -658,7 +644,7 @@ class VelCommander(object):
         # self._goal.position = self._drone_est_pose.position
 
     def get_ctrl_r_pos(self, ctrl_pose):
-        '''Retreives the position of the right hand controller.
+        '''Retrieves the position of the right hand controller.
         '''
         self.ctrl_r_pos = ctrl_pose.pose
 

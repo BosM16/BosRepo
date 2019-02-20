@@ -29,6 +29,22 @@ class Demo(object):
 
         rospy.init_node('bebop_demo')
 
+        self.state = "initialization"
+        self.fsm_state.publish("initialization")  # Finished when pushing controller buttons
+        self.state_sequence = []
+        self.change_state = False
+        self.new_task = False
+        self.state_finish = False
+        self.omg_standby = False
+        self.airborne = False
+        # State sequence should never be an empty list!
+        self.task_dict = {"standby": [],
+                          "take-off": ["take-off"],
+                          "land": ["land"],
+                          "point to point": ["omg standby", "omg fly"],
+                          "draw follow traj": ["land", "draw path", "take-off",
+                                               "fly to start", "follow path"]}
+
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
         self.pose_r_pub = rospy.Publisher(
@@ -51,22 +67,7 @@ class Demo(object):
         rospy.Subscriber(
             'ctrl_keypress/rtrigger', Bool, self.r_trigger)
 
-        self.state = "initialization"
-        self.fsm_state.publish("initialization")  # Finished when pushing controller buttons
-        self.state_sequence = []
-        self.change_state = False
-        self.new_task = False
-        self.state_finish = False
-        self.omg_standby = False
         self._get_pose_service = None
-        self.airborne = False
-        # State sequence should never be an empty list!
-        self.task_dict = {"standby": [],
-                          "take-off": ["take-off"],
-                          "land": ["land"],
-                          "point to point": ["omg standby", "omg fly"],
-                          "draw follow traj": ["land", "draw path", "take-off",
-                                               "fly to start", "follow path"]}
 
     def start(self):
         '''
@@ -96,7 +97,7 @@ class Demo(object):
 
             # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
             self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                            self.kalman.latest_vel_cmd, self.wm.yhat_r)
+                                    self.kalman.latest_vel_cmd, self.wm.yhat_r)
 
             # Transform the rotated yhat and vhat to world frame.
             self.wm.yhat = self.transform_point(
@@ -160,13 +161,14 @@ class Demo(object):
                     # switch state based on controller input.
                     while not (self.state_finish and (self.change_state or
                                                       task_final_state)):
-
+                        # Remaining in state. Allow state action to continue.
                         rospy.sleep(0.1)
 
                     self.change_state = False
                     self.state_finish = False
 
-                # Only publish standby state when task is finished
+                # Only publish standby state when task is finished.
+                # Except for repetitive tasks (back to first state in task).
                 if not self.omg_standby:
                     self.fsm_state.publish("standby")
                     print "bebop_core state changed to:", "standby"
@@ -174,7 +176,6 @@ class Demo(object):
             self.change_state = False
             self.state_finish = False
             rospy.sleep(0.1)
-
 
 ####################
 # Task functions #
@@ -202,7 +203,6 @@ class Demo(object):
             self.airborne = not self.airborne
             self.new_task = True
             print "bebop_core received a new task:", self.state_sequence[0]
-
 
 ####################
 # Helper functions #
