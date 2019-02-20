@@ -77,6 +77,7 @@ class VelCommander(object):
         self.measurement_valid = False
         self.safe = False
         self._goal = Pose()
+        self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
 
         self.cmd_twist_convert = TwistStamped()
@@ -192,7 +193,7 @@ class VelCommander(object):
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
                 (self._drone_est_pose, self.vhat,
                  self.real_yaw, measurement_valid) = self.get_pose_est()
-                self._goal.position = self._drone_est_pose.position
+                self.hover_setpoint.position = self._drone_est_pose.position
 
             if not self.state == "initialization":
                 self.hover()
@@ -397,9 +398,9 @@ class VelCommander(object):
         '''
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        pos_desired = Point(x=self._goal.position.x,
-                            y=self._goal.position.y,
-                            z=self._goal.position.z)
+        pos_desired = Point(x=self.hover_setpoint.position.x,
+                            y=self.hover_setpoint.position.y,
+                            z=self.hover_setpoint.position.z)
         vel_desired = Point(x=0.0,
                             y=0.0,
                             z=0.0)
@@ -419,8 +420,10 @@ class VelCommander(object):
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
         '''
+        # Preparing omg standby hover setpoint for when omgtools finishes.
+        self.hover_setpoint = self._goal
+
         while self.progress:
-            print self._init
             if self.startup:  # Becomes True when goal is set.
                 self.update()
                 # Determine whether goal has been reached.
@@ -433,7 +436,7 @@ class VelCommander(object):
         '''
         while self.draw:
             self.draw_ctrl_path()
-            rospy.ratesleep()
+            rospy.rate.sleep()
 
         print ('----trigger button has been released,'
                'path will be calculated----')

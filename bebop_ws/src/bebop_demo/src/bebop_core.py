@@ -189,7 +189,7 @@ class Demo(object):
 
         self.state_sequence = self.task_dict.get(task.data, [])
         self.new_task = True
-        print "bebop_core received a new task:", task
+        print "bebop_core received a new task:", task.data
 
     def take_off_land(self, empty):
         '''Check if menu button is pressed and switch to take-off or land
