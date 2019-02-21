@@ -43,6 +43,8 @@ class VelCommander(object):
                            "fly to start": self.fly_to_start,
                            "follow path": self.follow_traj}
         self.state_changed = False
+        self.executing_state = False
+        self.state_killed = False
 
         self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
         self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
@@ -179,8 +181,12 @@ class VelCommander(object):
         while not rospy.is_shutdown():
             if self.state_changed:
                 self.state_changed = False
+
+                self.executing_state = True
                 # Execute state function.
                 self.state_dict[self.state]()
+                self.executing_state = False
+
                 print 'PUBLISH FINISHED'
                 self.ctrl_state_finish.publish(Empty())
 
@@ -381,6 +387,8 @@ class VelCommander(object):
             self.state = state.data
             self.state_changed = True
             print "controller state changed to:", self.state
+        if self.executing_state:
+            self.state_killed = True
 
     def hover(self):
         '''When state is equal to the standby state, drone keeps itself in same
