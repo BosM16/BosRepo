@@ -112,8 +112,8 @@ class VelCommander(object):
             'motionplanner/desired_path', Marker, queue_size=1)
         self.trajectory_real = rospy.Publisher(
             'motionplanner/real_path', Marker, queue_size=1)
-        self.omg_vel_pub = rospy.Publisher(
-            'motionplanner/omg_vel', Marker, queue_size=1)
+        self.current_ff_vel_pub = rospy.Publisher(
+            'motionplanner/current_ff_vel', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', Marker, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
@@ -329,7 +329,7 @@ class VelCommander(object):
                 return
 
         # publish current pose and velocity calculated by omg-tools
-        self.publish_omg_vel()
+        self.publish_current_ff_vel()
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd()
@@ -423,10 +423,6 @@ class VelCommander(object):
             self.land.publish(Empty())
             rospy.sleep(8.)
 
-        # (self._drone_est_pose,
-        #  self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        # self._goal.position = self._drone_est_pose.position
-
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
         '''
@@ -446,7 +442,7 @@ class VelCommander(object):
         '''
         while self.draw:
             self.draw_ctrl_path()
-            rospy.rate.sleep()
+            rospy.rate.sleep() # NOT CORRECT RATE!!! should be placed in location function.
 
         print ('----trigger button has been released,'
                'path will be calculated----')
@@ -461,10 +457,20 @@ class VelCommander(object):
         goal.position.y = self.drawn_pos_y[-1]
         goal.position.z = self.drawn_pos_z[-1]
         self.set_goal(goal)
+        self.omg_fly()
 
     def follow_traj(self):
         '''Lets the drone fly along the drawn path.
         '''
+        # Gekopieerd uit andere branch, moet nog helemaal herwerkt worden!
+        while self.progress: # While not list of velocities at end.
+            if self.state_change:
+                self.state_killed = True
+                break
+            self.update()
+            # Determine whether goal has been reached.
+            self.progress = self.proceed()
+            self.rate.sleep()
 
 
 ####################
@@ -761,20 +767,20 @@ class VelCommander(object):
         self._real_path.lifetime = rospy.Duration(0)
 
         # omg-tools position and velocity
-        self.omg_vel = Marker()
-        self.omg_vel.header.frame_id = 'world'
-        self.omg_vel.ns = "omg_vel"
-        self.omg_vel.id = 2
-        self.omg_vel.type = 0  # Arrow
-        self.omg_vel.action = 0
-        self.omg_vel.scale.x = 0.06  # shaft diameter
-        self.omg_vel.scale.y = 0.1  # head diameter
-        self.omg_vel.scale.z = 0.15  # head length
-        self.omg_vel.color.r = 0.0
-        self.omg_vel.color.g = 0.0
-        self.omg_vel.color.b = 1.0
-        self.omg_vel.color.a = 1.0
-        self.omg_vel.lifetime = rospy.Duration(0)
+        self.current_ff_vel = Marker()
+        self.current_ff_vel.header.frame_id = 'world'
+        self.current_ff_vel.ns = "current_ff_vel"
+        self.current_ff_vel.id = 2
+        self.current_ff_vel.type = 0  # Arrow
+        self.current_ff_vel.action = 0
+        self.current_ff_vel.scale.x = 0.06  # shaft diameter
+        self.current_ff_vel.scale.y = 0.1  # head diameter
+        self.current_ff_vel.scale.z = 0.15  # head length
+        self.current_ff_vel.color.r = 0.0
+        self.current_ff_vel.color.g = 0.0
+        self.current_ff_vel.color.b = 1.0
+        self.current_ff_vel.color.a = 1.0
+        self.current_ff_vel.lifetime = rospy.Duration(0)
 
         # Obstacle
         self.rviz_obst = Marker()
@@ -850,11 +856,11 @@ class VelCommander(object):
 
         self.trajectory_real.publish(self._real_path)
 
-    def publish_omg_vel(self):
+    def publish_current_ff_vel(self):
         '''Publish current omg-tools velocity input vector where origin of the
         vector is equal to current omg-tools position.
         '''
-        self.omg_vel.header.stamp = rospy.get_rostime()
+        self.current_ff_vel.header.stamp = rospy.get_rostime()
 
         x_pos = self._traj['x'][self._index]
         y_pos = self._traj['y'][self._index]
@@ -867,9 +873,9 @@ class VelCommander(object):
         point_end = Point(x=(x_pos + 2.5*x_vel),
                           y=(y_pos + 2.5*y_vel),
                           z=(z_pos + 2.5*z_vel))
-        self.omg_vel.points = [point_start, point_end]
+        self.current_ff_vel.points = [point_start, point_end]
 
-        self.omg_vel_pub.publish(self.omg_vel)
+        self.current_ff_vel_pub.publish(self.current_ff_vel)
 
     def publish_obst(self, empty):
         '''Publish static obstacles.
