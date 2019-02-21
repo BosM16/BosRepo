@@ -418,10 +418,10 @@ class VelCommander(object):
 
         if self.state == "take-off":
             self.take_off.publish(Empty())
+            rospy.sleep(3.)
         elif self.state == "land":
             self.land.publish(Empty())
-
-        rospy.sleep(3.)
+            rospy.sleep(8.)
 
         # (self._drone_est_pose,
         #  self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
