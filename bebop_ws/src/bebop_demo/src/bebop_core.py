@@ -30,7 +30,6 @@ class Demo(object):
         rospy.init_node('bebop_demo')
 
         self.state = "initialization"
-        self.fsm_state.publish("initialization")  # Finished when pushing controller buttons
         self.state_sequence = []
         self.change_state = False
         self.new_task = False
@@ -51,6 +50,8 @@ class Demo(object):
             'world_model/yhat_r', PointStamped, queue_size=1)
         self.fsm_state = rospy.Publisher(
             'fsm/state', String, queue_size=1)
+        # Finished when pushing controller buttons
+        self.fsm_state.publish("initialization")
 
         rospy.Subscriber(
             'vive_localization/ready', Empty, self.vive_ready)
@@ -71,10 +72,45 @@ class Demo(object):
 
     def start(self):
         '''
-        Starts running of bebop_demo node.
+        Starts running of bebop_demo node. Runs along the state sequence, sends
+        out the current state and returns to the standby state when task is
+        completed.
         '''
         print '-------------------- \n Demo started \n --------------------'
-        self.send_states()
+
+        while not rospy.is_shutdown():
+            if self.new_task:
+                self.new_task = False
+                for state in self.state_sequence:
+                    self.state = state
+                    print "bebop_core state changed to:", self.state
+                    self.fsm_state.publish(state)
+                    # Omg tools should return to its own standby status unless
+                    # the controller trackpad has been pressed.
+                    if self.state == "omg standby":
+                        self.omg_standby = True
+                        self.new_task = True
+
+                    task_final_state = (self.state == self.state_sequence[-1])
+                    # Check if previous state is finished and if allowed to
+                    # switch state based on controller input.
+                    while not (self.state_finish and (self.change_state or
+                                                      task_final_state)):
+                        # Remaining in state. Allow state action to continue.
+                        rospy.sleep(0.1)
+
+                    self.change_state = False
+                    self.state_finish = False
+
+                # Only publish standby state when task is finished.
+                # Except for repetitive tasks (back to first state in task).
+                if not self.omg_standby:
+                    self.fsm_state.publish("standby")
+                    print "bebop_core state changed to:", "standby"
+
+            self.change_state = False
+            self.state_finish = False
+            rospy.sleep(0.1)
 
     def vive_ready(self, *_):
         '''
@@ -138,44 +174,6 @@ class Demo(object):
             self.wm.yhat = self.transform_point(
                 self.wm.yhat_r, "world_rot", "world")
             self.pose_pub.publish(self.wm.yhat)
-
-    def send_states(self):
-        '''Runs along the state sequence, sends out the current state and
-        returns to the standby state when task is completed.
-        '''
-        while not rospy.is_shutdown():
-            if self.new_task:
-                self.new_task = False
-                for state in self.state_sequence:
-                    self.state = state
-                    print "bebop_core state changed to:", self.state
-                    self.fsm_state.publish(state)
-                    # Omg tools should return to its own standby status unless
-                    # the controller trackpad has been pressed.
-                    if self.state == "omg standby":
-                        self.omg_standby = True
-                        self.new_task = True
-
-                    task_final_state = (self.state == self.state_sequence[-1])
-                    # Check if previous state is finished and if allowed to
-                    # switch state based on controller input.
-                    while not (self.state_finish and (self.change_state or
-                                                      task_final_state)):
-                        # Remaining in state. Allow state action to continue.
-                        rospy.sleep(0.1)
-
-                    self.change_state = False
-                    self.state_finish = False
-
-                # Only publish standby state when task is finished.
-                # Except for repetitive tasks (back to first state in task).
-                if not self.omg_standby:
-                    self.fsm_state.publish("standby")
-                    print "bebop_core state changed to:", "standby"
-
-            self.change_state = False
-            self.state_finish = False
-            rospy.sleep(0.1)
 
 ####################
 # Task functions #

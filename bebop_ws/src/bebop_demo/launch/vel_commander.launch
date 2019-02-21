@@ -7,7 +7,6 @@
   <param name="vel_cmd/sample_time" value="0.01" />
   <param name='vel_cmd/goal_reached_pos_tol' value="0.10" />
   <param name='vel_cmd/goal_reached_angle_tol' value="0.05" />
-  <param name='vel_cmd/goal_reached_input_tol' value="0.03" />
   <!-- <param name='vel_cmd/Kp_x' value="0.9790" />
   <param name='vel_cmd/Ki_x' value="0.6864" />
   <param name='vel_cmd/Kd_x' value="1.8532" />

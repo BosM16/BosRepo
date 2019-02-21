@@ -60,8 +60,6 @@ class VelCommander(object):
                                         'vel_cmd/goal_reached_pos_tol', 0.05)
         # self.angle_nrm_tol = rospy.get_param(
         #                                 'vel_cmd/goal_reached_angle_tol', 0.05)
-        self.input_nrm_tol = rospy.get_param(
-                                        'vel_cmd/goal_reached_input_tol', 0.03)
 
         self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
@@ -360,13 +358,7 @@ class VelCommander(object):
                                              self._goal.position.y,
                                              self._goal.position.z]))
 
-        input_nrm = np.linalg.norm(
-            np.array([self.cmd_twist_convert.twist.linear.x,
-                     self.cmd_twist_convert.twist.linear.y,
-                     self.cmd_twist_convert.twist.linear.z]))
-
-        stop_linear = (pos_nrm < self.pos_nrm_tol) and (
-                            input_nrm < self.input_nrm_tol)
+        stop_linear = (pos_nrm < self.pos_nrm_tol)
 
         if (stop_linear):
             self.target_reached = True
@@ -394,9 +386,11 @@ class VelCommander(object):
         '''When state is equal to the standby state, drone keeps itself in same
         location through a PD controller.
         '''
-        print 'hover'
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        if not measurement_valid:
+            self.safety_brake()
+            return
         pos_desired = Point(x=self.hover_setpoint.position.x,
                             y=self.hover_setpoint.position.y,
                             z=self.hover_setpoint.position.z)
