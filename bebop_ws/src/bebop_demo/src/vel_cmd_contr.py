@@ -187,9 +187,10 @@ class VelCommander(object):
                 self.state_dict[self.state]()
                 self.executing_state = False
 
-                print 'PUBLISH FINISHED'
+                # State has not finished when it has been killed!
                 if not self.state_killed:
-                    self.ctrl_state_finish.publish(Empty())  # State has not finished when it has been killed!
+                    self.ctrl_state_finish.publish(Empty())
+                    print 'PUBLISH FINISHED'
                 self.state_killed = False
 
                 # Adjust goal to make sure hover uses PD actions to stay in

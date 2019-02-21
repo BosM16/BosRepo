@@ -36,7 +36,6 @@ class Demo(object):
         self.state_finish = False
         self.omg_standby = False
         self.airborne = False
-        # State sequence should never be an empty list!
         self.task_dict = {"standby": [],
                           "take-off": ["take-off"],
                           "land": ["land"],
@@ -85,6 +84,7 @@ class Demo(object):
                     self.state = state
                     print "bebop_core state changed to:", self.state
                     self.fsm_state.publish(state)
+
                     # Omg tools should return to its own standby status unless
                     # the controller trackpad has been pressed.
                     if self.state == "omg standby":
