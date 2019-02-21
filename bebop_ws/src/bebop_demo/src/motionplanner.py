@@ -156,8 +156,6 @@ class MotionPlanner(object):
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
-        print 'state0 motionplanner', state0
-        print 'input0 motionplanner', input0
         trajectories = self._deployer.update(cmd.current_time, state0, input0)
 
         self._result = Trajectories(
