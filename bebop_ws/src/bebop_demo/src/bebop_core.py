@@ -61,7 +61,7 @@ class Demo(object):
         rospy.Subscriber(
             'ctrl_keypress/rmenu_button', Empty, self.take_off_land)
         rospy.Subscriber(
-            'ctrl_fsm_state_finish', Empty, self.ctrl_state_finish)
+            'controller/state_finish', Empty, self.ctrl_state_finish)
         rospy.Subscriber(
             'ctrl_keypress/rtrackpad', Empty, self.switch_state)
         rospy.Subscriber(

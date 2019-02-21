@@ -35,8 +35,8 @@ class VelCommander(object):
         self._index = 1
         self.state = "initialization"
         self.state_dict = {"standby": self.hover,
-                           "take-off": self.wait,
-                           "land": self.wait,
+                           "take-off": self.take_off_land,
+                           "land": self.take_off_land,
                            "omg standby": self.omg_standby,
                            "omg fly": self.omg_fly,
                            "draw path": self.draw_traj,
@@ -118,10 +118,8 @@ class VelCommander(object):
             'motionplanner/omg_vel', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', Marker, queue_size=1)
-        self.trigger_goal = rospy.Publisher(
-            'motionplanner/goal', Pose, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
-            'ctrl_fsm_state_finish', Empty, queue_size=1)
+            'controller/state_finish', Empty, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
 
@@ -418,6 +416,23 @@ class VelCommander(object):
         '''
         self.hover()
 
+    def take_off_land(self):
+        '''Function needed to wait when taking of or landing to make sure no
+        control inputs are sent out.
+        '''
+        self.cmd_vel.publish(Twist())
+
+        if self.state == "take-off":
+            self.take_off.publish(Empty())
+        elif self.state == "land":
+            self.land.publish(Empty())
+
+        rospy.sleep(3.)
+
+        # (self._drone_est_pose,
+        #  self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        # self._goal.position = self._drone_est_pose.position
+
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
         '''
@@ -630,23 +645,6 @@ class VelCommander(object):
 
         return point_transformed
 
-    def wait(self):
-        '''Function needed to wait when taking of or landing to make sure no
-        control inputs are sent out.
-        '''
-        self.cmd_vel.publish(Twist())
-
-        if self.state == "take-off":
-            self.take_off.publish(Empty())
-        elif self.state == "land":
-            self.land.publish(Empty())
-
-        rospy.sleep(3.)
-
-        # (self._drone_est_pose,
-        #  self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        # self._goal.position = self._drone_est_pose.position
-
     def get_ctrl_r_pos(self, ctrl_pose):
         '''Retrieves the position of the right hand controller.
         '''
@@ -665,7 +663,7 @@ class VelCommander(object):
             goal.position.y = self.ctrl_r_pos.position.y
             goal.position.z = self.ctrl_r_pos.position.z
             print 'Goal\n', goal
-            self.trigger_goal.publish(goal)
+            self.set_goal(goal)
 
         elif self.state == "draw path":
             # Start drawing and saving path
