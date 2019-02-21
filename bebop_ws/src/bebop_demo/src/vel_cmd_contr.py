@@ -188,7 +188,9 @@ class VelCommander(object):
                 self.executing_state = False
 
                 print 'PUBLISH FINISHED'
-                self.ctrl_state_finish.publish(Empty())
+                if not self.state_killed:
+                    self.ctrl_state_finish.publish(Empty())  # State has not finished when it has been killed!
+                self.state_killed = False
 
                 # Adjust goal to make sure hover uses PD actions to stay in
                 # current place.
@@ -438,11 +440,16 @@ class VelCommander(object):
         self.hover_setpoint = self._goal
 
         while self.progress:
+            if self.state_killed = True:
+                break
+
             if self.startup:  # Becomes True when goal is set.
                 self.update()
                 # Determine whether goal has been reached.
                 self.progress = self.proceed()
             self.rate.sleep()
+
+        self.startup = False
 
     def draw_traj(self):
         '''Start building a trajectory according to the trajectory of the
