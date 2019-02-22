@@ -29,9 +29,8 @@ class VelCommander(object):
         rospy.init_node("vel_commander_node")
 
         self.calc_succeeded = False
-        self.progress = False
-        self.startup = False
         self.target_reached = False
+        self.startup = False
         self._index = 1
         self.state = "initialization"
         self.state_dict = {"standby": self.hover,
@@ -237,7 +236,6 @@ class VelCommander(object):
             goal: Pose
         '''
 
-        self.progress = True
         self.target_reached = False
 
         self._time = 0.
@@ -357,9 +355,6 @@ class VelCommander(object):
             not stop: boolean whether goal is reached. If not, controller
                       proceeds to goal.
         '''
-        stop_linear = True
-        stop = True
-
         pos_nrm = np.linalg.norm(np.array([self._drone_est_pose.position.x,
                                            self._drone_est_pose.position.y,
                                            self._drone_est_pose.position.z])
@@ -367,16 +362,12 @@ class VelCommander(object):
                                              self._goal.position.y,
                                              self._goal.position.z]))
 
-        stop_linear = (pos_nrm < self.pos_nrm_tol)
+        self.target_reached = (pos_nrm < self.pos_nrm_tol)
 
-        if (stop_linear):
-            self.target_reached = True
+        if self.target_reached:
             print '-------------------'
             print '- Target Reached! -'
             print '-------------------'
-        stop *= (stop_linear)
-
-        return not stop
 
 ####################
 # State functions #
@@ -440,14 +431,14 @@ class VelCommander(object):
         # Preparing omg standby hover setpoint for when omgtools finishes.
         self.hover_setpoint = self._goal
 
-        while self.progress:
+        while not self.target_reached:
             if self.state_killed = True:
                 break
 
             if self.startup:  # Becomes True when goal is set.
                 self.update()
                 # Determine whether goal has been reached.
-                self.progress = self.proceed()
+                self.proceed()
             self.rate.sleep()
 
         self.startup = False
@@ -673,7 +664,7 @@ class VelCommander(object):
         '''
 
         if ((self.state == "omg fly") or (self.state == "omg standby")):
-            self.progress = True
+            self.target_reached = False
             goal = Pose()
             goal.position.x = self.ctrl_r_pos.position.x
             goal.position.y = self.ctrl_r_pos.position.y
