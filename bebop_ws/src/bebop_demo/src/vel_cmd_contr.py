@@ -432,7 +432,7 @@ class VelCommander(object):
         self.hover_setpoint = self._goal
 
         while not self.target_reached:
-            if self.state_killed = True:
+            if self.state_killed == True:
                 break
 
             if self.startup:  # Becomes True when goal is set.
