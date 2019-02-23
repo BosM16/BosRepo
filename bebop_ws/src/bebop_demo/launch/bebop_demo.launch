@@ -4,7 +4,7 @@
 
   <include file="$(find bebop_demo)/launch/vel_commander.launch" />
   <include file="$(find vive_localization)/launch/localization.launch" />
-  <include file="$(find vive_ctrl_buttons)/launch/vive_ctrl_buttons.launch" />
+  <!-- <include file="$(find vive_ctrl_buttons)/launch/vive_ctrl_buttons.launch" /> -->
   <!-- <include file="$(find bebop_driver)/launch/bebop_node.launch" /> -->
   <!-- <include file="$(find bebop_tools)/launch/joy_teleop.launch" /> -->
 

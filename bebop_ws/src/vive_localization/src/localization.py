@@ -24,7 +24,7 @@ class ViveLocalization(object):
         '''
         rospy.init_node('bebop_demo')
 
-        self.tracked_objects = ["tracker_1", "controller_1"]  # "controller_2"
+        self.tracked_objects = ["tracker_1"] #, "controller_1"]  # "controller_2"
 
         self.calib = rospy.get_param('vive_localization/calibrate', True)
 
@@ -96,7 +96,19 @@ class ViveLocalization(object):
         self.tf_t_in_v = TransformStamped()
         self.tf_w_in_v.header.frame_id = "vive"
         self.tf_w_in_v.child_frame_id = "tracker"
-        pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
+        # DUMMY - NO HARDWARE ATTACHED - MAKE SURE IT DOESNT TRY TO READ IT.
+        # pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
+        pose_t_in_v = PoseStamped()
+        pose_t_in_v.header.frame_id = "vive"
+        pose_t_in_v.header.stamp = rospy.Time.now()
+        pose_t_in_v.pose.position.x = 1.
+        pose_t_in_v.pose.position.y = 1.
+        pose_t_in_v.pose.position.z = 1.
+        pose_t_in_v.pose.orientation.x = 0.633938483633
+        pose_t_in_v.pose.orientation.y = -0.312469733542
+        pose_t_in_v.pose.orientation.z = -0.312720898172
+        pose_t_in_v.pose.orientation.w = -0.634578840205
+
         self.tf_t_in_v = self.pose_to_tf(pose_t_in_v, "tracker")
         self.broadc.sendTransform(self.tf_t_in_v)
 
@@ -133,12 +145,13 @@ class ViveLocalization(object):
 
         self.v = triad_openvr.triad_openvr()
         self.v.print_discovered_objects()
-        if not self.v.devices:  # Check that this works!! Need to check whether
-            # empty or not.
-            print '--------------------------------'
-            print '! Vive Error: No devices found !'
-            print '--------------------------------'
-            return
+        # TEST WITHOUT HARDWARE
+        # if not self.v.devices:  # Check that this works!! Need to check whether
+        #     # empty or not.
+        #     print '--------------------------------'
+        #     print '! Vive Error: No devices found !'
+        #     print '--------------------------------'
+        #     return
 
         self.init_transforms()
 
@@ -184,7 +197,18 @@ class ViveLocalization(object):
             # =========
             #  TRACKER
             # =========
-            pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
+            # DUMMY - NO HARDWARE ATTACHED - MAKE SURE IT DOESNT TRY TO READ IT.
+            # pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
+            pose_t_in_v = PoseStamped()
+            pose_t_in_v.header.frame_id = "vive"
+            pose_t_in_v.header.stamp = rospy.Time.now()
+            pose_t_in_v.pose.position.x = 1.
+            pose_t_in_v.pose.position.y = 1.
+            pose_t_in_v.pose.position.z = 1.
+            pose_t_in_v.pose.orientation.x = 0.633938483633
+            pose_t_in_v.pose.orientation.y = -0.312469733542
+            pose_t_in_v.pose.orientation.z = -0.312720898172
+            pose_t_in_v.pose.orientation.w = -0.634578840205
             self.tf_t_in_v = self.pose_to_tf(pose_t_in_v, "tracker")
 
             self.broadc.sendTransform(self.tf_t_in_v)
