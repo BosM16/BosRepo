@@ -72,6 +72,9 @@ class VelCommander(object):
         self.x_error = 0.
         self.y_error = 0.
         self.z_error = 0.
+        self.feedback_cmd_prev = Twist()
+        self.ep_prev = Point()
+        self.ev_prev = Point()
         self.measurement_valid = False
         self.safe = False
         self._goal = Pose()
@@ -526,22 +529,42 @@ class VelCommander(object):
         '''Whenever the target is reached, apply position feedback to the
         desired end position to remain in the correct spot and compensate for
         drift.
-        Lead compensator/controller?
+        Tustin discretized PID controller for x and y, PI for z.
         '''
         feedback_cmd = Twist()
+        ep_prev = self.ep_prev
+        ep = Point()
+        ep.x = pos_desired.x - self._drone_est_pose.position.x
+        ep.y = pos_desired.y - self._drone_est_pose.position.y
+        ep.z = pos_desired.z - self._drone_est_pose.position.z
+        ev_prev = self.ev_prev
+        ev = Point()
+        ev.x = vel_desired.x - self.vhat.x
+        ev.y = vel_desired.y - self.vhat.y
 
         feedback_cmd.linear.x = (
-                self.Kp_x*(pos_desired.x - self._drone_est_pose.position.x) +
-                self.Kd_x*(vel_desired.x - self.vhat.x))
+                self.feedback_cmd_prev.x +
+                (self.Kp_x + self.Ki_x*self._sample_time/2)*ep.x +
+                (-self.Kp_x + self.Ki_x*self._sample_time/2)*ep_prev.x +
+                self.Kd_x*(ev.x - ev_prev.x))
+
         feedback_cmd.linear.y = (
-                self.Kp_y*(pos_desired.y - self._drone_est_pose.position.y) +
-                self.Kd_y*(vel_desired.y - self.vhat.y))
+                self.feedback_cmd_prev.y +
+                (self.Kp_y + self.Ki_y*self._sample_time/2)*ep.y +
+                (-self.Kp_y + self.Ki_y*self._sample_time/2)*ep_prev.y +
+                self.Kd_y*(ev.y - ev_prev.y))
+
         feedback_cmd.linear.z = (
-                self.Kp_z*(pos_desired.z - self._drone_est_pose.position.z))
+                self.feedback_cmd_prev.z +
+                (self.Kp_z + self.Ki_z*self._sample_time/2)*ep.z +
+                (-self.Kp_z + self.Ki_z*self._sample_time/2)*ep_prev.z)
 
         # Add theta feedback to remain at zero yaw angle
         feedback_cmd.angular.z = (
                             self.K_theta*(self.desired_yaw - self.real_yaw))
+
+        self.ep_prev = ep
+        self.ev_prev = ev
 
         return feedback_cmd
 

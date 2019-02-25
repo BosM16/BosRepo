@@ -7,22 +7,14 @@
   <param name="vel_cmd/sample_time" value="0.01" />
   <param name='vel_cmd/goal_reached_pos_tol' value="0.10" />
   <param name='vel_cmd/goal_reached_angle_tol' value="0.05" />
-  <!-- <param name='vel_cmd/Kp_x' value="0.9790" />
-  <param name='vel_cmd/Ki_x' value="0.6864" />
-  <param name='vel_cmd/Kd_x' value="1.8532" />
-  <param name='vel_cmd/Kp_y' value="0.7436" />
-  <param name='vel_cmd/Ki_y' value="0.6864" />
-  <param name='vel_cmd/Kd_y' value="1.6077" />
-  <param name='vel_cmd/Kp_z' value="4.0" />
-  <param name='vel_cmd/Ki_z' value="1.5792" /> -->
-  <param name='vel_cmd/Kp_x' value="0.6864" />
-  <param name='vel_cmd/Ki_x' value="0.6864" />
-  <param name='vel_cmd/Kd_x' value="1.5792" />
-  <param name='vel_cmd/Kp_y' value="0.6864" />
-  <param name='vel_cmd/Ki_y' value="0.6864" />
-  <param name='vel_cmd/Kd_y' value="1.5792" />
-  <param name='vel_cmd/Kp_z' value="0.5" />
-  <param name='vel_cmd/Ki_z' value="1.5792" />
+  <param name='vel_cmd/Kp_x' value="1.0995" />
+  <param name='vel_cmd/Ki_x' value="0.2578" />
+  <param name='vel_cmd/Kd_x' value="0.9279" />
+  <param name='vel_cmd/Kp_y' value="0.9445" />
+  <param name='vel_cmd/Ki_y' value="0.2062" />
+  <param name='vel_cmd/Kd_y' value="0.8560" />
+  <param name='vel_cmd/Kp_z' value="4.1593" />
+  <param name='vel_cmd/Ki_z' value="4.0299" />
   <param name='vel_cmd/K_theta' value="0.4" />
   <param name='vel_cmd/max_input' value="1.0" />
   <param name='vel_cmd/safety_treshold' value="0.5" />
