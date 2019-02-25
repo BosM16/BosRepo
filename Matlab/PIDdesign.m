@@ -26,10 +26,10 @@ options.prints = false;
 PM_des = 45;
 
 % Function calls
-% fprintf('\n----------------- x direction -----------------\n')
-% [xsys_cl,xPIDparams] = PID_design(xmodel, PM_des, options);
-% fprintf('\n----------------- y direction -----------------\n')
-% [ysys_cl,yPIDparams] = PID_design(ymodel, PM_des, options);
+fprintf('\n----------------- x direction -----------------\n')
+[xsys_cl,xPIDparams] = PID_design(xmodel, PM_des, options);
+fprintf('\n----------------- y direction -----------------\n')
+[ysys_cl,yPIDparams] = PID_design(ymodel, PM_des, options);
 
 % -------------------------------------------------------------------------
 fprintf('\n----------------- z direction -----------------\n')
@@ -228,7 +228,7 @@ if options.figures
     hl1 = flipud(findobj(h(1),'type','Line'));
 %     hl2 = flipud(findobj(h(2),'type','Line'));
  
-    legend(h(1),hl1(3:4),'Uncompensated','PID Compensated')
+    legend(h(1),hl1(3:4),'Uncompensated','PI Compensated')
 end
 
 % Display margins, poles in command window
