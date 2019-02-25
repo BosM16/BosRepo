@@ -28,6 +28,7 @@ class VelCommander(object):
         """
         rospy.init_node("vel_commander_node")
 
+        self.airborne = False
         self.calc_succeeded = False
         self.target_reached = False
         self.startup = False
@@ -388,23 +389,24 @@ class VelCommander(object):
         '''When state is equal to the standby state, drone keeps itself in same
         location through a PD controller.
         '''
-        (self._drone_est_pose,
-         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        if not measurement_valid:
-            self.safety_brake()
-            return
-        pos_desired = Point(x=self.hover_setpoint.position.x,
-                            y=self.hover_setpoint.position.y,
-                            z=self.hover_setpoint.position.z)
-        vel_desired = Point(x=0.0,
-                            y=0.0,
-                            z=0.0)
-        feedback_cmd = self.transform_twist(
-            self.feedback(pos_desired, vel_desired), "world", "world_rot")
+        if self.airborne:
+            (self._drone_est_pose,
+             self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+            if not measurement_valid:
+                self.safety_brake()
+                return
+            pos_desired = Point(x=self.hover_setpoint.position.x,
+                                y=self.hover_setpoint.position.y,
+                                z=self.hover_setpoint.position.z)
+            vel_desired = Point(x=0.0,
+                                y=0.0,
+                                z=0.0)
+            feedback_cmd = self.transform_twist(
+                self.feedback(pos_desired, vel_desired), "world", "world_rot")
 
-        self.cmd_twist_convert.twist = feedback_cmd
-        self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self.cmd_vel.publish(self.cmd_twist_convert.twist)
+            self.cmd_twist_convert.twist = feedback_cmd
+            self.cmd_twist_convert.header.stamp = rospy.Time.now()
+            self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
     def omg_standby(self):
         '''As long as no goal has been set, remain at current position through
@@ -416,14 +418,16 @@ class VelCommander(object):
         '''Function needed to wait when taking of or landing to make sure no
         control inputs are sent out.
         '''
-        self.cmd_vel.publish(Twist())
+        # self.cmd_vel.publish(Twist())
 
         if self.state == "take-off":
             self.take_off.publish(Empty())
             rospy.sleep(3.)
+            self.airborne = True
         elif self.state == "land":
             self.land.publish(Empty())
             rospy.sleep(8.)
+            self.airborne = False
 
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
@@ -432,7 +436,7 @@ class VelCommander(object):
         self.hover_setpoint = self._goal
 
         while not self.target_reached:
-            if self.state_killed == True:
+            if self.state_killed:
                 break
 
             if self.startup:  # Becomes True when goal is set.
@@ -478,7 +482,6 @@ class VelCommander(object):
             # Determine whether goal has been reached.
             self.progress = self.proceed()
             self.rate.sleep()
-
 
 ####################
 # Helper functions #
