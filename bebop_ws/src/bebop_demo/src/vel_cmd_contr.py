@@ -79,6 +79,7 @@ class VelCommander(object):
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
+        self.draw = False
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -420,11 +421,12 @@ class VelCommander(object):
         '''
         # self.cmd_vel.publish(Twist())
 
-        if self.state == "take-off":
+        if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
             rospy.sleep(3.)
             self.airborne = True
-        elif self.state == "land":
+        elif self.state == "land" and self.airborne:
+            print 'LANDINGGGGGG'
             self.land.publish(Empty())
             rospy.sleep(8.)
             self.airborne = False
@@ -451,9 +453,13 @@ class VelCommander(object):
         '''Start building a trajectory according to the trajectory of the
         controller.
         '''
+        # While loops needed to ensure that only differentiating path when path
+        # is drawn and trigger button has been released.
+        while not self.draw:
+            self.rate.sleep()
 
         while self.draw:
-            rospy.rate.sleep()
+            self.rate.sleep()
 
         print ('----trigger button has been released,'
                'path will be calculated----')
@@ -464,9 +470,9 @@ class VelCommander(object):
         omgtools to fly the drone towards it.
         '''
         goal = Pose()
-        goal.position.x = self.drawn_pos_x[-1]
-        goal.position.y = self.drawn_pos_y[-1]
-        goal.position.z = self.drawn_pos_z[-1]
+        goal.position.x = self.drawn_pos_x[0]
+        goal.position.y = self.drawn_pos_y[0]
+        goal.position.z = self.drawn_pos_z[0]
         self.set_goal(goal)
         self.omg_fly()
 
@@ -682,14 +688,14 @@ class VelCommander(object):
 
         elif self.state == "draw path":
             # Start drawing and saving path
-            if button_pushed.data:
+            if (button_pushed.data and not self.draw):
                 self.drawn_pos_x = []
                 self.drawn_pos_y = []
                 self.drawn_pos_z = []
                 self.draw = True
                 print '----start drawing path while keeping trigger pushed----'
 
-            else:
+            if (not button_pushed.data and self.draw):
                 self.draw = False
 
     def differentiate_traj(self):
@@ -717,20 +723,26 @@ class VelCommander(object):
         '''Linearly interpolates a list so that it contains twice the number of
         elements.
         '''
-        drawn_pos_x_interp = np.zeros((1, 2*len(self.drawn_pos_x)-1))
-        drawn_pos_y_interp = np.zeros((1, 2*len(self.drawn_pos_y)-1))
-        drawn_pos_z_interp = np.zeros((1, 2*len(self.drawn_pos_z)-1))
+        drawn_pos_x_interp = (2*len(self.drawn_pos_x)-1)*[0]
+        drawn_pos_y_interp = (2*len(self.drawn_pos_y)-1)*[0]
+        drawn_pos_z_interp = (2*len(self.drawn_pos_z)-1)*[0]
 
         drawn_pos_x_interp[0::2] = self.drawn_pos_x
         drawn_pos_y_interp[0::2] = self.drawn_pos_y
         drawn_pos_z_interp[0::2] = self.drawn_pos_z
 
-        drawn_pos_x_interp[1::2] = (self.drawn_pos_x[:-1] +
-                                    self.drawn_pos_x[1:]) // 2
-        drawn_pos_y_interp[1::2] = (self.drawn_pos_y[:-1] +
-                                    self.drawn_pos_y[1:]) // 2
-        drawn_pos_z_interp[1::2] = (self.drawn_pos_z[:-1] +
-                                    self.drawn_pos_z[1:]) // 2
+        drawn_pos_x_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_x[:-1],
+                                         self.drawn_pos_x[1:])]]
+        drawn_pos_y_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_y[:-1],
+                                         self.drawn_pos_y[1:])]]
+        drawn_pos_z_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_z[:-1],
+                                         self.drawn_pos_z[1:])]]
 
         self.drawn_pos_x = drawn_pos_x_interp
         self.drawn_pos_y = drawn_pos_y_interp
