@@ -5,6 +5,8 @@
 
   <param name="vel_cmd/update_time" value="0.5" />
   <param name="vel_cmd/sample_time" value="0.01" />
+  <param name="vel_cmd/LPF_cutoff" value="0.5" />
+  <param name="vel_cmd/LPF_order" value="4" />    
   <param name='vel_cmd/goal_reached_pos_tol' value="0.10" />
   <param name='vel_cmd/goal_reached_angle_tol' value="0.05" />
   <param name='vel_cmd/Kp_x' value="0.9790" />
