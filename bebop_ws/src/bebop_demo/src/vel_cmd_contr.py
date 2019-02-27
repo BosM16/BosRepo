@@ -29,10 +29,10 @@ class VelCommander(object):
         """
         rospy.init_node("vel_commander_node")
 
+        self.airborne = False
         self.calc_succeeded = False
-        self.progress = False
-        self.startup = False
         self.target_reached = False
+        self.startup = False
         self._index = 1
         self.state = "initialization"
         self.state_dict = {"standby": self.hover,
@@ -88,6 +88,7 @@ class VelCommander(object):
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
+        self.draw = False
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -246,7 +247,6 @@ class VelCommander(object):
             goal: Pose
         '''
 
-        self.progress = True
         self.target_reached = False
 
         self._time = 0.
@@ -366,9 +366,6 @@ class VelCommander(object):
             not stop: boolean whether goal is reached. If not, controller
                       proceeds to goal.
         '''
-        stop_linear = True
-        stop = True
-
         pos_nrm = np.linalg.norm(np.array([self._drone_est_pose.position.x,
                                            self._drone_est_pose.position.y,
                                            self._drone_est_pose.position.z])
@@ -376,16 +373,12 @@ class VelCommander(object):
                                              self._goal.position.y,
                                              self._goal.position.z]))
 
-        stop_linear = (pos_nrm < self.pos_nrm_tol)
+        self.target_reached = (pos_nrm < self.pos_nrm_tol)
 
-        if (stop_linear):
-            self.target_reached = True
+        if self.target_reached:
             print '-------------------'
             print '- Target Reached! -'
             print '-------------------'
-        stop *= (stop_linear)
-
-        return not stop
 
 ####################
 # State functions #
@@ -406,23 +399,24 @@ class VelCommander(object):
         '''When state is equal to the standby state, drone keeps itself in same
         location through a PD controller.
         '''
-        (self._drone_est_pose,
-         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        if not measurement_valid:
-            self.safety_brake()
-            return
-        pos_desired = Point(x=self.hover_setpoint.position.x,
-                            y=self.hover_setpoint.position.y,
-                            z=self.hover_setpoint.position.z)
-        vel_desired = Point(x=0.0,
-                            y=0.0,
-                            z=0.0)
-        feedback_cmd = self.transform_twist(
-            self.feedback(pos_desired, vel_desired), "world", "world_rot")
+        if self.airborne:
+            (self._drone_est_pose,
+             self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+            if not measurement_valid:
+                self.safety_brake()
+                return
+            pos_desired = Point(x=self.hover_setpoint.position.x,
+                                y=self.hover_setpoint.position.y,
+                                z=self.hover_setpoint.position.z)
+            vel_desired = Point(x=0.0,
+                                y=0.0,
+                                z=0.0)
+            feedback_cmd = self.transform_twist(
+                self.feedback(pos_desired, vel_desired), "world", "world_rot")
 
-        self.cmd_twist_convert.twist = feedback_cmd
-        self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self.cmd_vel.publish(self.cmd_twist_convert.twist)
+            self.cmd_twist_convert.twist = feedback_cmd
+            self.cmd_twist_convert.header.stamp = rospy.Time.now()
+            self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
     def omg_standby(self):
         '''As long as no goal has been set, remain at current position through
@@ -434,14 +428,17 @@ class VelCommander(object):
         '''Function needed to wait when taking of or landing to make sure no
         control inputs are sent out.
         '''
-        self.cmd_vel.publish(Twist())
+        # self.cmd_vel.publish(Twist())
 
-        if self.state == "take-off":
+        if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
             rospy.sleep(3.)
-        elif self.state == "land":
+            self.airborne = True
+        elif self.state == "land" and self.airborne:
+            print 'LANDINGGGGGG'
             self.land.publish(Empty())
             rospy.sleep(8.)
+            self.airborne = False
 
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
@@ -449,14 +446,14 @@ class VelCommander(object):
         # Preparing omg standby hover setpoint for when omgtools finishes.
         self.hover_setpoint = self._goal
 
-        while self.progress:
-            if self.state_killed = True:
+        while not self.target_reached:
+            if self.state_killed:
                 break
 
             if self.startup:  # Becomes True when goal is set.
                 self.omg_update()
                 # Determine whether goal has been reached.
-                self.progress = self.proceed()
+                self.proceed()
             self.rate.sleep()
 
         self.startup = False
@@ -465,9 +462,13 @@ class VelCommander(object):
         '''Start building a trajectory according to the trajectory of the
         controller.
         '''
+        # While loops needed to ensure that only differentiating path when path
+        # is drawn and trigger button has been released.
+        while not self.draw:
+            self.rate.sleep()
 
         while self.draw:
-            rospy.rate.sleep()
+            self.rate.sleep()
 
         print ('----trigger button has been released,'
                'path will be calculated----')
@@ -481,9 +482,9 @@ class VelCommander(object):
         omgtools to fly the drone towards it.
         '''
         goal = Pose()
-        goal.position.x = self.drawn_pos_x[-1]
-        goal.position.y = self.drawn_pos_y[-1]
-        goal.position.z = self.drawn_pos_z[-1]
+        goal.position.x = self.drawn_pos_x[0]
+        goal.position.y = self.drawn_pos_y[0]
+        goal.position.z = self.drawn_pos_z[0]
         self.set_goal(goal)
         self.omg_fly()
 
@@ -689,7 +690,7 @@ class VelCommander(object):
 
         if (((self.state == "omg fly") or (self.state == "omg standby"))
            and button_pushed.data):
-            self.progress = True
+            self.target_reached = False
             goal = Pose()
             goal.position.x = self.ctrl_r_pos.position.x
             goal.position.y = self.ctrl_r_pos.position.y
@@ -699,14 +700,14 @@ class VelCommander(object):
 
         elif self.state == "draw path":
             # Start drawing and saving path
-            if button_pushed.data:
+            if (button_pushed.data and not self.draw):
                 self.drawn_pos_x = []
                 self.drawn_pos_y = []
                 self.drawn_pos_z = []
                 self.draw = True
                 print '----start drawing path while keeping trigger pushed----'
 
-            else:
+            if (not button_pushed.data and self.draw):
                 self.draw = False
 
     def differentiate_traj(self):
@@ -734,20 +735,26 @@ class VelCommander(object):
         '''Linearly interpolates a list so that it contains twice the number of
         elements.
         '''
-        drawn_pos_x_interp = np.zeros((1, 2*len(self.drawn_pos_x)-1))
-        drawn_pos_y_interp = np.zeros((1, 2*len(self.drawn_pos_y)-1))
-        drawn_pos_z_interp = np.zeros((1, 2*len(self.drawn_pos_z)-1))
+        drawn_pos_x_interp = (2*len(self.drawn_pos_x)-1)*[0]
+        drawn_pos_y_interp = (2*len(self.drawn_pos_y)-1)*[0]
+        drawn_pos_z_interp = (2*len(self.drawn_pos_z)-1)*[0]
 
         drawn_pos_x_interp[0::2] = self.drawn_pos_x
         drawn_pos_y_interp[0::2] = self.drawn_pos_y
         drawn_pos_z_interp[0::2] = self.drawn_pos_z
 
-        drawn_pos_x_interp[1::2] = (self.drawn_pos_x[:-1] +
-                                    self.drawn_pos_x[1:]) // 2
-        drawn_pos_y_interp[1::2] = (self.drawn_pos_y[:-1] +
-                                    self.drawn_pos_y[1:]) // 2
-        drawn_pos_z_interp[1::2] = (self.drawn_pos_z[:-1] +
-                                    self.drawn_pos_z[1:]) // 2
+        drawn_pos_x_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_x[:-1],
+                                         self.drawn_pos_x[1:])]]
+        drawn_pos_y_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_y[:-1],
+                                         self.drawn_pos_y[1:])]]
+        drawn_pos_z_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_z[:-1],
+                                         self.drawn_pos_z[1:])]]
 
         self.drawn_pos_x = drawn_pos_x_interp
         self.drawn_pos_y = drawn_pos_y_interp

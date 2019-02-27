@@ -68,27 +68,32 @@ class ViveLocalization(object):
         self.tf_w_in_v = TransformStamped()
         self.tf_w_in_v.header.frame_id = "vive"
         self.tf_w_in_v.child_frame_id = "world"
-        # self.tf_w_in_v.transform.translation.x = -0.579949732853
-        # self.tf_w_in_v.transform.translation.y = -2.87866738454
-        # self.tf_w_in_v.transform.translation.z = 0.204150527522
-        # self.tf_w_in_v.transform.rotation.x = -0.619970851896
-        # self.tf_w_in_v.transform.rotation.y = 0.29928129688
-        # self.tf_w_in_v.transform.rotation.z = 0.329915180093
-        # self.tf_w_in_v.transform.rotation.w = 0.645927876842
-        self.tf_w_in_v.transform.translation.x = 0.129081706552
-        self.tf_w_in_v.transform.translation.y = -2.89506984729
-        self.tf_w_in_v.transform.translation.z = -6.92454187852
-        self.tf_w_in_v.transform.rotation.x = -0.343447879743
-        self.tf_w_in_v.transform.rotation.y = -0.639533223494
-        self.tf_w_in_v.transform.rotation.z = -0.61245458901
-        self.tf_w_in_v.transform.rotation.w = 0.312953968416
-        # self.tf_w_in_v.transform.translation.x = 0.0708966901567
-        # self.tf_w_in_v.transform.translation.y = -2.92482276032
-        # self.tf_w_in_v.transform.translation.z = -7.11681368875
-        # self.tf_w_in_v.transform.rotation.x = -0.342985968821
-        # self.tf_w_in_v.transform.rotation.y = -0.650466725041
-        # self.tf_w_in_v.transform.rotation.z = -0.592736932571
-        # self.tf_w_in_v.transform.rotation.w = 0.328506611155
+
+        # # Newest calibrated values (origin in center) (Mathias)
+        # self.tf_w_in_v.transform.translation.x = -0.0653594065575
+        # self.tf_w_in_v.transform.translation.y = -2.93788157322
+        # self.tf_w_in_v.transform.translation.z = -3.58790665423
+        # self.tf_w_in_v.transform.rotation.x = 0.633938483633
+        # self.tf_w_in_v.transform.rotation.y = -0.312469733542
+        # self.tf_w_in_v.transform.rotation.z = -0.312720898172
+        # self.tf_w_in_v.transform.rotation.w = -0.634578840205
+        # Newest calibrated values (origin in center) (Rian)
+        self.tf_w_in_v.transform.translation.x = 0.0127584116207
+        self.tf_w_in_v.transform.translation.y = -2.9642058687
+        self.tf_w_in_v.transform.translation.z = -3.24945095473
+        self.tf_w_in_v.transform.rotation.x = -0.339866444679
+        self.tf_w_in_v.transform.rotation.y = -0.633483680153
+        self.tf_w_in_v.transform.rotation.z = -0.617152604346
+        self.tf_w_in_v.transform.rotation.w = 0.319862298045
+        # # Old calibrated values (origin in corner)
+        # self.tf_w_in_v.transform.translation.x = 0.129081706552
+        # self.tf_w_in_v.transform.translation.y = -2.89506984729
+        # self.tf_w_in_v.transform.translation.z = -6.92454187852
+        # self.tf_w_in_v.transform.rotation.x = -0.343447879743
+        # self.tf_w_in_v.transform.rotation.y = -0.639533223494
+        # self.tf_w_in_v.transform.rotation.z = -0.61245458901
+        # self.tf_w_in_v.transform.rotation.w = 0.312953968416
+
         self.stbroadc.sendTransform(self.tf_w_in_v)
         rospy.sleep(2.)
 
