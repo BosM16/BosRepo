@@ -1,19 +1,18 @@
 tf_w_in_v
-header: 
+header:
   seq: 0
-  stamp: 
+  stamp:
     secs: 1542714730
     nsecs: 280407906
   frame_id: "vive"
 child_frame_id: "world"
-transform: 
-  translation: 
-    x: -0.579949732853
-    y: -2.87866738454
-    z: 0.204150527522
-  rotation: 
-    x: -0.619970851896
-    y: 0.29928129688
-    z: 0.329915180093
-    w: 0.645927876842
-
+transform:
+  translation:
+    x: -0.0653594065575
+    y: -2.93788157322
+    z: -3.58790665423
+  rotation:
+    x: 0.633938483633
+    y: -0.312469733542
+    z: -0.312720898172
+    w: -0.634578840205

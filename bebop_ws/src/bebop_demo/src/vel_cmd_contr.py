@@ -24,14 +24,14 @@ class VelCommander(object):
 
         Args:
             sample_time : Period between computed velocity samples.
-            update_time : Period of problem solving.
+            omg_update_time : Period of problem solving.
         """
         rospy.init_node("vel_commander_node")
 
+        self.airborne = False
         self.calc_succeeded = False
-        self.progress = False
-        self.startup = False
         self.target_reached = False
+        self.startup = False
         self._index = 1
         self.state = "initialization"
         self.state_dict = {"standby": self.hover,
@@ -43,6 +43,8 @@ class VelCommander(object):
                            "fly to start": self.fly_to_start,
                            "follow path": self.follow_traj}
         self.state_changed = False
+        self.executing_state = False
+        self.state_killed = False
 
         self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
         self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
@@ -77,6 +79,7 @@ class VelCommander(object):
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
+        self.draw = False
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -112,8 +115,8 @@ class VelCommander(object):
             'motionplanner/desired_path', Marker, queue_size=1)
         self.trajectory_real = rospy.Publisher(
             'motionplanner/real_path', Marker, queue_size=1)
-        self.omg_vel_pub = rospy.Publisher(
-            'motionplanner/omg_vel', Marker, queue_size=1)
+        self.current_ff_vel_pub = rospy.Publisher(
+            'motionplanner/current_ff_vel', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', Marker, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
@@ -179,10 +182,17 @@ class VelCommander(object):
         while not rospy.is_shutdown():
             if self.state_changed:
                 self.state_changed = False
+
+                self.executing_state = True
                 # Execute state function.
                 self.state_dict[self.state]()
-                print 'PUBLISH FINISHED'
-                self.ctrl_state_finish.publish(Empty())
+                self.executing_state = False
+
+                # State has not finished when it has been killed!
+                if not self.state_killed:
+                    self.ctrl_state_finish.publish(Empty())
+                    print 'PUBLISH FINISHED'
+                self.state_killed = False
 
                 # Adjust goal to make sure hover uses PD actions to stay in
                 # current place.
@@ -228,7 +238,6 @@ class VelCommander(object):
             goal: Pose
         '''
 
-        self.progress = True
         self.target_reached = False
 
         self._time = 0.
@@ -275,7 +284,7 @@ class VelCommander(object):
         z_traj = data.z_traj
         self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
 
-    def update(self):
+    def omg_update(self):
         '''
         - Updates the controller with newly calculated trajectories and
         velocity commands.
@@ -329,7 +338,7 @@ class VelCommander(object):
                 return
 
         # publish current pose and velocity calculated by omg-tools
-        self.publish_omg_vel()
+        self.publish_current_ff_vel()
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd()
@@ -348,9 +357,6 @@ class VelCommander(object):
             not stop: boolean whether goal is reached. If not, controller
                       proceeds to goal.
         '''
-        stop_linear = True
-        stop = True
-
         pos_nrm = np.linalg.norm(np.array([self._drone_est_pose.position.x,
                                            self._drone_est_pose.position.y,
                                            self._drone_est_pose.position.z])
@@ -358,16 +364,12 @@ class VelCommander(object):
                                              self._goal.position.y,
                                              self._goal.position.z]))
 
-        stop_linear = (pos_nrm < self.pos_nrm_tol)
+        self.target_reached = (pos_nrm < self.pos_nrm_tol)
 
-        if (stop_linear):
-            self.target_reached = True
+        if self.target_reached:
             print '-------------------'
             print '- Target Reached! -'
             print '-------------------'
-        stop *= (stop_linear)
-
-        return not stop
 
 ####################
 # State functions #
@@ -381,28 +383,31 @@ class VelCommander(object):
             self.state = state.data
             self.state_changed = True
             print "controller state changed to:", self.state
+        if self.executing_state:
+            self.state_killed = True
 
     def hover(self):
         '''When state is equal to the standby state, drone keeps itself in same
         location through a PD controller.
         '''
-        (self._drone_est_pose,
-         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        if not measurement_valid:
-            self.safety_brake()
-            return
-        pos_desired = Point(x=self.hover_setpoint.position.x,
-                            y=self.hover_setpoint.position.y,
-                            z=self.hover_setpoint.position.z)
-        vel_desired = Point(x=0.0,
-                            y=0.0,
-                            z=0.0)
-        feedback_cmd = self.transform_twist(
-            self.feedback(pos_desired, vel_desired), "world", "world_rot")
+        if self.airborne:
+            (self._drone_est_pose,
+             self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+            if not measurement_valid:
+                self.safety_brake()
+                return
+            pos_desired = Point(x=self.hover_setpoint.position.x,
+                                y=self.hover_setpoint.position.y,
+                                z=self.hover_setpoint.position.z)
+            vel_desired = Point(x=0.0,
+                                y=0.0,
+                                z=0.0)
+            feedback_cmd = self.transform_twist(
+                self.feedback(pos_desired, vel_desired), "world", "world_rot")
 
-        self.cmd_twist_convert.twist = feedback_cmd
-        self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self.cmd_vel.publish(self.cmd_twist_convert.twist)
+            self.cmd_twist_convert.twist = feedback_cmd
+            self.cmd_twist_convert.header.stamp = rospy.Time.now()
+            self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
     def omg_standby(self):
         '''As long as no goal has been set, remain at current position through
@@ -414,18 +419,17 @@ class VelCommander(object):
         '''Function needed to wait when taking of or landing to make sure no
         control inputs are sent out.
         '''
-        self.cmd_vel.publish(Twist())
+        # self.cmd_vel.publish(Twist())
 
-        if self.state == "take-off":
+        if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
-        elif self.state == "land":
+            rospy.sleep(3.)
+            self.airborne = True
+        elif self.state == "land" and self.airborne:
+            print 'LANDINGGGGGG'
             self.land.publish(Empty())
-
-        rospy.sleep(3.)
-
-        # (self._drone_est_pose,
-        #  self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        # self._goal.position = self._drone_est_pose.position
+            rospy.sleep(8.)
+            self.airborne = False
 
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
@@ -433,20 +437,29 @@ class VelCommander(object):
         # Preparing omg standby hover setpoint for when omgtools finishes.
         self.hover_setpoint = self._goal
 
-        while self.progress:
+        while not self.target_reached:
+            if self.state_killed:
+                break
+
             if self.startup:  # Becomes True when goal is set.
-                self.update()
+                self.omg_update()
                 # Determine whether goal has been reached.
-                self.progress = self.proceed()
+                self.proceed()
             self.rate.sleep()
+
+        self.startup = False
 
     def draw_traj(self):
         '''Start building a trajectory according to the trajectory of the
         controller.
         '''
+        # While loops needed to ensure that only differentiating path when path
+        # is drawn and trigger button has been released.
+        while not self.draw:
+            self.rate.sleep()
+
         while self.draw:
-            self.draw_ctrl_path()
-            rospy.rate.sleep()
+            self.rate.sleep()
 
         print ('----trigger button has been released,'
                'path will be calculated----')
@@ -457,15 +470,26 @@ class VelCommander(object):
         omgtools to fly the drone towards it.
         '''
         goal = Pose()
-        goal.position.x = self.drawn_pos_x[-1]
-        goal.position.y = self.drawn_pos_y[-1]
-        goal.position.z = self.drawn_pos_z[-1]
+        goal.position.x = self.drawn_pos_x[0]
+        goal.position.y = self.drawn_pos_y[0]
+        goal.position.z = self.drawn_pos_z[0]
         self.set_goal(goal)
+        self.omg_fly()
 
     def follow_traj(self):
         '''Lets the drone fly along the drawn path.
         '''
-
+        # Feedforward velocities generated by
+        # differentiating velocities. Smoothing of path?
+        # Gekopieerd uit andere branch, moet nog helemaal herwerkt worden!
+        while self.progress: # While not list of velocities at end.
+            if self.state_change:
+                self.state_killed = True
+                break
+            self.omg_update()
+            # Determine whether goal has been reached.
+            self.progress = self.proceed()
+            self.rate.sleep()
 
 ####################
 # Helper functions #
@@ -643,6 +667,8 @@ class VelCommander(object):
         '''Retrieves the position of the right hand controller.
         '''
         self.ctrl_r_pos = ctrl_pose.pose
+        if self.draw:
+            self.draw_ctrl_path()
 
     def r_trigger(self, button_pushed):
         '''When button is pushed on the right hand controller, depending on the
@@ -650,8 +676,9 @@ class VelCommander(object):
         controller, or allows path that the controller describes to be saved.
         '''
 
-        if ((self.state == "omg fly") or (self.state == "omg standby")):
-            self.progress = True
+        if (((self.state == "omg fly") or (self.state == "omg standby"))
+           and button_pushed.data):
+            self.target_reached = False
             goal = Pose()
             goal.position.x = self.ctrl_r_pos.position.x
             goal.position.y = self.ctrl_r_pos.position.y
@@ -661,15 +688,14 @@ class VelCommander(object):
 
         elif self.state == "draw path":
             # Start drawing and saving path
-            if button_pushed.data:
+            if (button_pushed.data and not self.draw):
+                self.drawn_pos_x = []
+                self.drawn_pos_y = []
+                self.drawn_pos_z = []
                 self.draw = True
                 print '----start drawing path while keeping trigger pushed----'
 
-            # Stop drawing, fly to first point in list with PD controller and
-            # then follow drawn trajectory. Feedforward velocities generated by
-            # differentiating velocities. Is it necessary to check max vel?
-            # Smoothing of path?
-            else:
+            if (not button_pushed.data and self.draw):
                 self.draw = False
 
     def differentiate_traj(self):
@@ -697,20 +723,26 @@ class VelCommander(object):
         '''Linearly interpolates a list so that it contains twice the number of
         elements.
         '''
-        drawn_pos_x_interp = np.zeros((1, 2*len(self.drawn_pos_x)-1))
-        drawn_pos_y_interp = np.zeros((1, 2*len(self.drawn_pos_y)-1))
-        drawn_pos_z_interp = np.zeros((1, 2*len(self.drawn_pos_z)-1))
+        drawn_pos_x_interp = (2*len(self.drawn_pos_x)-1)*[0]
+        drawn_pos_y_interp = (2*len(self.drawn_pos_y)-1)*[0]
+        drawn_pos_z_interp = (2*len(self.drawn_pos_z)-1)*[0]
 
         drawn_pos_x_interp[0::2] = self.drawn_pos_x
         drawn_pos_y_interp[0::2] = self.drawn_pos_y
         drawn_pos_z_interp[0::2] = self.drawn_pos_z
 
-        drawn_pos_x_interp[1::2] = (self.drawn_pos_x[:-1] +
-                                    self.drawn_pos_x[1:]) // 2
-        drawn_pos_y_interp[1::2] = (self.drawn_pos_y[:-1] +
-                                    self.drawn_pos_y[1:]) // 2
-        drawn_pos_z_interp[1::2] = (self.drawn_pos_z[:-1] +
-                                    self.drawn_pos_z[1:]) // 2
+        drawn_pos_x_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_x[:-1],
+                                         self.drawn_pos_x[1:])]]
+        drawn_pos_y_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_y[:-1],
+                                         self.drawn_pos_y[1:])]]
+        drawn_pos_z_interp[1::2] = [elem / 2.0 for elem in
+                                    [a + b for a, b in
+                                     zip(self.drawn_pos_z[:-1],
+                                         self.drawn_pos_z[1:])]]
 
         self.drawn_pos_x = drawn_pos_x_interp
         self.drawn_pos_y = drawn_pos_y_interp
@@ -761,20 +793,20 @@ class VelCommander(object):
         self._real_path.lifetime = rospy.Duration(0)
 
         # omg-tools position and velocity
-        self.omg_vel = Marker()
-        self.omg_vel.header.frame_id = 'world'
-        self.omg_vel.ns = "omg_vel"
-        self.omg_vel.id = 2
-        self.omg_vel.type = 0  # Arrow
-        self.omg_vel.action = 0
-        self.omg_vel.scale.x = 0.06  # shaft diameter
-        self.omg_vel.scale.y = 0.1  # head diameter
-        self.omg_vel.scale.z = 0.15  # head length
-        self.omg_vel.color.r = 0.0
-        self.omg_vel.color.g = 0.0
-        self.omg_vel.color.b = 1.0
-        self.omg_vel.color.a = 1.0
-        self.omg_vel.lifetime = rospy.Duration(0)
+        self.current_ff_vel = Marker()
+        self.current_ff_vel.header.frame_id = 'world'
+        self.current_ff_vel.ns = "current_ff_vel"
+        self.current_ff_vel.id = 2
+        self.current_ff_vel.type = 0  # Arrow
+        self.current_ff_vel.action = 0
+        self.current_ff_vel.scale.x = 0.06  # shaft diameter
+        self.current_ff_vel.scale.y = 0.1  # head diameter
+        self.current_ff_vel.scale.z = 0.15  # head length
+        self.current_ff_vel.color.r = 0.0
+        self.current_ff_vel.color.g = 0.0
+        self.current_ff_vel.color.b = 1.0
+        self.current_ff_vel.color.a = 1.0
+        self.current_ff_vel.lifetime = rospy.Duration(0)
 
         # Obstacle
         self.rviz_obst = Marker()
@@ -850,11 +882,11 @@ class VelCommander(object):
 
         self.trajectory_real.publish(self._real_path)
 
-    def publish_omg_vel(self):
+    def publish_current_ff_vel(self):
         '''Publish current omg-tools velocity input vector where origin of the
         vector is equal to current omg-tools position.
         '''
-        self.omg_vel.header.stamp = rospy.get_rostime()
+        self.current_ff_vel.header.stamp = rospy.get_rostime()
 
         x_pos = self._traj['x'][self._index]
         y_pos = self._traj['y'][self._index]
@@ -867,9 +899,9 @@ class VelCommander(object):
         point_end = Point(x=(x_pos + 2.5*x_vel),
                           y=(y_pos + 2.5*y_vel),
                           z=(z_pos + 2.5*z_vel))
-        self.omg_vel.points = [point_start, point_end]
+        self.current_ff_vel.points = [point_start, point_end]
 
-        self.omg_vel_pub.publish(self.omg_vel)
+        self.current_ff_vel_pub.publish(self.current_ff_vel)
 
     def publish_obst(self, empty):
         '''Publish static obstacles.
@@ -893,9 +925,6 @@ class VelCommander(object):
                       z=self.ctrl_r_pos.position.z)
         self.drawn_path.points.append(point)
 
-        self.drawn_pos_x = []
-        self.drawn_pos_y = []
-        self.drawn_pos_z = []
         self.drawn_pos_x += [point.x]
         self.drawn_pos_y += [point.y]
         self.drawn_pos_z += [point.z]

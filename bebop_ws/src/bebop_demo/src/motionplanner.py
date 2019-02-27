@@ -158,34 +158,28 @@ class MotionPlanner(object):
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
         trajectories = self._deployer.update(cmd.current_time, state0, input0)
 
-        self._result = Trajectories(
-            u_traj=trajectories['input'][0, :],
-            v_traj=trajectories['input'][1, :],
-            w_traj=trajectories['input'][2, :],
-            x_traj=trajectories['state'][0, :],
-            y_traj=trajectories['state'][1, :],
-            z_traj=trajectories['state'][2, :],)
+        if (self._deployer.problem.problem.stats()['return_status']
+                == 'Infeasible_Problem_Detected'):
+            print ('send trajectory of zero input commands since problem'
+                   ' is infeasible')
+            self._result = Trajectories(
+                u_traj=100*[0],
+                v_traj=100*[0],
+                w_traj=100*[0],
+                x_traj=[cmd.pos_state.position.x for i in range(0, 100)],
+                y_traj=[cmd.pos_state.position.y for i in range(0, 100)],
+                z_traj=[cmd.pos_state.position.z for i in range(0, 100)])
+
+        else:
+            self._result = Trajectories(
+                u_traj=trajectories['input'][0, :],
+                v_traj=trajectories['input'][1, :],
+                w_traj=trajectories['input'][2, :],
+                x_traj=trajectories['state'][0, :],
+                y_traj=trajectories['state'][1, :],
+                z_traj=trajectories['state'][2, :])
+
         self._mp_result_topic.publish(self._result)
-        # if not (self._deployer.problem.local_problem.problem.stats()
-        #         ['return_status'] == 'Solve_Succeeded'):
-        #     self._result = Trajectories(
-        #         u_traj=trajectories['input'][0, :],
-        #         v_traj=trajectories['input'][1, :],
-        #         w_traj=trajectories['input'][2, :],
-        #         x_traj=trajectories['state'][0, :],
-        #         y_traj=trajectories['state'][1, :],
-        #         z_traj=trajectories['state'][2, :])
-        # else:
-        #     print ('send trajectory of zero input commands since problem'
-        #            'is infeasible')
-        #     self._result = Trajectories(
-        #         u_traj=np.zeros((1, 100)),
-        #         v_traj=np.zeros((1, 100)),
-        #         w_traj=np.zeros((1, 100)),
-        #         x_traj=cmd.pos_state.position.x*np.ones((1, 100)),
-        #         y_traj=cmd.pos_state.position.y*np.ones((1, 100)),
-        #         z_traj=cmd.pos_state.position.z*np.ones((1, 100)))
-        # self._mp_result_topic.publish(self._result)
 
 
 if __name__ == '__main__':

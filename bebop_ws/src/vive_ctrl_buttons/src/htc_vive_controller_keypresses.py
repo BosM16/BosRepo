@@ -178,6 +178,8 @@ class KeyPress(object):
                     # self.pp.pprint(d)
                     if d['trigger'] == 1.0:
                         self.rtrigger_pressed.publish(True)
+                    if d['trigger'] == 0.0:
+                        self.rtrigger_pressed.publish(False)
                     if d['menu_button'] == 1.0:
                         self.rmenu_button.publish(Empty())
                     if d['trackpad_pressed'] == 1.0:
