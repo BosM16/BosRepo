@@ -15,7 +15,7 @@
   <param name='vel_cmd/Kd_y' value="0.8560" />
   <param name='vel_cmd/Kp_z' value="4.1593" />
   <param name='vel_cmd/Ki_z' value="4.0299" />
-  <param name='vel_cmd/K_theta' value="0.4" />
+  <param name='vel_cmd/K_theta' value="0.2" />
   <param name='vel_cmd/max_input' value="1.0" />
   <param name='vel_cmd/safety_treshold' value="0.5" />
 
