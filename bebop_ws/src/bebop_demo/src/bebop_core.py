@@ -140,23 +140,24 @@ class Demo(object):
         '''
         # Don't do prediction and transformation calculations if the
         # measurement is invalid.
-        if self.measurement_valid:
-            self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
-            self.kalman.latest_vel_cmd = req_vel.vel_cmd
+        if not self.measurement_valid:
+            req_vel.vel_cmd.twist = Twist()
 
-            # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
-            self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                    self.kalman.latest_vel_cmd, self.wm.yhat_r)
+        self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
+        self.kalman.latest_vel_cmd = req_vel.vel_cmd
 
-            # Transform the rotated yhat and vhat to world frame.
-            self.wm.yhat = self.transform_point(
-                self.wm.yhat_r, "world_rot", "world")
-            self.wm.vhat = self.transform_point(
-                self.wm.vhat_r, "world_rot", "world")
-            self.wm.yaw = self.pc.yaw
+        self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
+                                self.kalman.latest_vel_cmd, self.wm.yhat_r)
 
-            self.pose_r_pub.publish(self.wm.yhat_r)
-            self.pose_pub.publish(self.wm.yhat)
+        # Transform the rotated yhat and vhat to world frame.
+        self.wm.yhat = self.transform_point(
+            self.wm.yhat_r, "world_rot", "world")
+        self.wm.vhat = self.transform_point(
+            self.wm.vhat_r, "world_rot", "world")
+        self.wm.yaw = self.pc.yaw
+
+        self.pose_r_pub.publish(self.wm.yhat_r)
+        self.pose_pub.publish(self.wm.yhat)
 
         return GetPoseEstResponse(
             self.wm.yhat, self.wm.vhat, self.wm.yaw, self.measurement_valid)

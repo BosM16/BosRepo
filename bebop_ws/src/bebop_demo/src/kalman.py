@@ -98,12 +98,10 @@ class Kalman(object):
         vel_len = len(self.vel_list_corr)
         if (vel_len > 1):
             case3 = False
-            Ts = self.get_time_diff(
-                self.vel_list_corr[1], yhat_r_t0)
+            Ts = self.get_time_diff(self.vel_list_corr[1], yhat_r_t0)
         else:
             case3 = True
-            Ts = self.get_time_diff(
-                measurement, yhat_r_t0)
+            Ts = self.get_time_diff(measurement, yhat_r_t0)
         # print '\n kalman first predict step Ts, X_r_t0 \n', Ts, self.X_r_t0
         (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                 self.vel_list_corr[0], Ts, self.X_r_t0, self.Phat_t0)
