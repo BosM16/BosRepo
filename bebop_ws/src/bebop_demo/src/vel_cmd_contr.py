@@ -391,6 +391,7 @@ class VelCommander(object):
         '''
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        print 'meas valid', measurement_valid
         if not measurement_valid:
             self.safety_brake()
             return
@@ -543,19 +544,19 @@ class VelCommander(object):
         ev.y = vel_desired.y - self.vhat.y
 
         feedback_cmd.linear.x = (
-                self.feedback_cmd_prev.x +
+                self.feedback_cmd_prev.linear.x +
                 (self.Kp_x + self.Ki_x*self._sample_time/2)*ep.x +
                 (-self.Kp_x + self.Ki_x*self._sample_time/2)*ep_prev.x +
                 self.Kd_x*(ev.x - ev_prev.x))
 
         feedback_cmd.linear.y = (
-                self.feedback_cmd_prev.y +
+                self.feedback_cmd_prev.linear.y +
                 (self.Kp_y + self.Ki_y*self._sample_time/2)*ep.y +
                 (-self.Kp_y + self.Ki_y*self._sample_time/2)*ep_prev.y +
                 self.Kd_y*(ev.y - ev_prev.y))
 
         feedback_cmd.linear.z = (
-                self.feedback_cmd_prev.z +
+                self.feedback_cmd_prev.linear.z +
                 (self.Kp_z + self.Ki_z*self._sample_time/2)*ep.z +
                 (-self.Kp_z + self.Ki_z*self._sample_time/2)*ep_prev.z)
 
@@ -565,6 +566,8 @@ class VelCommander(object):
 
         self.ep_prev = ep
         self.ev_prev = ev
+        print 'feedback pos errors', ep
+        self.feedback_cmd_prev = feedback_cmd
 
         return feedback_cmd
 
@@ -572,6 +575,7 @@ class VelCommander(object):
         '''Brake as emergency measure: Bebop brakes automatically when
             /bebop/cmd_vel topic receives all zeros.
         '''
+        print 'Safety brake'
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
