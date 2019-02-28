@@ -37,6 +37,7 @@ class Demo(object):
         self.omg_standby = False
         self.airborne = False
         self.task_dict = {"standby": [],
+                          "invalid measurement": ["emergency brake"]
                           "take-off": ["take-off"],
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
@@ -49,7 +50,7 @@ class Demo(object):
             'world_model/yhat_r', PointStamped, queue_size=1)
         self.fsm_state = rospy.Publisher(
             'fsm/state', String, queue_size=1)
-        # Finished when pushing controller buttons
+        # Initialization finishes when pushing controller buttons
         self.fsm_state.publish("initialization")
 
         rospy.Subscriber(
@@ -142,6 +143,8 @@ class Demo(object):
         # measurement is invalid.
         if not self.measurement_valid:
             req_vel.vel_cmd.twist = Twist()
+            inv_meas_task = String(data="invalid measurement")
+            self.switch_task(inv_meas_task)
 
         self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
         self.kalman.latest_vel_cmd = req_vel.vel_cmd

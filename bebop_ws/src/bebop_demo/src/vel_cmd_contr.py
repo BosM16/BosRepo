@@ -35,6 +35,7 @@ class VelCommander(object):
         self._index = 1
         self.state = "initialization"
         self.state_dict = {"standby": self.hover,
+                           "emergency": self.repeat_safety_brake,
                            "take-off": self.take_off_land,
                            "land": self.take_off_land,
                            "omg standby": self.omg_standby,
@@ -342,7 +343,7 @@ class VelCommander(object):
                 self.safety_brake()
                 return
 
-        # publish current pose and velocity calculated by omg-tools
+        # Publish current pose and velocity calculated by omg-tools
         self.publish_current_ff_vel()
 
         # Transform feedforward command from frame world to world_rotated.
@@ -398,9 +399,11 @@ class VelCommander(object):
         if self.airborne:
             (self._drone_est_pose,
              self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+
             if not measurement_valid:
                 self.safety_brake()
                 return
+
             pos_desired = Point(x=self.hover_setpoint.position.x,
                                 y=self.hover_setpoint.position.y,
                                 z=self.hover_setpoint.position.z)
@@ -418,6 +421,8 @@ class VelCommander(object):
         '''As long as no goal has been set, remain at current position through
         the use of Pd control.
         '''
+        # WAAROM IS DEZE FUNCTIE NI GEDITCHT EN ALS ACTIE BIJ OMG_STANDBY DE
+        # HOVER FUNCTIE?
         self.hover()
 
     def take_off_land(self):
@@ -560,54 +565,54 @@ class VelCommander(object):
         '''
         feedback_cmd = Twist()
 
-        ## PD
-        feedback_cmd.linear.x = (
-                self.Kp_x*(pos_desired.x - self._drone_est_pose.position.x) +
-                self.Kd_x*(vel_desired.x - self.vhat.x))
-        feedback_cmd.linear.y = (
-                self.Kp_y*(pos_desired.y - self._drone_est_pose.position.y) +
-                self.Kd_y*(vel_desired.y - self.vhat.y))
-        feedback_cmd.linear.z = (
-                self.Kp_z*(pos_desired.z - self._drone_est_pose.position.z))
-
-        # Add theta feedback to remain at zero yaw angle
-        feedback_cmd.angular.z = (
-            self.K_theta*(self.desired_yaw - self.real_yaw))
-
-        ## PID
-        # ep_prev = self.ep_prev
-        # ep = Point()
-        # ep.x = pos_desired.x - self._drone_est_pose.position.x
-        # ep.y = pos_desired.y - self._drone_est_pose.position.y
-        # ep.z = pos_desired.z - self._drone_est_pose.position.z
-        # ev_prev = self.ev_prev
-        # ev = Point()
-        # ev.x = vel_desired.x - self.vhat.x
-        # ev.y = vel_desired.y - self.vhat.y
-        #
+        # # PD
         # feedback_cmd.linear.x = (
-        #         self.feedback_cmd_prev.linear.x +
-        #         (self.Kp_x + self.Ki_x*self._sample_time/2)*ep.x +
-        #         (-self.Kp_x + self.Ki_x*self._sample_time/2)*ep_prev.x +
-        #         self.Kd_x*(ev.x - ev_prev.x))
-        #
+        #         self.Kp_x*(pos_desired.x - self._drone_est_pose.position.x) +
+        #         self.Kd_x*(vel_desired.x - self.vhat.x))
         # feedback_cmd.linear.y = (
-        #         self.feedback_cmd_prev.linear.y +
-        #         (self.Kp_y + self.Ki_y*self._sample_time/2)*ep.y +
-        #         (-self.Kp_y + self.Ki_y*self._sample_time/2)*ep_prev.y +
-        #         self.Kd_y*(ev.y - ev_prev.y))
-        #
+        #         self.Kp_y*(pos_desired.y - self._drone_est_pose.position.y) +
+        #         self.Kd_y*(vel_desired.y - self.vhat.y))
         # feedback_cmd.linear.z = (
-        #         self.feedback_cmd_prev.linear.z +
-        #         (self.Kp_z + self.Ki_z*self._sample_time/2)*ep.z +
-        #         (-self.Kp_z + self.Ki_z*self._sample_time/2)*ep_prev.z)
+        #         self.Kp_z*(pos_desired.z - self._drone_est_pose.position.z))
         #
         # # Add theta feedback to remain at zero yaw angle
         # feedback_cmd.angular.z = (
-        #                     self.K_theta*(self.desired_yaw - self.real_yaw))
+        #     self.K_theta*(self.desired_yaw - self.real_yaw))
 
-        # self.ep_prev = ep
-        # self.ev_prev = ev
+        # # PID
+        ep_prev = self.ep_prev
+        ep = Point()
+        ep.x = pos_desired.x - self._drone_est_pose.position.x
+        ep.y = pos_desired.y - self._drone_est_pose.position.y
+        ep.z = pos_desired.z - self._drone_est_pose.position.z
+        ev_prev = self.ev_prev
+        ev = Point()
+        ev.x = vel_desired.x - self.vhat.x
+        ev.y = vel_desired.y - self.vhat.y
+
+        feedback_cmd.linear.x = (
+                self.feedback_cmd_prev.linear.x +
+                (self.Kp_x + self.Ki_x*self._sample_time/2)*ep.x +
+                (-self.Kp_x + self.Ki_x*self._sample_time/2)*ep_prev.x +
+                self.Kd_x*(ev.x - ev_prev.x))
+
+        feedback_cmd.linear.y = (
+                self.feedback_cmd_prev.linear.y +
+                (self.Kp_y + self.Ki_y*self._sample_time/2)*ep.y +
+                (-self.Kp_y + self.Ki_y*self._sample_time/2)*ep_prev.y +
+                self.Kd_y*(ev.y - ev_prev.y))
+
+        feedback_cmd.linear.z = (
+                self.feedback_cmd_prev.linear.z +
+                (self.Kp_z + self.Ki_z*self._sample_time/2)*ep.z +
+                (-self.Kp_z + self.Ki_z*self._sample_time/2)*ep_prev.z)
+
+        # Add theta feedback to remain at zero yaw angle
+        feedback_cmd.angular.z = (
+                            self.K_theta*(self.desired_yaw - self.real_yaw))
+
+        self.ep_prev = ep
+        self.ev_prev = ev
         print '* 1. feedback cmd\n', feedback_cmd.linear
         print '* 2. feedback pos errors\n', pos_desired.x - self._drone_est_pose.position.x
         print '* 3. vhat\n', self.vhat
@@ -623,6 +628,14 @@ class VelCommander(object):
         print 'Safety brake'
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
+
+    def repeat_safety_brake(self):
+        '''More permanent emergency measure: keep safety braking until new task
+        (eg. land) is given.
+        '''
+        while not (rospy.is_shutdown() or self.state_killed):
+            self.safety_brake()
+            self.rate.sleep()
 
     def get_pose_est(self):
         '''Retrieves a new pose estimate from world model.
