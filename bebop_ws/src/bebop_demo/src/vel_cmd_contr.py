@@ -611,8 +611,7 @@ class VelCommander(object):
         '''
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
-        feedback_cmd = self.transform_twist(
-                self.feedback(pos_desired, vel_desired), "world", "world_rot")
+        feedback_cmd = self.feedback(pos_desired, vel_desired)
 
         self.cmd_twist_convert.twist.linear.x = max(min((
                         self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
@@ -635,14 +634,29 @@ class VelCommander(object):
         '''
         feedback_cmd = Twist()
 
-        feedback_cmd.linear.x = (
-                self.Kp_x*(pos_desired.x - self._drone_est_pose.position.x) +
-                self.Kd_x*(vel_desired.x - self.vhat.x))
-        feedback_cmd.linear.y = (
-                self.Kp_y*(pos_desired.y - self._drone_est_pose.position.y) +
-                self.Kd_y*(vel_desired.y - self.vhat.y))
-        feedback_cmd.linear.z = (
-                self.Kp_z*(pos_desired.z - self._drone_est_pose.position.z))
+        pos_error = Twist()
+        pos_error.linear.x = pos_desired.x - self._drone_est_pose.position.x
+        pos_error.linear.y = pos_desired.y - self._drone_est_pose.position.y
+        pos_error.linear.z = pos_desired.z - self._drone_est_pose.position.z
+
+        vel_error = Twist()
+        vel_error.linear.x = vel_desired.x - self.vhat.x
+        vel_error.linear.y = vel_desired.y - self.vhat.y
+
+        pos_error = self.transform_twist(vel_error, "world", "world_rot")
+        vel_error = self.transform_twist(vel_error, "world", "world_rot")
+
+        feedback_cmd.linear.x = max(min((
+                self.Kp_x*pos_error.linear.x +
+                self.Kd_x*vel_error.linear.x),
+                self.max_input), - self.max_input)
+        feedback_cmd.linear.y = max(min((
+                self.Kp_y*pos_error.linear.y +
+                self.Kd_y*vel_error.linear.y),
+                self.max_input), - self.max_input)
+        feedback_cmd.linear.z = max(min((
+                self.Kp_z*pos_error.linear.z),
+                self.max_input), - self.max_input)
 
         # Add theta feedback to remain at zero yaw angle
         feedback_cmd.angular.z = (
