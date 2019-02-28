@@ -422,7 +422,7 @@ class VelCommander(object):
         '''Function needed to wait when taking of or landing to make sure no
         control inputs are sent out.
         '''
-        # self.cmd_vel.publish(Twist())
+        self.cmd_vel.publish(Twist())
 
         if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
