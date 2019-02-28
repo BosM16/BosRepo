@@ -33,7 +33,6 @@ class VelCommander(object):
         self.calc_succeeded = False
         self.target_reached = False
         self.startup = False
-        self._index = 1
         self.state = "initialization"
         self.state_dict = {"standby": self.hover,
                            "take-off": self.take_off_land,
@@ -124,6 +123,8 @@ class VelCommander(object):
             'motionplanner/desired_path', Marker, queue_size=1)
         self.trajectory_real = rospy.Publisher(
             'motionplanner/real_path', Marker, queue_size=1)
+        self.trajectory_smoothed = rospy.Publisher(
+            'motionplanner/smoothed_path', Marker, queue_size=1)
         self.current_ff_vel_pub = rospy.Publisher(
             'motionplanner/current_ff_vel', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
@@ -237,11 +238,11 @@ class VelCommander(object):
             print "Service call failed: %s" % e
             config_success = False
 
-        rospy.Subscriber('motionplanner/goal', Pose, self.set_goal)
+        rospy.Subscriber('motionplanner/goal', Pose, self.set_omg_goal)
 
         return config_success
 
-    def set_goal(self, goal):
+    def set_omg_goal(self, goal):
         '''Sets the goal and fires motionplanner.
         Args:
             goal: Pose
@@ -293,7 +294,7 @@ class VelCommander(object):
         z_traj = data.z_traj
         self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
 
-    def omg_update(self):
+    def omg_update(self, index):
         '''
         - Updates the controller with newly calculated trajectories and
         velocity commands.
@@ -307,7 +308,6 @@ class VelCommander(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
-        # old_pose = self._drone_est_pose
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
 
@@ -324,18 +324,18 @@ class VelCommander(object):
         if self._init:
             if not self._new_trajectories:
                 return
-            self._index = int(self._update_time/self._sample_time)
+            index = int(self._update_time/self._sample_time)
             self._init = False
 
-        if ((self._index >= int(self._update_time/self._sample_time))
-                or (self._index >= len(self._traj['u'])-2)):
+        if ((index >= int(self._update_time/self._sample_time))
+                or (index >= len(self._traj['u'])-2)):
             if self._new_trajectories:
                 # Load fresh trajectories.
                 self.load_trajectories()
                 self._new_trajectories = False
-                self._time += self._index*self._sample_time
-                self.pos_index = self._index
-                self._index = 1
+                self._time += index*self._sample_time
+                self.pos_index = index
+                index = 1
                 # Trigger motion planner.
                 self.fire_motionplanner()
 
@@ -347,20 +347,78 @@ class VelCommander(object):
                 return
 
         # publish current pose and velocity calculated by omg-tools
-        self.publish_current_ff_vel()
+        pos = Point(x=self._traj['x'][index + 1],
+                    y=self._traj['y'][index + 1],
+                    z=self._traj['z'][index + 1])
+
+        vel = Point(x=self._traj['u'][index + 1],
+                    y=self._traj['v'][index + 1],
+                    z=self._traj['w'][index + 1])
+
+        self.publish_current_ff_vel(pos, vel)
 
         # Transform feedforward command from frame world to world_rotated.
-        self.rotate_vel_cmd()
+        self.rotate_vel_cmd(vel)
 
         # Convert feedforward velocity command to angle input.
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
-        self.combine_ff_fb()
+        pos_fb = pos
+        vel_fb = Point(x=self._traj['u'][index],
+                       y=self._traj['v'][index],
+                       z=self._traj['w'][index])
+        self.combine_ff_fb(pos_fb, vel_fb)
 
-        self._index += 1
+    def draw_update(self, index):
+        '''
+        - Updates the controller with newly calculated trajectories and
+        velocity commands.
+        - Sends out new velocity command.
+        - Retrieves new pose estimate.
+        '''
+        # Send velocity sample.
+        self.cmd_twist_convert.header.stamp = rospy.Time.now()
+        self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
-    def proceed(self):
+        # Retrieve new pose estimate from World Model.
+        # This is a pose estimate for the first following time instance [k+1]
+        # if the velocity command sent above corresponds to time instance [k].
+        (self._drone_est_pose,
+         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+
+        # Publish pose to plot in rviz.
+        self.publish_real(self._drone_est_pose.position.x,
+                          self._drone_est_pose.position.y,
+                          self._drone_est_pose.position.z)
+
+        if not measurement_valid:
+            self.safety_brake()
+            return
+
+        # publish current pose and velocity calculated by omg-tools
+        pos = Point(x=self.drawn_pos_x[index],
+                    y=self.drawn_pos_y[index],
+                    z=self.drawn_pos_z[index])
+        vel = Point(x=self.drawn_vel_x[index],
+                    y=self.drawn_vel_y[index],
+                    z=self.drawn_vel_z[index])
+        self.publish_current_ff_vel(pos, vel)
+
+        # Transform feedforward command from frame world to world_rotated.
+        self.rotate_vel_cmd(vel)
+
+        # Convert feedforward velocity command to angle input.
+        self.convert_vel_cmd()
+
+        # Combine feedback and feedforward commands.
+        pos_fb = pos
+        vel_fb = Point(x=self.drawn_vel_x[index - 1],
+                       y=self.drawn_vel_y[index - 1],
+                       z=self.drawn_vel_z[index - 1])
+        self.combine_ff_fb(pos_fb, vel_fb)
+
+    def check_goal_reached(self):
         '''Determines whether goal is reached.
         Returns:
             not stop: boolean whether goal is reached. If not, controller
@@ -445,15 +503,17 @@ class VelCommander(object):
         '''
         # Preparing omg standby hover setpoint for when omgtools finishes.
         self.hover_setpoint = self._goal
+        index = 1
 
         while not self.target_reached:
             if self.state_killed:
                 break
 
             if self.startup:  # Becomes True when goal is set.
-                self.omg_update()
+                self.omg_update(index)
+                index += 1
                 # Determine whether goal has been reached.
-                self.proceed()
+                self.check_goal_reached()
             self.rate.sleep()
 
         self.startup = False
@@ -485,35 +545,50 @@ class VelCommander(object):
         goal.position.x = self.drawn_pos_x[0]
         goal.position.y = self.drawn_pos_y[0]
         goal.position.z = self.drawn_pos_z[0]
-        self.set_goal(goal)
+        self.set_omg_goal(goal)
         self.omg_fly()
 
     def follow_traj(self):
         '''Lets the drone fly along the drawn path.
         '''
-        # Feedforward velocities generated by
-        # differentiating velocities. Smoothing of path?
-        # Gekopieerd uit andere branch, moet nog helemaal herwerkt worden!
-        while self.progress:  # While not list of velocities at end.
-            if self.state_change:
-                self.state_killed = True
+
+        # Preparing hover setpoint for when trajectory is completed.
+        self._goal = Pose()
+        self._goal.position.x = self.drawn_pos_x[-1]
+        self._goal.position.y = self.drawn_pos_y[-1]
+        self._goal.position.z = self.drawn_pos_z[-1]
+
+        self.hover_setpoint = self._goal
+        self.target_reached = False
+
+        self.cmd_twist_convert.twist = Twist()
+        self.cmd_twist_convert.twist.linear.x = self.drawn_vel_x[0]
+        self.cmd_twist_convert.twist.linear.y = self.drawn_vel_y[0]
+        self.cmd_twist_convert.twist.linear.z = self.drawn_vel_z[0]
+
+        index = 1
+        while (not self.target_reached and (index < len(self.drawn_vel_x))):
+            if self.state_killed:
                 break
-            self.omg_update()
+
+            self.draw_update(index)
+            index += 1
             # Determine whether goal has been reached.
-            self.progress = self.proceed()
+            self.check_goal_reached()
+
             self.rate.sleep()
 
 ####################
 # Helper functions #
 ####################
 
-    def rotate_vel_cmd(self):
+    def rotate_vel_cmd(self, vel):
         '''Transforms the velocity commands from the global world frame to the
         rotated world frame world_rot.
         '''
-        self.feedforward_cmd.linear.x = self._traj['u'][self._index + 1]
-        self.feedforward_cmd.linear.y = self._traj['v'][self._index + 1]
-        self.feedforward_cmd.linear.z = self._traj['w'][self._index + 1]
+        self.feedforward_cmd.linear.x = vel.x
+        self.feedforward_cmd.linear.y = vel.x
+        self.feedforward_cmd.linear.z = vel.x
         self.feedforward_cmd = self.transform_twist(
                                     self.feedforward_cmd, "world", "world_rot")
 
@@ -530,17 +605,11 @@ class VelCommander(object):
         self.feedforward_cmd.linear.y = Y[1, 0]
         self.feedforward_cmd.linear.z = Y[2, 0]
 
-    def combine_ff_fb(self):
+    def combine_ff_fb(self, pos_desired, vel_desired):
         '''Combines the feedforward and feedback commands to generate the full
         input angle command.
         '''
-        pos_desired = Point(x=self._traj['x'][self._index + 1],
-                            y=self._traj['y'][self._index + 1],
-                            z=self._traj['z'][self._index + 1])
-        vel_desired = Point(x=self._traj['u'][self._index + 1],
-                            y=self._traj['v'][self._index + 1],
-                            z=self._traj['w'][self._index + 1])
-        # Transform desired position and velocity from world frame to
+        # Transform feedback desired position and velocity from world frame to
         # world_rot frame
         feedback_cmd = self.transform_twist(
                 self.feedback(pos_desired, vel_desired), "world", "world_rot")
@@ -696,7 +765,7 @@ class VelCommander(object):
             goal.position.y = self.ctrl_r_pos.position.y
             goal.position.z = self.ctrl_r_pos.position.z
             print 'Goal\n', goal
-            self.set_goal(goal)
+            self.set_omg_goal(goal)
 
         elif self.state == "draw path":
             # Start drawing and saving path
@@ -770,6 +839,9 @@ class VelCommander(object):
             self.butter_b, self.butter_a, self.drawn_pos_y)
         self.drawn_pos_z = lfilter(
             self.butter_b, self.butter_a, self.drawn_pos_z)
+
+        # Plot the smoothed trajectory in Rviz.
+        self.draw_smoothed_path()
 
 
 #######################################
@@ -859,11 +931,27 @@ class VelCommander(object):
         self.drawn_path.scale.x = 0.05
         self.drawn_path.scale.y = 0.05
         self.drawn_path.scale.z = 0.0
-        self.drawn_path.color.r = 0.5
-        self.drawn_path.color.g = 0.5
-        self.drawn_path.color.b = 0.5
+        self.drawn_path.color.r = 1.0
+        self.drawn_path.color.g = 0.86
+        self.drawn_path.color.b = 0.0
         self.drawn_path.color.a = 1.0
         self.drawn_path.lifetime = rospy.Duration(0)
+
+        # Smoother version of the path
+        self.smooth_path = Marker()
+        self.smooth_path.header.frame_id = 'world'
+        self.smooth_path.ns = "smooth_path"
+        self.smooth_path.id = 5
+        self.smooth_path.type = 4  # Line List.
+        self.smooth_path.action = 0
+        self.smooth_path.scale.x = 0.05
+        self.smooth_path.scale.y = 0.05
+        self.smooth_path.scale.z = 0.0
+        self.smooth_path.color.r = 1.0
+        self.smooth_path.color.g = 0.38
+        self.smooth_path.color.b = 0.0
+        self.smooth_path.color.a = 1.0
+        self.smooth_path.lifetime = rospy.Duration(0)
 
     def publish_desired(self, x_traj, y_traj, z_traj):
         '''Publish planned x and y trajectory to topic for visualisation in
@@ -906,23 +994,16 @@ class VelCommander(object):
 
         self.trajectory_real.publish(self._real_path)
 
-    def publish_current_ff_vel(self):
+    def publish_current_ff_vel(self, pos, vel):
         '''Publish current omg-tools velocity input vector where origin of the
         vector is equal to current omg-tools position.
         '''
         self.current_ff_vel.header.stamp = rospy.get_rostime()
 
-        x_pos = self._traj['x'][self._index]
-        y_pos = self._traj['y'][self._index]
-        z_pos = self._traj['z'][self._index]
-        x_vel = self._traj['u'][self._index]
-        y_vel = self._traj['v'][self._index]
-        z_vel = self._traj['w'][self._index]
-
-        point_start = Point(x=x_pos, y=y_pos, z=z_pos)
-        point_end = Point(x=(x_pos + 2.5*x_vel),
-                          y=(y_pos + 2.5*y_vel),
-                          z=(z_pos + 2.5*z_vel))
+        point_start = Point(x=pos.x, y=pos.y, z=pos.z)
+        point_end = Point(x=(pos.x + 2.5*vel.x),
+                          y=(pos.y + 2.5*vel.y),
+                          z=(pos.z + 2.5*vel.z))
         self.current_ff_vel.points = [point_start, point_end]
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)
@@ -953,7 +1034,22 @@ class VelCommander(object):
         self.drawn_pos_y += [point.y]
         self.drawn_pos_z += [point.z]
 
-        self.trajectory_real.publish(self.drawn_path)
+        self.trajectory_desired.publish(self.drawn_path)
+
+    def draw_smoothed_path(self):
+        '''Publish the smoothed x and y trajectory to topic for visualisation in
+        rviz.
+        '''
+        self.smooth_path.header.stamp = rospy.get_rostime()
+        self.smooth_path.points = []
+
+        for index in len(self.drawn_pos_x):
+            point = Point(x=self.drawn_pos_x[i],
+                          y=self.drawn_pos_y[i],
+                          z=self.drawn_pos_z[i])
+            self.smooth_path.points.append(point)
+
+        self.trajectory_smoothed.publish(self.smooth_path)
 
 
 if __name__ == '__main__':
