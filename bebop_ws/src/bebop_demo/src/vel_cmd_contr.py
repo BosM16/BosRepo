@@ -38,7 +38,7 @@ class VelCommander(object):
                            "emergency": self.repeat_safety_brake,
                            "take-off": self.take_off_land,
                            "land": self.take_off_land,
-                           "omg standby": self.omg_standby,
+                           "omg standby": self.hover,
                            "omg fly": self.omg_fly,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
@@ -416,14 +416,6 @@ class VelCommander(object):
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
             self.cmd_vel.publish(self.cmd_twist_convert.twist)
-
-    def omg_standby(self):
-        '''As long as no goal has been set, remain at current position through
-        the use of Pd control.
-        '''
-        # WAAROM IS DEZE FUNCTIE NI GEDITCHT EN ALS ACTIE BIJ OMG_STANDBY DE
-        # HOVER FUNCTIE?
-        self.hover()
 
     def take_off_land(self):
         '''Function needed to wait when taking of or landing to make sure no
