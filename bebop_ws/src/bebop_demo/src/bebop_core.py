@@ -37,7 +37,7 @@ class Demo(object):
         self.omg_standby = False
         self.airborne = False
         self.task_dict = {"standby": [],
-                          "invalid measurement": ["emergency brake"]
+                          "invalid measurement": ["emergency"]
                           "take-off": ["take-off"],
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
