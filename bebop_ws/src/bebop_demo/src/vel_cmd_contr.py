@@ -5,7 +5,7 @@ from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
 from std_msgs.msg import Bool, Empty, String
 from visualization_msgs.msg import Marker
 
-from bebop_demo.msg import Trigger, Trajectories, Obstacle
+from bebop_demo.msg import PID_gains, Trigger, Trajectories, Obstacle
 
 from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 
@@ -42,13 +42,17 @@ class VelCommander(object):
                            "omg fly": self.omg_fly,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
-                           "follow path": self.follow_traj}
+                           "follow path": self.follow_traj,
+                           "undamped spring": self.hover_changed_gains,
+                           "viscous fluid": self.hover_changed_gains,
+                           "reset_PID": self.reset_PID_gains}
         self.state_changed = False
         self.executing_state = False
         self.state_killed = False
 
         rospy.set_param(
             "/bebop/bebop_driver/SpeedSettingsMaxRotationSpeedCurrent", 360.0)
+
         self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
         self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
         self.Kd_x = rospy.get_param('vel_cmd/Kd_x', 0.6864)
@@ -114,7 +118,12 @@ class VelCommander(object):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-        self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
+        self.cmd_vel = rospy.Publisher(
+            'bebop/cmd_vel', Twist, queue_size=1)
+        self.take_off = rospy.Publisher(
+            'bebop/takeoff', Empty, queue_size=1)
+        self.land = rospy.Publisher(
+            'bebop/land', Empty, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
             'motionplanner/trigger', Trigger, queue_size=1)
         self.trajectory_desired = rospy.Publisher(
@@ -127,8 +136,8 @@ class VelCommander(object):
             'motionplanner/rviz_obst', Marker, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
             'controller/state_finish', Empty, queue_size=1)
-        self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
-        self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
+        self.pos_error_pub = rospy.Publisher(
+            'controller/position_error', Point, queue_size=1)
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
@@ -200,7 +209,7 @@ class VelCommander(object):
                     print 'PUBLISH FINISHED'
                 self.state_killed = False
 
-                # Adjust goal to make sure hover uses PD actions to stay in
+                # Adjust goal to make sure hover uses PID actions to stay in
                 # current place.
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
                 (self._drone_est_pose, self.vhat,
@@ -209,7 +218,7 @@ class VelCommander(object):
 
             if not self.state == "initialization":
                 self.hover()
-            rospy.sleep(0.01)
+            self.rate.sleep()
 
     def configure(self):
         '''Configures the controller by loading in the room and static
@@ -394,7 +403,7 @@ class VelCommander(object):
 
     def hover(self):
         '''When state is equal to the standby state, drone keeps itself in same
-        location through a PD controller.
+        location through a PID controller.
         '''
         if self.airborne:
             (self._drone_est_pose,
@@ -407,9 +416,7 @@ class VelCommander(object):
             pos_desired = Point(x=self.hover_setpoint.position.x,
                                 y=self.hover_setpoint.position.y,
                                 z=self.hover_setpoint.position.z)
-            vel_desired = Point(x=0.0,
-                                y=0.0,
-                                z=0.0)
+            vel_desired = Point()
             feedback_cmd = self.transform_twist(
                 self.feedback(pos_desired, vel_desired), "world", "world_rot")
 
@@ -494,6 +501,47 @@ class VelCommander(object):
             self.progress = self.proceed()
             self.rate.sleep()
 
+    def hover_changed_gains(self):
+        '''Adapts gains for the undamped spring (only Kp) or viscous fluid
+        (only Kd) illustration.
+        '''
+        if self.state == "undamped spring":
+            self.Kp_x = self.Kp_x/4.
+            self.Ki_x = 0.
+            self.Kd_x = 0.
+            self.Kp_y = self.Kp_y/4.
+            self.Ki_y = 0.
+            self.Kd_y = 0.
+            self.Kp_z = self.Kp_z/4.
+            self.Ki_z = 0.
+
+        elif self.state == "viscous fluid":
+            self.Kp_x = 0.
+            self.Ki_x = 0.
+            self.Kd_x = self.Kd_x/4.
+            self.Kp_y = 0.
+            self.Ki_y = 0.
+            self.Kd_y = self.Kd_y/4.
+            self.Kp_z = self.Kp_z/4.
+            self.Ki_z = 0.
+
+        while not (rospy.is_shutdown() or self.state_killed):
+            self.hover()
+            self.rate.sleep()
+
+    def reset_PID_gains(self):
+        '''Resets the PID gains to the rosparam vaules after tasks "undamped
+        spring" or "viscous fluid".
+        '''
+        self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
+        self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
+        self.Kd_x = rospy.get_param('vel_cmd/Kd_x', 0.6864)
+        self.Kp_y = rospy.get_param('vel_cmd/Kp_y', 0.6864)
+        self.Ki_y = rospy.get_param('vel_cmd/Ki_y', 0.6864)
+        self.Kd_y = rospy.get_param('vel_cmd/Kd_y', 0.6864)
+        self.Kp_z = rospy.get_param('vel_cmd/Kp_z', 0.5)
+        self.Ki_z = rospy.get_param('vel_cmd/Ki_z', 1.5792)
+
 ####################
 # Helper functions #
 ####################
@@ -577,6 +625,8 @@ class VelCommander(object):
         ep.x = pos_desired.x - self._drone_est_pose.position.x
         ep.y = pos_desired.y - self._drone_est_pose.position.y
         ep.z = pos_desired.z - self._drone_est_pose.position.z
+        self.pos_error_pub.publish(ep)
+
         ev_prev = self.ev_prev
         ev = Point()
         ev.x = vel_desired.x - self.vhat.x

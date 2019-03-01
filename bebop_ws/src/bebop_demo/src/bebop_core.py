@@ -37,12 +37,14 @@ class Demo(object):
         self.omg_standby = False
         self.airborne = False
         self.task_dict = {"standby": [],
-                          "invalid measurement": ["emergency"]
+                          "invalid measurement": ["emergency"],
                           "take-off": ["take-off"],
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
                           "draw follow traj": ["land", "draw path", "take-off",
-                                               "fly to start", "follow path"]}
+                                               "fly to start", "follow path"],
+                          "undamped spring": ["undamped spring", "reset_PID"],
+                          "viscous fluid": ["viscous fluid", "reset_PID"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
