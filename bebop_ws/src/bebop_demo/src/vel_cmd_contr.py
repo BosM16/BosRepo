@@ -41,7 +41,8 @@ class VelCommander(object):
                            "omg fly": self.omg_fly,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
-                           "follow path": self.follow_traj}
+                           "follow path": self.follow_traj,
+                           "drag drone": self.drag_drone}
         self.state_changed = False
         self.executing_state = False
         self.state_killed = False
@@ -88,6 +89,7 @@ class VelCommander(object):
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
         self.draw = False
+        self.drag = False
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -578,6 +580,29 @@ class VelCommander(object):
 
             self.rate.sleep()
 
+    def drag_drone(self):
+        '''Adapts hover setpoint to follow vive right controller when trigger
+        is pressed.
+        '''
+        while not (rospy.is_shutdown() or self.state_killed):
+            drag_offset = Point(
+                x=(self._drone_est_pose.position.x-self.ctrl_r_pos.position.x),
+                y=(self._drone_est_pose.position.y-self.ctrl_r_pos.position.y),
+                z=(self._drone_est_pose.position.z-self.ctrl_r_pos.position.z))
+
+            while (self.drag and not self.state_killed):
+                # When trigger pulled, freeze offset controller-drone and adapt
+                # hover setpoint, until trigger is released.
+                self.hover_setpoint = Point(
+                    x=self.ctrl_r_pos.position.x + drag_offset.x,
+                    y=self.ctrl_r_pos.position.y + drag_offset.y,
+                    z=self.ctrl_r_pos.position.z + drag_offset.z,)
+                self.hover()
+                self.rate.sleep()
+
+            self.hover()
+            self.rate.sleep()
+
 ####################
 # Helper functions #
 ####################
@@ -793,6 +818,9 @@ class VelCommander(object):
             if (not button_pushed.data and self.draw):
                 self.draw = False
 
+        elif self.state == "drag drone":
+            self.drag = True
+
     def differentiate_traj(self):
         '''Differentiate obtained trajectory to obtain feedforward velocity
         commands.
@@ -856,7 +884,6 @@ class VelCommander(object):
 
         # Plot the smoothed trajectory in Rviz.
         self.draw_smoothed_path()
-
 
 #######################################
 # Functions for plotting Rviz markers #
@@ -1051,8 +1078,8 @@ class VelCommander(object):
         self.trajectory_desired.publish(self.drawn_path)
 
     def draw_smoothed_path(self):
-        '''Publish the smoothed x and y trajectory to topic for visualisation in
-        rviz.
+        '''Publish the smoothed x and y trajectory to topic for visualisation
+        in rviz.
         '''
         self.smooth_path.header.stamp = rospy.get_rostime()
         self.smooth_path.points = []

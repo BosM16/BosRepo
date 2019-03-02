@@ -41,7 +41,8 @@ class Demo(object):
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
                           "draw follow traj": ["land", "draw path", "take-off",
-                                               "fly to start", "follow path"]}
+                                               "fly to start", "follow path"],
+                          "drag drone": ["drag drone"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
@@ -144,7 +145,6 @@ class Demo(object):
             self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
             self.kalman.latest_vel_cmd = req_vel.vel_cmd
 
-            # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
             self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
                                     self.kalman.latest_vel_cmd, self.wm.yhat_r)
 
