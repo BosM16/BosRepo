@@ -643,7 +643,7 @@ class VelCommander(object):
         vel_error.linear.x = vel_desired.x - self.vhat.x
         vel_error.linear.y = vel_desired.y - self.vhat.y
 
-        pos_error = self.transform_twist(vel_error, "world", "world_rot")
+        pos_error = self.transform_twist(pos_error, "world", "world_rot")
         vel_error = self.transform_twist(vel_error, "world", "world_rot")
 
         feedback_cmd.linear.x = max(min((
