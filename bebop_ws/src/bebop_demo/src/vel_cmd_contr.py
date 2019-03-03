@@ -357,6 +357,10 @@ class VelCommander(object):
 
         self.publish_current_ff_vel(pos, vel)
 
+        # Calculate the desired yaw angle based on the pointing direction of
+        # the resulting feedforward velocity vector.
+        self.desired_yaw = np.arctan2(vel.y, vel.x)
+
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
 
@@ -396,7 +400,7 @@ class VelCommander(object):
             self.safety_brake()
             return
 
-        # publish current pose and velocity calculated by omg-tools
+        # Publish current pose and velocity calculated by omg-tools.
         pos = Point(x=self.drawn_pos_x[index],
                     y=self.drawn_pos_y[index],
                     z=self.drawn_pos_z[index])
@@ -404,6 +408,10 @@ class VelCommander(object):
                     y=self.drawn_vel_y[index],
                     z=self.drawn_vel_z[index])
         self.publish_current_ff_vel(pos, vel)
+
+        # Calculate the desired yaw angle based on the pointing direction of
+        # the resulting feedforward velocity vector.
+        self.desired_yaw = np.arctan2(vel.y, vel.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)

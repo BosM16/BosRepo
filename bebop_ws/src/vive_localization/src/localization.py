@@ -209,6 +209,7 @@ class ViveLocalization(object):
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
+            print 'yaw angle as perceived in viv localization \n', yaw
 
             data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
             self.pos_update.publish(data)

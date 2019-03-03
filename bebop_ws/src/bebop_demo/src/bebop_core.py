@@ -169,6 +169,7 @@ class Demo(object):
         '''
         self.pc.pose_vive = data.meas_world
         self.pc.yaw = data.yaw
+        print 'yaw as received by bebop_core \n', data.yaw
         self.measurement_valid = self.pc.measurement_check()
 
         measurement = self.kalman.transform_pose(
