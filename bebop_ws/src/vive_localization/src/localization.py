@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import PoseStamped, TransformStamped
+from geometry_msgs.msg import PoseStamped, TransformStamped, Point
 from std_msgs.msg import Empty
 from vive_localization.msg import PoseMeas
 
@@ -25,7 +25,7 @@ class ViveLocalization(object):
         rospy.init_node('bebop_demo')
 
         self.tracked_objects = ["tracker_1"] #, "controller_1"]  # "controller_2"
-
+        self.index = 1
         self.calib = rospy.get_param('vive_localization/calibrate', True)
 
         self.pose_t_in_w = PoseStamped()
@@ -101,9 +101,9 @@ class ViveLocalization(object):
         pose_t_in_v = PoseStamped()
         pose_t_in_v.header.frame_id = "vive"
         pose_t_in_v.header.stamp = rospy.Time.now()
-        pose_t_in_v.pose.position.x = 1.
-        pose_t_in_v.pose.position.y = 1.
-        pose_t_in_v.pose.position.z = 1.
+        pose_t_in_v.pose.position.x = -1.
+        pose_t_in_v.pose.position.y = -1.
+        pose_t_in_v.pose.position.z = -1.
         pose_t_in_v.pose.orientation.x = 0.633938483633
         pose_t_in_v.pose.orientation.y = -0.312469733542
         pose_t_in_v.pose.orientation.z = -0.312720898172
@@ -199,16 +199,18 @@ class ViveLocalization(object):
             # =========
             # DUMMY - NO HARDWARE ATTACHED - MAKE SURE IT DOESNT TRY TO READ IT.
             # pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
+            quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=0., z=0))
+            self.index += 1
             pose_t_in_v = PoseStamped()
             pose_t_in_v.header.frame_id = "vive"
             pose_t_in_v.header.stamp = rospy.Time.now()
             pose_t_in_v.pose.position.x = 1.
             pose_t_in_v.pose.position.y = 1.
             pose_t_in_v.pose.position.z = 1.
-            pose_t_in_v.pose.orientation.x = 0.633938483633
-            pose_t_in_v.pose.orientation.y = -0.312469733542
-            pose_t_in_v.pose.orientation.z = -0.312720898172
-            pose_t_in_v.pose.orientation.w = -0.634578840205
+            pose_t_in_v.pose.orientation.x = quat[0]
+            pose_t_in_v.pose.orientation.y = quat[1]
+            pose_t_in_v.pose.orientation.z = quat[2]
+            pose_t_in_v.pose.orientation.w = quat[3]
             self.tf_t_in_v = self.pose_to_tf(pose_t_in_v, "tracker")
 
             self.broadc.sendTransform(self.tf_t_in_v)
@@ -225,6 +227,7 @@ class ViveLocalization(object):
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
+
 
             data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
             self.pos_update.publish(data)
@@ -284,6 +287,16 @@ class ViveLocalization(object):
         euler = tf.transformations.euler_from_quaternion(quat)
 
         return euler
+
+    def get_quat_angles(self, transf):
+        '''
+        '''
+        euler = (transf.x,
+                 transf.y,
+                 transf.z)
+        quat = tf.transformations.quaternion_from_euler(transf.x, transf.y, transf.z)
+
+        return quat
 
     def get_transform(self, _from, _to):
         '''
