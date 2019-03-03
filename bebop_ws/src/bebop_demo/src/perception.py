@@ -6,6 +6,8 @@ from nav_msgs.msg import Odometry
 import tf2_ros
 import rospy
 
+from fabulous.color import highlight_red
+
 
 class Perception(object):
     '''
@@ -46,9 +48,7 @@ class Perception(object):
         tf_t_in_w = self.get_transform("tracker", "world")
         measurement_valid = (tf_v_in_w.transform != tf_t_in_w.transform)
         if not measurement_valid:
-            print '***********************************'
-            print '   Warning: invalid measurement!   '
-            print '***********************************'
+            print highlight_red('Warning: invalid measurement!')
 
         return measurement_valid
 

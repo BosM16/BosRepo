@@ -16,6 +16,8 @@ import tf2_ros
 import tf2_geometry_msgs as tf2_geom
 import time
 
+from fabulous.color import highlight_red, highlight_green, magenta, green
+
 
 class VelCommander(object):
 
@@ -180,10 +182,7 @@ class VelCommander(object):
         Starts the controller's periodical loop.
         '''
         self.configure()
-        print '-----------------------------------------'
-        print '- Controller & Motionplanner Configured -'
-        print '-        Velocity Control Started       -'
-        print '-----------------------------------------'
+        print green('---- Controller running ----')
 
         while not rospy.is_shutdown():
             if self.state_changed:
@@ -197,7 +196,7 @@ class VelCommander(object):
                 # State has not finished when it has been killed!
                 if not self.state_killed:
                     self.ctrl_state_finish.publish(Empty())
-                    print 'PUBLISH FINISHED'
+                    print magenta('---- Publish state finished ----')
                 self.state_killed = False
 
                 # Adjust goal to make sure hover uses PD actions to stay in
@@ -231,7 +230,7 @@ class VelCommander(object):
                 "/motionplanner/config_motionplanner", ConfigMotionplanner)
             config_success = config_mp(self.obstacles)
         except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
+            print highlight_red('Service call failed: %s') % e
             config_success = False
 
         rospy.Subscriber('motionplanner/goal', Pose, self.set_goal)
@@ -261,9 +260,7 @@ class VelCommander(object):
         self._init = True
         self.startup = True
 
-        print '-----------------------'
-        print 'Motionplanner goal set!'
-        print '-----------------------'
+        # print magenta('---- Motionplanner goal set! ----')
 
     def fire_motionplanner(self):
         '''Publishes inputs to motionplanner via Trigger topic.
@@ -338,8 +335,7 @@ class VelCommander(object):
 
             else:
                 self.calc_succeeded = False
-                print '-- !! -------- !! --'
-                print '-- !! Overtime !! --'
+                print highlight_red('---- !! Overtime !! ----')
                 self.safety_brake()
                 return
 
@@ -373,9 +369,7 @@ class VelCommander(object):
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
 
         if self.target_reached:
-            print '-------------------'
-            print '- Target Reached! -'
-            print '-------------------'
+            print magenta('---- Target Reached! ----')
 
 ####################
 # State functions #
@@ -388,7 +382,7 @@ class VelCommander(object):
         if not (state.data == self.state):
             self.state = state.data
             self.state_changed = True
-            print "controller state changed to:", self.state
+            print magenta('Controller state changed to:'), self.state
         if self.executing_state:
             self.state_killed = True
 
@@ -428,7 +422,6 @@ class VelCommander(object):
             rospy.sleep(3.)
             self.airborne = True
         elif self.state == "land" and self.airborne:
-            print 'LANDINGGGGGG'
             rospy.sleep(0.1)
             self.land.publish(Empty())
             rospy.sleep(8.)
@@ -464,8 +457,8 @@ class VelCommander(object):
         while self.draw:
             self.rate.sleep()
 
-        print ('----trigger button has been released,'
-               'path will be calculated----')
+        print magenta('---- Trigger button has been released,'
+                      ' path will be calculated ----')
         self.differentiate_traj()
 
     def fly_to_start(self):
@@ -605,9 +598,9 @@ class VelCommander(object):
 
         self.ep_prev = ep
         self.ev_prev = ev
-        print '* 1. feedback cmd\n', feedback_cmd.linear
-        print '* 2. feedback pos errors\n', pos_desired.x - self._drone_est_pose.position.x
-        print '* 3. vhat\n', self.vhat
+        # print magenta('* 1. feedback cmd\n'), feedback_cmd.linear
+        # print magenta('* 2. feedback pos errors\n'), pos_desired.x - self._drone_est_pose.position.x
+        # print magenta('* 3. vhat\n'), self.vhat
         # print '* 3. goal (pos des)\n', pos_desired
         self.feedback_cmd_prev = feedback_cmd
 
@@ -617,7 +610,7 @@ class VelCommander(object):
         '''Brake as emergency measure: Bebop brakes automatically when
             /bebop/cmd_vel topic receives all zeros.
         '''
-        print 'Safety brake'
+        print highlight_red('Safety brake activated')
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
@@ -652,7 +645,7 @@ class VelCommander(object):
             return pose, vhat, yaw, measurement_valid
 
         except rospy.ServiceException, e:
-            print "Service call failed: %s" % e
+            print highlight_red('Service call failed: %s') % e
             return
 
     def load_trajectories(self):
@@ -680,7 +673,6 @@ class VelCommander(object):
         self._traj_strg = {'u': u_traj, 'v': v_traj, 'w': w_traj,
                            'x': x_traj, 'y': y_traj, 'z': z_traj}
         self._new_trajectories = True
-        print '--------------- NEW TRAJECTORIES AVAILABLE ---------------'
 
         x_traj = self._traj_strg['x'][:]
         y_traj = self._traj_strg['y'][:]
@@ -736,7 +728,6 @@ class VelCommander(object):
             goal.position.x = self.ctrl_r_pos.position.x
             goal.position.y = self.ctrl_r_pos.position.y
             goal.position.z = self.ctrl_r_pos.position.z
-            print 'Goal\n', goal
             self.set_goal(goal)
 
         elif self.state == "draw path":
@@ -746,7 +737,8 @@ class VelCommander(object):
                 self.drawn_pos_y = []
                 self.drawn_pos_z = []
                 self.draw = True
-                print '----start drawing path while keeping trigger pushed----'
+                print highlight_green('---- Start drawing path while keeping'
+                                      ' trigger pushed ----')
 
             if (not button_pushed.data and self.draw):
                 self.draw = False
