@@ -89,7 +89,7 @@ class Demo(object):
                 # Run over sequence of states corresponding to current task.
                 for state in self.state_sequence:
                     self.state = state
-                    print cyan('Bebop_core state changed to:'), self.state
+                    print cyan(' Bebop_core state changed to:', self.state)
                     self.fsm_state.publish(state)
 
                     # Omg tools should return to its own standby status unless
@@ -124,7 +124,7 @@ class Demo(object):
                 # Except for repetitive tasks (back to first state in task).
                 if not self.new_task:
                     self.fsm_state.publish("standby")
-                    print cyan('Bebop_core state changed to:'), "standby"
+                    print cyan(' Bebop_core state changed to:', "standby")
 
             rospy.sleep(0.1)
 
@@ -203,11 +203,11 @@ class Demo(object):
         '''
         if task.data not in self.task_dict:
             print highlight_red(
-                    'Not a valid task, drone will remain in standby state.')
+                    ' Not a valid task, drone will remain in standby state.')
 
         self.state_sequence = self.task_dict.get(task.data, [])
         self.new_task = True
-        print cyan('Bebop_core received a new task:'), task.data
+        print cyan(' Bebop_core received a new task:', task.data)
 
     def take_off_land(self, empty):
         '''Check if menu button is pressed and switch to take-off or land
@@ -220,7 +220,8 @@ class Demo(object):
                 self.state_sequence = self.task_dict.get("take-off", [])
             self.airborne = not self.airborne
             self.new_task = True
-            print cyan('Bebop_core received a new task:'), self.state_sequence[0]
+            print cyan(
+                ' Bebop_core received a new task:', self.state_sequence[0])
 
 ####################
 # Helper functions #

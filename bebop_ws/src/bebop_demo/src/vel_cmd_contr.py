@@ -382,7 +382,7 @@ class VelCommander(object):
         if not (state.data == self.state):
             self.state = state.data
             self.state_changed = True
-            print magenta('Controller state changed to:'), self.state
+            print magenta(' Controller state changed to:', self.state)
         if self.executing_state:
             self.state_killed = True
 
@@ -394,6 +394,7 @@ class VelCommander(object):
             (self._drone_est_pose,
              self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
 
+            # print 'pose + meas valid\n', self._drone_est_pose, '\n', measurement_valid
             if not measurement_valid:
                 self.safety_brake()
                 return
@@ -610,7 +611,7 @@ class VelCommander(object):
         '''Brake as emergency measure: Bebop brakes automatically when
             /bebop/cmd_vel topic receives all zeros.
         '''
-        print highlight_red('Safety brake activated')
+        print highlight_red(' Safety brake activated')
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
 

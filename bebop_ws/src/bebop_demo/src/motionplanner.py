@@ -141,7 +141,7 @@ class MotionPlanner(object):
                  self._goal.position.z])
             self._deployer.reset()
             print yellow('---- Motionplanner received a new goal -'
-                  ' deployer resetted ----')
+                         ' deployer resetted ----')
 
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
