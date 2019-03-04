@@ -24,6 +24,7 @@ class Perception(object):
         self.pose_bebop = Twist()
         self.twist_bebop = Twist()
         self.tf_t_in_w_prev = TransformStamped()
+        self.init = True
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
@@ -62,7 +63,10 @@ class Perception(object):
             (tf_v_in_w.transform == tf_t_in_w.transform) or
             (meas_distance > 0.25))
         if not measurement_valid:
-            print highlight_red('Warning: invalid measurement!')
+            if not self.init:
+                print highlight_red('Warning: invalid measurement!')
+            else:
+                self.init = False
 
         return measurement_valid
 

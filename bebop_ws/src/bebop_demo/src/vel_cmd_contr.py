@@ -71,17 +71,18 @@ class VelCommander(object):
         self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
+        self.omg_index = 1
 
         # Setup low pass filter for trajectory drawing task.
         cutoff_freq_LPF = rospy.get_param('vel_cmd/LPF_cutoff', 0.5)
         LPF_order = rospy.get_param('vel_cmd/LPF_order', 4)
 
-        norm_fc_LPF = cutoff_freq_LPF/(0.5*self.rate)
+        norm_fc_LPF = cutoff_freq_LPF/(0.5)*self._sample_time
         self.butter_b, self.butter_a = butter(
             LPF_order, norm_fc_LPF, btype='low', analog=False)
 
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.desired_yaw = 0.0
+        self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.x_error = 0.
@@ -89,7 +90,7 @@ class VelCommander(object):
         self.z_error = 0.
         self.feedback_cmd_prev = Twist()
         self.pos_error_prev = PointStamped()
-        self.ev_prev = PointStamped()
+        self.vel_error_prev = PointStamped()
         self.measurement_valid = False
         self.safe = False
         self._goal = Pose()
@@ -297,7 +298,7 @@ class VelCommander(object):
         z_traj = data.z_traj
         self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
 
-    def omg_update(self, index):
+    def omg_update(self):
         '''
         - Updates the controller with newly calculated trajectories and
         velocity commands.
@@ -327,35 +328,38 @@ class VelCommander(object):
         if self._init:
             if not self._new_trajectories:
                 return
-            index = int(self._update_time/self._sample_time)
+            self.omg_index = int(self._update_time/self._sample_time)
             self._init = False
 
-        if ((index >= int(self._update_time/self._sample_time))
-                or (index >= len(self._traj['u'])-2)):
+        if ((self.omg_index >= int(self._update_time/self._sample_time))
+                or (self.omg_index >= len(self._traj['u'])-2)):
             if self._new_trajectories:
                 # Load fresh trajectories.
                 self.load_trajectories()
                 self._new_trajectories = False
-                self._time += index*self._sample_time
-                self.pos_index = index
-                index = 1
+                self._time += self.omg_index*self._sample_time
+                self.pos_index = self.omg_index
+                self.omg_index = 1
                 # Trigger motion planner.
                 self.fire_motionplanner()
 
             else:
                 self.calc_succeeded = False
-                print highlight_red('---- !! Overtime !! ----')
+                print highlight_red('---- ! Overtime !  ----')
                 self.safety_brake()
                 return
 
         # publish current pose and velocity calculated by omg-tools
-        pos = Point(x=self._traj['x'][index + 1],
-                    y=self._traj['y'][index + 1],
-                    z=self._traj['z'][index + 1])
-
-        vel = Point(x=self._traj['u'][index + 1],
-                    y=self._traj['v'][index + 1],
-                    z=self._traj['w'][index + 1])
+        pos = PointStamped()
+        pos.header.frame_id = "world"
+        pos.point = Point(x=self._traj['x'][self.omg_index + 1],
+                          y=self._traj['y'][self.omg_index + 1],
+                          z=self._traj['z'][self.omg_index + 1])
+        vel = PointStamped()
+        vel.header.frame_id = "world"
+        vel.point = Point(x=self._traj['u'][self.omg_index + 1],
+                          y=self._traj['v'][self.omg_index + 1],
+                          z=self._traj['w'][self.omg_index + 1])
 
         self.publish_current_ff_vel(pos, vel)
 
@@ -367,10 +371,14 @@ class VelCommander(object):
 
         # Combine feedback and feedforward commands.
         pos_fb = pos
-        vel_fb = Point(x=self._traj['u'][index],
-                       y=self._traj['v'][index],
-                       z=self._traj['w'][index])
+        vel_fb = PointStamped()
+        vel_fb.header.frame_id = "world"
+        vel_fb.point = Point(x=self._traj['u'][self.omg_index],
+                             y=self._traj['v'][self.omg_index],
+                             z=self._traj['w'][self.omg_index])
         self.combine_ff_fb(pos_fb, vel_fb)
+
+        self.omg_index += 1
 
     def draw_update(self, index):
         '''
@@ -465,15 +473,15 @@ class VelCommander(object):
             if not measurement_valid:
                 self.safety_brake()
                 return
-
-            pos_desired = Point(x=self.hover_setpoint.position.x,
-                                y=self.hover_setpoint.position.y,
-                                z=self.hover_setpoint.position.z)
-            vel_desired = Point(x=0.0,
-                                y=0.0,
-                                z=0.0)
-            feedback_cmd = self.transform_twist(
-                self.feedback(pos_desired, vel_desired), "world", "world_rot")
+            pos_desired = PointStamped()
+            pos_desired.point = Point(x=self.hover_setpoint.position.x,
+                                      y=self.hover_setpoint.position.y,
+                                      z=self.hover_setpoint.position.z)
+            vel_desired = PointStamped()
+            vel_desired.point = Point(x=0.0,
+                                      y=0.0,
+                                      z=0.0)
+            feedback_cmd = self.feedback(pos_desired, vel_desired)
 
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
@@ -500,15 +508,14 @@ class VelCommander(object):
         '''
         # Preparing omg standby hover setpoint for when omgtools finishes.
         self.hover_setpoint = self._goal
-        index = 1
+        self.omg_index = 1
 
         while not self.target_reached:
             if self.state_killed:
                 break
 
             if self.startup:  # Becomes True when goal is set.
-                self.omg_update(index)
-                index += 1
+                self.omg_update()
                 # Determine whether goal has been reached.
                 self.check_goal_reached()
             self.rate.sleep()
@@ -583,9 +590,9 @@ class VelCommander(object):
         '''Transforms the velocity commands from the global world frame to the
         rotated world frame world_rot.
         '''
-        self.feedforward_cmd.linear.x = vel.x
-        self.feedforward_cmd.linear.y = vel.x
-        self.feedforward_cmd.linear.z = vel.x
+        self.feedforward_cmd.linear.x = vel.point.x
+        self.feedforward_cmd.linear.y = vel.point.y
+        self.feedforward_cmd.linear.z = vel.point.z
         self.feedforward_cmd = self.transform_twist(
                                     self.feedforward_cmd, "world", "world_rot")
 
@@ -633,58 +640,74 @@ class VelCommander(object):
 
         # # PD
         # pos_error = PointStamped()
-        # pos_error.point.x = pos_desired.x - self._drone_est_pose.position.x
-        # pos_error.point.y = pos_desired.y - self._drone_est_pose.position.y
-        # pos_error.point.z = pos_desired.z - self._drone_est_pose.position.z
+        # pos_error.header.frame_id = "world"
+        # pos_error.point.x = pos_desired.point.x - self._drone_est_pose.position.x
+        # pos_error.point.y = pos_desired.point.y - self._drone_est_pose.position.y
+        # pos_error.point.z = pos_desired.point.z - self._drone_est_pose.position.z
         #
-        # vel_error = Twist()
-        # vel_error.point.x = vel_desired.x - self.vhat.x
-        # vel_error.point.y = vel_desired.y - self.vhat.y
+        # vel_error = PointStamped()
+        # vel_error.header.frame_id = "world"
+        # vel_error.point.x = vel_desired.point.x - self.vhat.x
+        # vel_error.point.y = vel_desired.point.y - self.vhat.y
         #
         # pos_error = self.transform_point(pos_error, "world", "world_rot")
         # vel_error = self.transform_point(vel_error, "world", "world_rot")
+        # print 'pos error', pos_error.point
+        # print 'vel error\n', self.vhat, vel_error.point
         #
-        # feedback_cmd.linear.x = max(self.max_input, min(- self.max_input, (
-        #         self.Kp_x*pos_error.linear.x +
-        #         self.Kd_x*vel_error.linear.x)))
-        # feedback_cmd.linear.y = max(self.max_input, min(- self.max_input, (
-        #         self.Kp_y*pos_error.linear.y +
-        #         self.Kd_y*vel_error.linear.y)))
-        # feedback_cmd.linear.z = max(self.max_input, min(- self.max_input, (
-        #         self.Kp_z*pos_error.linear.z)))
+        # feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
+        #         self.Kp_x*pos_error.point.x +
+        #         self.Kd_x*vel_error.point.x)))
+        # feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
+        #         self.Kp_y*pos_error.point.y +
+        #         self.Kd_y*vel_error.point.y)))
+        # feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
+        #         self.Kp_z*pos_error.point.z)))
 
         # # PID
         pos_error_prev = self.pos_error_prev
-        pos_error = Point()
-        pos_error.x = pos_desired.x - self._drone_est_pose.position.x
-        pos_error.y = pos_desired.y - self._drone_est_pose.position.y
-        pos_error.z = pos_desired.z - self._drone_est_pose.position.z
+        pos_error = PointStamped()
+        pos_error.header.frame_id = "world"
+        pos_error.point.x = (pos_desired.point.x
+                             - self._drone_est_pose.position.x)
+        pos_error.point.y = (pos_desired.point.y
+                             - self._drone_est_pose.position.y)
+        pos_error.point.z = (pos_desired.point.z
+                             - self._drone_est_pose.position.z)
 
         vel_error_prev = self.vel_error_prev
-        vel_error = Point()
-        vel_error.x = vel_desired.x - self.vhat.x
-        vel_error.y = vel_desired.y - self.vhat.y
+        vel_error = PointStamped()
+        vel_error.header.frame_id = "world"
+        vel_error.point.x = vel_desired.point.x - self.vhat.x
+        vel_error.point.y = vel_desired.point.y - self.vhat.y
 
+        # print magenta('error before transform\n', pos_error)
         pos_error = self.transform_point(pos_error, "world", "world_rot")
         vel_error = self.transform_point(vel_error, "world", "world_rot")
+        # print magenta('error after transform\n', pos_error)
 
-        feedback_cmd.linear.x = max(self.max_input, min(- self.max_input, (
+        feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
                 self.feedback_cmd_prev.linear.x +
-                (self.Kp_x + self.Ki_x*self._sample_time/2)*pos_error.x +
-                (-self.Kp_x + self.Ki_x*self._sample_time/2)*pos_error_prev.x +
-                self.Kd_x*(vel_error.x - vel_error_prev.x))))
+                (self.Kp_x + self.Ki_x*self._sample_time/2) *
+                pos_error.point.x +
+                (-self.Kp_x + self.Ki_x*self._sample_time/2) *
+                pos_error_prev.point.x +
+                self.Kd_x*(vel_error.point.x - vel_error_prev.point.x))))
 
-        feedback_cmd.linear.y = max(self.max_input, min(- self.max_input, (
+        feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
                 self.feedback_cmd_prev.linear.y +
-                (self.Kp_y + self.Ki_y*self._sample_time/2)*pos_error.y +
-                (-self.Kp_y + self.Ki_y*self._sample_time/2)*pos_error_prev.y +
-                self.Kd_y*(vel_error.y - vel_error_prev.y))))
+                (self.Kp_y + self.Ki_y*self._sample_time/2) *
+                pos_error.point.y +
+                (-self.Kp_y + self.Ki_y*self._sample_time/2) *
+                pos_error_prev.point.y +
+                self.Kd_y*(vel_error.point.y - vel_error_prev.point.y))))
 
-        feedback_cmd.linear.z = max(self.max_input, min(- self.max_input, (
+        feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
                 self.feedback_cmd_prev.linear.z +
-                (self.Kp_z + self.Ki_z*self._sample_time/2)*pos_error.z +
-                (-self.Kp_z + self.Ki_z*self._sample_time/2)*pos_error_prev.z))
-                )
+                (self.Kp_z + self.Ki_z*self._sample_time/2) *
+                pos_error.point.z +
+                (-self.Kp_z + self.Ki_z*self._sample_time/2) *
+                pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
         feedback_cmd.angular.z = (
@@ -1058,10 +1081,10 @@ class VelCommander(object):
         '''
         self.current_ff_vel.header.stamp = rospy.get_rostime()
 
-        point_start = Point(x=pos.x, y=pos.y, z=pos.z)
-        point_end = Point(x=(pos.x + 2.5*vel.x),
-                          y=(pos.y + 2.5*vel.y),
-                          z=(pos.z + 2.5*vel.z))
+        point_start = Point(x=pos.point.x, y=pos.point.y, z=pos.point.z)
+        point_end = Point(x=(pos.point.x + 2.5*vel.point.x),
+                          y=(pos.point.y + 2.5*vel.point.y),
+                          z=(pos.point.z + 2.5*vel.point.z))
         self.current_ff_vel.points = [point_start, point_end]
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)
