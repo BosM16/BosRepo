@@ -39,7 +39,7 @@ class Demo(object):
         self.omg_standby = False
         self.airborne = False
         self.task_dict = {"standby": [],
-                          "invalid measurement": ["emergency"]
+                          "invalid measurement": ["emergency"],
                           "take-off": ["take-off"],
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
@@ -78,7 +78,7 @@ class Demo(object):
         out the current state and returns to the standby state when task is
         completed.
         '''
-        print green('---- Bebop core running ----')
+        print green('----    Bebop core running     ----')
 
         while not rospy.is_shutdown():
             if self.new_task:

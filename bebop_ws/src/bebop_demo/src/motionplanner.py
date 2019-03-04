@@ -105,7 +105,7 @@ class MotionPlanner(object):
         self._deployer.reset()
 
         mp_configured = True
-        print green('---- Motionplanner running ----')
+        print green('----   Motionplanner running   ----')
 
         return ConfigMotionplannerResponse(mp_configured)
 

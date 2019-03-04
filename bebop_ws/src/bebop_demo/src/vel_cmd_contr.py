@@ -182,7 +182,7 @@ class VelCommander(object):
         Starts the controller's periodical loop.
         '''
         self.configure()
-        print green('---- Controller running ----')
+        print green('----    Controller running     ----')
 
         while not rospy.is_shutdown():
             if self.state_changed:

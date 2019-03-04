@@ -142,7 +142,7 @@ class ViveLocalization(object):
         self.rate = rospy.Rate(1./sample_time)
 
         self.v = triad_openvr.triad_openvr()
-        self.v.print_discovered_objects()
+        # self.v.print_discovered_objects()
         if not self.v.devices:  # Check that this works!! Need to check whether
             # empty or not.
             print highlight_red('! Vive Error: No devices found !')

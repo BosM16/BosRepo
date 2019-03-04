@@ -7,7 +7,8 @@ import pprint
 import openvr
 import rospy
 
-from fabulous.color import highlight_red, highlight_green, white, green
+from fabulous.color import (highlight_red, highlight_green, highlight_blue,
+                            white, green)
 
 
 class KeyPress(object):
@@ -54,6 +55,7 @@ class KeyPress(object):
         self.show_only_new_events = True
         self.last_unPacketNum_left = 0
         self.last_unPacketNum_right = 0
+        self.vive_loc_ready = False
 
         self.rtrigger_pressed = rospy.Publisher(
             'ctrl_keypress/rtrigger', Bool, queue_size=1)
@@ -64,23 +66,17 @@ class KeyPress(object):
         self.rtrackpad = rospy.Publisher(
             'ctrl_keypress/rtrackpad', Empty, queue_size=1)
 
-        try:
-            # was: openvr.init(openvr.VRApplication_Scene),
-            # but that gives 306 error. Don't need HMD.
-            openvr.init(openvr.VRApplication_Other)
+        rospy.Subscriber(
+                    'vive_localization/ready', Empty, self.vive_localization_ready)
 
-        except openvr.OpenVRError as e:
-            print highlight_red('Error when initializing OpenVR (try {} / {})'.format(
-                  retries + 1, max_init_retries))
-            printhighlight_red(e)
-            time.sleep(2.0)
+        openvr.init(openvr.VRApplication_Other)
 
         self.vrsystem = openvr.VRSystem()
 
         # Let system choose id's at first to make sure both controllers are
         # found.
         self.left_id, self.right_id = None, None
-        print white('---- Waiting for controllers... ----')
+        print white(' Waiting for Vive controllers ...')
         try:
             while (not rospy.is_shutdown()) and (
                     self.left_id is None or self.right_id is None):
@@ -92,7 +88,7 @@ class KeyPress(object):
                     # corresonds to 1.
                     self.right_id, self.left_id = 1, 2
                     break
-                print white('----Waiting for controllers... ----')
+                print white(' Waiting for Vive controllers ...')
                 time.sleep(1.0)
         except KeyboardInterrupt:
             print white('----Control+C pressed, shutting down... ----')
@@ -111,6 +107,9 @@ class KeyPress(object):
         Let user identify which is right and which is left controller by
         pulling triggers. Controller hand is displayed in terminal.
         '''
+        while not self.vive_loc_ready:
+            rospy.sleep(0.1)
+
         print highlight_green(' Pull each trigger ')
         identify_right = True
         identify_left = True
@@ -125,7 +124,7 @@ class KeyPress(object):
                 # print("Left controller:")
                 # self.pp.pprint(d)
                 if d['trigger'] == 1.0:
-                    print highlight_green(' Left trigger ')
+                    print highlight_blue(' Left trigger ')
                     identify_left = False
 
             (result, pControllerState) = (
@@ -136,7 +135,7 @@ class KeyPress(object):
                     != d['unPacketNum']):
                 self.last_unPacketNum_right = d['unPacketNum']
                 if d['trigger'] == 1.0:
-                    print highlight_green(' Right trigger ')
+                    print highlight_blue(' Right trigger ')
                     identify_right = False
 
     def publish_events(self):
@@ -226,6 +225,12 @@ class KeyPress(object):
         # System button can't be read, if you press it
         # the controllers stop reporting
         return d
+
+    def vive_localization_ready(self, empty):
+        '''Sets variable vive_loc_ready to true when vive localizaiton is
+        running.
+        '''
+        self.vive_loc_ready = True
 
 
 if __name__ == '__main__':
