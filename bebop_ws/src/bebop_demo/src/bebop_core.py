@@ -12,7 +12,8 @@ import rospy
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
 
-from fabulous.color import highlight_red, highlight_green, cyan, green
+from fabulous.color import (highlight_red, highlight_green, highlight_blue,
+                            cyan, green)
 
 from perception import *
 from world_model import *
@@ -235,6 +236,7 @@ class Demo(object):
             self.omg_standby = False
             self.new_task = False
         self.change_state = True
+        print highlight_blue(' Switching to next state')
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
