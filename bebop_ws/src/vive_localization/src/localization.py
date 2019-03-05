@@ -199,7 +199,7 @@ class ViveLocalization(object):
             # =========
             # DUMMY - NO HARDWARE ATTACHED - MAKE SURE IT DOESNT TRY TO READ IT.
             # pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
-            quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=0., z=0))
+            quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=self.index * 2.*np.pi/360., z=0))
             self.index += 1
             pose_t_in_v = PoseStamped()
             pose_t_in_v.header.frame_id = "vive"
