@@ -595,22 +595,19 @@ class VelCommander(object):
                 x=(self._drone_est_pose.position.x-self.ctrl_r_pos.position.x),
                 y=(self._drone_est_pose.position.y-self.ctrl_r_pos.position.y),
                 z=(self._drone_est_pose.position.z-self.ctrl_r_pos.position.z))
-            print magenta('drag_offset = \n', drag_offset)
 
             while (self.drag and not (
                                     self.state_killed or rospy.is_shutdown())):
                 # When trigger pulled, freeze offset controller-drone and adapt
                 # hover setpoint, until trigger is released.
-                print magenta('in den drag while, drag = ', self.drag)
+                # print magenta('in den drag while, drag = ', self.drag)
                 self.hover_setpoint.position = Point(
-                    x=self.ctrl_r_pos.position.x + drag_offset.x,
-                    y=self.ctrl_r_pos.position.y + drag_offset.y,
-                    z=self.ctrl_r_pos.position.z + drag_offset.z,)
-                print magenta('DRAGGING, setpoint = \n', self.hover_setpoint)
+                    x=(self.ctrl_r_pos.position.x + drag_offset.x),
+                    y=(self.ctrl_r_pos.position.y + drag_offset.y),
+                    z=(self.ctrl_r_pos.position.z + drag_offset.z))
                 self.hover()
                 self.rate.sleep()
 
-            print magenta('not dragging, setpoint = \n', self.hover_setpoint)
             self.hover()
             self.rate.sleep()
 
