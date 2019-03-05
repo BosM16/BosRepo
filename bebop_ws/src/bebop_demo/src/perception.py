@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import Twist, TwistStamped
+from geometry_msgs.msg import Twist, TwistStamped, TransformStamped
 from nav_msgs.msg import Odometry
 
+import numpy as np
 import tf2_ros
 import rospy
+
+from fabulous.color import highlight_red
 
 
 class Perception(object):
@@ -20,6 +23,8 @@ class Perception(object):
         self.pose_vive = TwistStamped()
         self.pose_bebop = Twist()
         self.twist_bebop = Twist()
+        self.tf_t_in_w_prev = TransformStamped()
+        self.init = True
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
@@ -36,7 +41,7 @@ class Perception(object):
         self.twist_bebop = data.twist.twist
 
     def measurement_check(self):
-        '''Monitor function: checks measurementself.
+        '''Monitor function: checks measurement.
         If the measurement equals the vive frame origin, this means that
         vibrations cause a false measurement.
 
@@ -44,11 +49,24 @@ class Perception(object):
         '''
         tf_v_in_w = self.get_transform("vive", "world")
         tf_t_in_w = self.get_transform("tracker", "world")
-        measurement_valid = (tf_v_in_w.transform != tf_t_in_w.transform)
+
+        meas_distance = np.linalg.norm(
+            np.array([tf_t_in_w.transform.translation.x,
+                      tf_t_in_w.transform.translation.y,
+                      tf_t_in_w.transform.translation.z])
+            - np.array([self.tf_t_in_w_prev.transform.translation.x,
+                        self.tf_t_in_w_prev.transform.translation.y,
+                        self.tf_t_in_w_prev.transform.translation.z]))
+        self.tf_t_in_w_prev = tf_t_in_w
+
+        measurement_valid = not (
+            (tf_v_in_w.transform == tf_t_in_w.transform) or
+            (meas_distance > 0.25))
         if not measurement_valid:
-            print '***********************************'
-            print '   Warning: invalid measurement!   '
-            print '***********************************'
+            if not self.init:
+                print highlight_red('Warning: invalid measurement!')
+            else:
+                self.init = False
 
         return measurement_valid
 

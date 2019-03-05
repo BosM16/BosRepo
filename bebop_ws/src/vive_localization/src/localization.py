@@ -11,6 +11,8 @@ import tf
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
 
+from fabulous.color import highlight_red, blue, green
+
 import triad_openvr
 
 
@@ -70,21 +72,21 @@ class ViveLocalization(object):
         self.tf_w_in_v.child_frame_id = "world"
 
         # # Newest calibrated values (origin in center) (Mathias)
-        # self.tf_w_in_v.transform.translation.x = -0.0653594065575
-        # self.tf_w_in_v.transform.translation.y = -2.93788157322
-        # self.tf_w_in_v.transform.translation.z = -3.58790665423
-        # self.tf_w_in_v.transform.rotation.x = 0.633938483633
-        # self.tf_w_in_v.transform.rotation.y = -0.312469733542
-        # self.tf_w_in_v.transform.rotation.z = -0.312720898172
-        # self.tf_w_in_v.transform.rotation.w = -0.634578840205
+        self.tf_w_in_v.transform.translation.x = -0.0653594065575
+        self.tf_w_in_v.transform.translation.y = -2.93788157322
+        self.tf_w_in_v.transform.translation.z = -3.58790665423
+        self.tf_w_in_v.transform.rotation.x = 0.633938483633
+        self.tf_w_in_v.transform.rotation.y = -0.312469733542
+        self.tf_w_in_v.transform.rotation.z = -0.312720898172
+        self.tf_w_in_v.transform.rotation.w = -0.634578840205
         # Newest calibrated values (origin in center) (Rian)
-        self.tf_w_in_v.transform.translation.x = 0.0127584116207
-        self.tf_w_in_v.transform.translation.y = -2.9642058687
-        self.tf_w_in_v.transform.translation.z = -3.24945095473
-        self.tf_w_in_v.transform.rotation.x = -0.339866444679
-        self.tf_w_in_v.transform.rotation.y = -0.633483680153
-        self.tf_w_in_v.transform.rotation.z = -0.617152604346
-        self.tf_w_in_v.transform.rotation.w = 0.319862298045
+        # self.tf_w_in_v.transform.translation.x = 0.0127584116207
+        # self.tf_w_in_v.transform.translation.y = -2.9642058687
+        # self.tf_w_in_v.transform.translation.z = -3.24945095473
+        # self.tf_w_in_v.transform.rotation.x = -0.339866444679
+        # self.tf_w_in_v.transform.rotation.y = -0.633483680153
+        # self.tf_w_in_v.transform.rotation.z = -0.617152604346
+        # self.tf_w_in_v.transform.rotation.w = 0.319862298045
         # # Old calibrated values (origin in corner)
         # self.tf_w_in_v.transform.translation.x = 0.129081706552
         # self.tf_w_in_v.transform.translation.y = -2.89506984729
@@ -140,12 +142,10 @@ class ViveLocalization(object):
         self.rate = rospy.Rate(1./sample_time)
 
         self.v = triad_openvr.triad_openvr()
-        self.v.print_discovered_objects()
+        # self.v.print_discovered_objects()
         if not self.v.devices:  # Check that this works!! Need to check whether
             # empty or not.
-            print '--------------------------------'
-            print '! Vive Error: No devices found !'
-            print '--------------------------------'
+            print highlight_red('! Vive Error: No devices found !')
             return
 
         self.init_transforms()
@@ -158,8 +158,7 @@ class ViveLocalization(object):
 
     def calibrate(self, *_):
 
-        print '--------------------------- \n'
-        print 'CALIBRATION STARTED \n'
+        print blue('---- Calibration started ---- \n')
 
         pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
         self.tf_t_in_v = self.pose_to_tf(pose_t_in_v, "tracker")
@@ -173,20 +172,16 @@ class ViveLocalization(object):
         self.tf_w_in_v.child_frame_id = "world"
 
         self.stbroadc.sendTransform(self.tf_w_in_v)
-        print 'tf_w_in_v'
-        print self.tf_w_in_v
+        print blue('tf_w_in_v \n'), self.tf_w_in_v
 
-        print 'CALIBRATED \n'
-        print '--------------------------- \n'
+        print blue('---- Calibrated ---- \n')
 
     def publish_pose_est(self, *_):
         '''Publishes message that calibration is completed. Starts publishing
         pose measurements.
         '''
         self.ready.publish(Empty())
-        print '-------------------------'
-        print ' Vive Localization READY '
-        print '-------------------------'
+        print green('---- Vive Localization running ----')
         # rospy.sleep(10.)
         while not rospy.is_shutdown():
             # =========

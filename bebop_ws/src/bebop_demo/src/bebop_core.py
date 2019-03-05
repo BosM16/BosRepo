@@ -9,8 +9,11 @@ from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import numpy as np
 import math as m
 import rospy
-import tf2_ros       # kijken wat nog weg mag door verplaatsen naar kalman file
+import tf2_ros
 import tf2_geometry_msgs as tf2_geom
+
+from fabulous.color import (highlight_red, highlight_green, highlight_blue,
+                            cyan, green)
 
 from perception import *
 from world_model import *
@@ -37,6 +40,7 @@ class Demo(object):
         self.omg_standby = False
         self.airborne = False
         self.task_dict = {"standby": [],
+                          "invalid measurement": ["emergency"],
                           "take-off": ["take-off"],
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
@@ -50,7 +54,7 @@ class Demo(object):
             'world_model/yhat_r', PointStamped, queue_size=1)
         self.fsm_state = rospy.Publisher(
             'fsm/state', String, queue_size=1)
-        # Finished when pushing controller buttons
+        # Initialization finishes when pushing controller buttons
         self.fsm_state.publish("initialization")
 
         rospy.Subscriber(
@@ -76,7 +80,7 @@ class Demo(object):
         out the current state and returns to the standby state when task is
         completed.
         '''
-        print '-------------------- \n Demo started \n --------------------'
+        print green('----    Bebop core running     ----')
 
         while not rospy.is_shutdown():
             if self.new_task:
@@ -87,7 +91,7 @@ class Demo(object):
                 # Run over sequence of states corresponding to current task.
                 for state in self.state_sequence:
                     self.state = state
-                    print "bebop_core state changed to:", self.state
+                    print cyan(' Bebop_core state changed to:', self.state)
                     self.fsm_state.publish(state)
 
                     # Omg tools should return to its own standby status unless
@@ -112,7 +116,7 @@ class Demo(object):
                     # User forces leaving omg with trackpad or other new task
                     # received --> leave the for loop for the current task.
                     if (leave_omg or self.new_task):
-                        print 'BROKE FOR LOOP'
+                        # print cyan('---- Broke for loop ----')
                         break
 
                 # Make sure that omg-tools task is repeated until force quit.
@@ -122,7 +126,7 @@ class Demo(object):
                 # Except for repetitive tasks (back to first state in task).
                 if not self.new_task:
                     self.fsm_state.publish("standby")
-                    print "bebop_core state changed to:", "standby"
+                    print cyan(' Bebop_core state changed to:', "standby")
 
             rospy.sleep(0.1)
 
@@ -141,22 +145,26 @@ class Demo(object):
         '''
         # Don't do prediction and transformation calculations if the
         # measurement is invalid.
-        if self.measurement_valid:
-            self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
-            self.kalman.latest_vel_cmd = req_vel.vel_cmd
+        if not self.measurement_valid:
+            req_vel.vel_cmd.twist = Twist()
+            inv_meas_task = String(data="invalid measurement")
+            self.switch_task(inv_meas_task)
 
-            self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                    self.kalman.latest_vel_cmd, self.wm.yhat_r)
+        self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
+        self.kalman.latest_vel_cmd = req_vel.vel_cmd
 
-            # Transform the rotated yhat and vhat to world frame.
-            self.wm.yhat = self.transform_point(
-                self.wm.yhat_r, "world_rot", "world")
-            self.wm.vhat = self.transform_point(
-                self.wm.vhat_r, "world_rot", "world")
-            self.wm.yaw = self.pc.yaw
+        self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
+                                self.kalman.latest_vel_cmd, self.wm.yhat_r)
 
-            self.pose_r_pub.publish(self.wm.yhat_r)
-            self.pose_pub.publish(self.wm.yhat)
+        # Transform the rotated yhat and vhat to world frame.
+        self.wm.yhat = self.transform_point(
+            self.wm.yhat_r, "world_rot", "world")
+        self.wm.vhat = self.transform_point(
+            self.wm.vhat_r, "world_rot", "world")
+        self.wm.yaw = self.pc.yaw
+
+        self.pose_r_pub.publish(self.wm.yhat_r)
+        self.pose_pub.publish(self.wm.yhat)
 
         return GetPoseEstResponse(
             self.wm.yhat, self.wm.vhat, self.wm.yaw, self.measurement_valid)
@@ -196,11 +204,12 @@ class Demo(object):
         '''Reads out the task topic and switches to the desired task.
         '''
         if task.data not in self.task_dict:
-            print "Not a valid task, drone will remain in standby state."
+            print highlight_red(
+                    ' Not a valid task, drone will remain in standby state.')
 
         self.state_sequence = self.task_dict.get(task.data, [])
         self.new_task = True
-        print "bebop_core received a new task:", task.data
+        print cyan(' Bebop_core received a new task:', task.data)
 
     def take_off_land(self, empty):
         '''Check if menu button is pressed and switch to take-off or land
@@ -213,7 +222,8 @@ class Demo(object):
                 self.state_sequence = self.task_dict.get("take-off", [])
             self.airborne = not self.airborne
             self.new_task = True
-            print "bebop_core received a new task:", self.state_sequence[0]
+            print cyan(
+                ' Bebop_core received a new task:', self.state_sequence[0])
 
 ####################
 # Helper functions #
@@ -227,6 +237,7 @@ class Demo(object):
             self.omg_standby = False
             self.new_task = False
         self.change_state = True
+        print highlight_blue(' Switching to next state')
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
