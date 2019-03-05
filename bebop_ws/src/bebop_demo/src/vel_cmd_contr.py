@@ -44,13 +44,15 @@ class VelCommander(object):
                            "omg fly": self.omg_fly,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
-                           "follow path": self.follow_traj}
+                           "follow path": self.follow_traj,
+                           "drag drone": self.drag_drone}
         self.state_changed = False
         self.executing_state = False
         self.state_killed = False
 
         rospy.set_param(
             "/bebop/bebop_driver/SpeedSettingsMaxRotationSpeedCurrent", 360.0)
+
         self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
         self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
         self.Kd_x = rospy.get_param('vel_cmd/Kd_x', 0.6864)
@@ -97,6 +99,7 @@ class VelCommander(object):
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
         self.draw = False
+        self.drag = False
 
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
@@ -510,7 +513,7 @@ class VelCommander(object):
         self.hover_setpoint = self._goal
         self.omg_index = 1
 
-        while not self.target_reached:
+        while not (rospy.is_shutdown() or self.target_reached):
             if self.state_killed:
                 break
 
@@ -528,10 +531,10 @@ class VelCommander(object):
         '''
         # While loops needed to ensure that only differentiating path when path
         # is drawn and trigger button has been released.
-        while not self.draw:
+        while not (self.draw or rospy.is_shutdown()):
             self.rate.sleep()
 
-        while self.draw:
+        while self.draw and not rospy.is_shutdown():
             self.rate.sleep()
 
         print magenta('----trigger button has been released,'
@@ -571,7 +574,8 @@ class VelCommander(object):
         self.cmd_twist_convert.twist.linear.z = self.drawn_vel_z[0]
 
         index = 1
-        while (not self.target_reached and (index < len(self.drawn_vel_x))):
+        while (not self.target_reached and (index < len(self.drawn_vel_x))
+               and (not rospy.is_shutdown())):
             if self.state_killed:
                 break
 
@@ -580,6 +584,34 @@ class VelCommander(object):
             # Determine whether goal has been reached.
             self.check_goal_reached()
 
+            self.rate.sleep()
+
+    def drag_drone(self):
+        '''Adapts hover setpoint to follow vive right controller when trigger
+        is pressed.
+        '''
+        while not (rospy.is_shutdown() or self.state_killed):
+            drag_offset = Point(
+                x=(self._drone_est_pose.position.x-self.ctrl_r_pos.position.x),
+                y=(self._drone_est_pose.position.y-self.ctrl_r_pos.position.y),
+                z=(self._drone_est_pose.position.z-self.ctrl_r_pos.position.z))
+            print magenta('drag_offset = \n', drag_offset)
+
+            while (self.drag and not (
+                                    self.state_killed or rospy.is_shutdown())):
+                # When trigger pulled, freeze offset controller-drone and adapt
+                # hover setpoint, until trigger is released.
+                print magenta('in den drag while, drag = ', self.drag)
+                self.hover_setpoint.position = Point(
+                    x=self.ctrl_r_pos.position.x + drag_offset.x,
+                    y=self.ctrl_r_pos.position.y + drag_offset.y,
+                    z=self.ctrl_r_pos.position.z + drag_offset.z,)
+                print magenta('DRAGGING, setpoint = \n', self.hover_setpoint)
+                self.hover()
+                self.rate.sleep()
+
+            print magenta('not dragging, setpoint = \n', self.hover_setpoint)
+            self.hover()
             self.rate.sleep()
 
 ####################
@@ -860,6 +892,13 @@ class VelCommander(object):
             if (not button_pushed.data and self.draw):
                 self.draw = False
 
+        elif self.state == "drag drone":
+            if (button_pushed.data and not self.drag):
+                print magenta('trigger, drag op true')
+                self.drag = True
+            elif (not button_pushed.data and self.drag):
+                self.drag = False
+
     def differentiate_traj(self):
         '''Differentiate obtained trajectory to obtain feedforward velocity
         commands.
@@ -867,7 +906,7 @@ class VelCommander(object):
         max_vel_ok = False
         self.interpolate_list()
 
-        while not max_vel_ok:
+        while not (rospy.is_shutdown() or max_vel_ok):
             self.drawn_vel_x = np.diff(self.drawn_pos_x)/self._sample_time
             self.drawn_vel_y = np.diff(self.drawn_pos_y)/self._sample_time
             self.drawn_vel_z = np.diff(self.drawn_pos_z)/self._sample_time
@@ -923,7 +962,6 @@ class VelCommander(object):
 
         # Plot the smoothed trajectory in Rviz.
         self.draw_smoothed_path()
-
 
 #######################################
 # Functions for plotting Rviz markers #
@@ -1118,8 +1156,8 @@ class VelCommander(object):
         self.trajectory_desired.publish(self.drawn_path)
 
     def draw_smoothed_path(self):
-        '''Publish the smoothed x and y trajectory to topic for visualisation in
-        rviz.
+        '''Publish the smoothed x and y trajectory to topic for visualisation
+        in rviz.
         '''
         self.smooth_path.header.stamp = rospy.get_rostime()
         self.smooth_path.points = []

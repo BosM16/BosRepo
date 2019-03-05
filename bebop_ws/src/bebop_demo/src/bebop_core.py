@@ -45,7 +45,8 @@ class Demo(object):
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
                           "draw follow traj": ["land", "draw path", "take-off",
-                                               "fly to start", "follow path"]}
+                                               "fly to start", "follow path"],
+                          "drag drone": ["drag drone"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
@@ -103,7 +104,7 @@ class Demo(object):
                     # switch state based on controller input.
                     while not ((self.state_finish and (
                                 self.change_state or task_final_state)) or
-                               self.new_task):
+                               self.new_task or rospy.is_shutdown()):
                         # Remaining in state. Allow state action to continue.
                         rospy.sleep(0.1)
 
