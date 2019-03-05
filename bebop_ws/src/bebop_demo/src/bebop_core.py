@@ -39,6 +39,7 @@ class Demo(object):
         self.state_finish = False
         self.omg_standby = False
         self.airborne = False
+        self.trackpad_buffer = False
         self.task_dict = {"standby": [],
                           "invalid measurement": ["emergency"],
                           "take-off": ["take-off"],
@@ -236,8 +237,12 @@ class Demo(object):
         if self.state == "omg standby":
             self.omg_standby = False
             self.new_task = False
-        self.change_state = True
-        print highlight_blue(' Switching to next state')
+        if not self.trackpad_buffer:
+            self.change_state = True
+            print highlight_blue(' Switching to next state ')
+            self.trackpad_buffer = True
+            rospy.sleep(2.)
+            self.trackpad_buffer = False
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.

@@ -16,6 +16,7 @@ Panels:
         - /Marker2
         - /Marker3
         - /Marker4
+        - /Marker5
       Splitter Ratio: 0.5
     Tree Height: 815
   - Class: rviz/Selection
@@ -128,8 +129,16 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /motionplanner/rviz_obst
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /motionplanner/smoothed_path
       Name: Marker
       Namespaces:
         {}
@@ -175,10 +184,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.800203085
+      Pitch: 0.775203168
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 4.67175341
+      Yaw: 4.60176086
     Saved: ~
 Window Geometry:
   Displays:
