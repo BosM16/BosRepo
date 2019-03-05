@@ -107,14 +107,16 @@ class KeyPress(object):
         Let user identify which is right and which is left controller by
         pulling triggers. Controller hand is displayed in terminal.
         '''
-        while not self.vive_loc_ready:
+        while not (rospy.is_shutdown() or self.vive_loc_ready):
             rospy.sleep(0.1)
 
-        print highlight_green(' Pull each trigger ')
+        if not rospy.is_shutdown():
+            print highlight_green(' Pull each trigger ')
+
         identify_right = True
         identify_left = True
-        while identify_right or identify_left:
-            time.sleep(1.0 / self.reading_rate_hz)
+        while (identify_right or identify_left) and not rospy.is_shutdown():
+
             (result, pControllerState) = (
                 self.vrsystem.getControllerState(self.left_id))
             d = self.from_controller_state_to_dict(pControllerState)
@@ -124,7 +126,7 @@ class KeyPress(object):
                 # print("Left controller:")
                 # self.pp.pprint(d)
                 if d['trigger'] == 1.0:
-                    print highlight_blue(' Left trigger ')
+                    print highlight_blue(' Left  trigger ')
                     identify_left = False
 
             (result, pControllerState) = (
@@ -138,8 +140,11 @@ class KeyPress(object):
                     print highlight_blue(' Right trigger ')
                     identify_right = False
 
+            rospy.sleep(1.0 / self.reading_rate_hz)
+
     def publish_events(self):
-        print white(" Monitoring controller events! ")
+        if not rospy.is_shutdown():
+            print white(" Monitoring controller events! ")
         try:
             while not rospy.is_shutdown():
                 time.sleep(1.0 / self.reading_rate_hz)
