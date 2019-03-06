@@ -50,6 +50,7 @@ class VelCommander(object):
         self.state_changed = False
         self.executing_state = False
         self.state_killed = False
+        self.trackpad_held = False
 
         rospy.set_param(
             "/bebop/bebop_driver/SpeedSettingsMaxRotationSpeedCurrent", 360.0)
@@ -162,7 +163,7 @@ class VelCommander(object):
         rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst)
         rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
         rospy.Subscriber('ctrl_keypress/ltrigger', Bool, self.l_trigger)
-        rospy.Subscriber('ctrl_keypress/rtrackpad', Empty, self.trackpad_press)
+        rospy.Subscriber('ctrl_keypress/rtrackpad', Bool, self.trackpad_press)
         rospy.Subscriber(
             'vive_localization/c1_pose', PoseStamped, self.get_ctrl_r_pos)
         rospy.Subscriber(
@@ -922,12 +923,17 @@ class VelCommander(object):
         if self.draw:
             self.draw_ctrl_path()
 
-    def trackpad_press(self, empty):
+    def trackpad_press(self, trackpad_pressed):
         '''If state is equal to drag drone state and trackpad is pressed,
         return to standby hover.
         '''
-        if (self.state == "drag drone") or (self.state == "draw path"):
-            self.stop_drawing = True
+        if trackpad_pressed.data and not self.trackpad_held:
+            if (self.state == "drag drone") or (self.state == "draw path"):
+                self.stop_drawing = True
+            self.trackpad_held = True
+
+        elif not trackpad_pressed.data and self.trackpad_held:
+            self.trackpad_held = False
 
     def r_trigger(self, button_pushed):
         '''When button is pushed on the right hand controller, depending on the
