@@ -147,7 +147,7 @@ class KeyPress(object):
             print white(" Monitoring controller events! ")
         try:
             while not rospy.is_shutdown():
-                time.sleep(1.0 / self.reading_rate_hz)
+                rospy.sleep(1.0 / self.reading_rate_hz)
 
                 (result, pControllerState) = (
                     self.vrsystem.getControllerState(self.left_id))
@@ -160,6 +160,8 @@ class KeyPress(object):
                     # self.pp.pprint(d)
                     if d['trigger'] == 1.0:
                         self.ltrigger_pressed.publish(True)
+                    if d['trigger'] == 0.0:
+                        self.ltrigger_pressed.publish(False)
 
                 (result, pControllerState) = (
                     self.vrsystem.getControllerState(self.right_id))

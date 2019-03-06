@@ -12,7 +12,7 @@ import numpy as np
 import omgtools as omg
 import rospy
 
-from fabulous.color import highlight_red, yellow, green
+from fabulous.color import highlight_red, magenta, green
 
 
 class MotionPlanner(object):
@@ -140,7 +140,7 @@ class MotionPlanner(object):
                  self._goal.position.y,
                  self._goal.position.z])
             self._deployer.reset()
-            print yellow('---- Motionplanner received a new goal -'
+            print magenta('---- Motionplanner received a new goal -'
                          ' deployer resetted ----')
 
         state0 = [cmd.pos_state.position.x,

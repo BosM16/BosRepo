@@ -16,6 +16,8 @@ Panels:
         - /Marker2
         - /Marker3
         - /Marker4
+        - /Marker5
+        - /Marker6
       Splitter Ratio: 0.5
     Tree Height: 815
   - Class: rviz/Selection
@@ -128,8 +130,24 @@ Visualization Manager:
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
-      Enabled: true
+      Enabled: false
       Marker Topic: /motionplanner/rviz_obst
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: false
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /motionplanner/drawn_path
+      Name: Marker
+      Namespaces:
+        smooth_path: true
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /motionplanner/smoothed_path
       Name: Marker
       Namespaces:
         {}
@@ -160,25 +178,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 6.7993536
+      Distance: 7.3120532
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 2.62075496
-        Y: -0.891793609
-        Z: -4.76837158e-07
+        X: -1.03183687
+        Y: 0.304880381
+        Z: 5.96046448e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.800203085
+      Pitch: 0.164797828
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 4.67175341
+      Yaw: 3.79309058
     Saved: ~
 Window Geometry:
   Displays:
