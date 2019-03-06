@@ -51,7 +51,7 @@ class KeyPress(object):
         '''
         rospy.init_node('ctrl_keypress')
 
-        self.reading_rate_hz = 4
+        self.reading_rate_hz = 10
         self.show_only_new_events = True
         self.last_unPacketNum_left = 0
         self.last_unPacketNum_right = 0
@@ -62,17 +62,15 @@ class KeyPress(object):
         self.ltrigger_pressed = rospy.Publisher(
             'ctrl_keypress/ltrigger', Bool, queue_size=1)
         self.rmenu_button = rospy.Publisher(
-            'ctrl_keypress/rmenu_button', Empty, queue_size=1)
+            'ctrl_keypress/rmenu_button', Bool, queue_size=1)
         self.rtrackpad = rospy.Publisher(
-            'ctrl_keypress/rtrackpad', Empty, queue_size=1)
+            'ctrl_keypress/rtrackpad', Bool, queue_size=1)
 
         rospy.Subscriber(
                     'vive_localization/ready', Empty, self.vive_localization_ready)
 
         openvr.init(openvr.VRApplication_Other)
-
         self.vrsystem = openvr.VRSystem()
-
         # Let system choose id's at first to make sure both controllers are
         # found.
         self.left_id, self.right_id = None, None
@@ -84,9 +82,6 @@ class KeyPress(object):
                 self.left_id, self.right_id = (
                     self.get_controller_ids(self.vrsystem))
                 if self.left_id and self.right_id:
-                    # Now both controllers are found, make sure that right
-                    # corresonds to 1.
-                    self.right_id, self.left_id = 1, 2
                     break
                 print white(' Waiting for Vive controllers ...')
                 time.sleep(1.0)
@@ -177,9 +172,13 @@ class KeyPress(object):
                     if d['trigger'] == 0.0:
                         self.rtrigger_pressed.publish(False)
                     if d['menu_button'] == 1.0:
-                        self.rmenu_button.publish(Empty())
+                        self.rmenu_button.publish(True)
+                    if d['menu_button'] == 0.0:
+                        self.rmenu_button.publish(False)
                     if d['trackpad_pressed'] == 1.0:
-                        self.rtrackpad.publish(Empty())
+                        self.rtrackpad.publish(True)
+                    if d['trackpad_pressed'] == 0.0:
+                        self.rtrackpad.publish(False)
 
         except KeyboardInterrupt:
             print white("Control+C pressed, shutting down...")
@@ -192,13 +191,13 @@ class KeyPress(object):
             vrsys = vrsys
         left = None
         right = None
+
         for i in range(openvr.k_unMaxTrackedDeviceCount):
             device_class = vrsys.getTrackedDeviceClass(i)
             if device_class == openvr.TrackedDeviceClass_Controller:
-                role = vrsys.getControllerRoleForTrackedDeviceIndex(i)
-                if role == openvr.TrackedControllerRole_RightHand:
+                if not right:
                     right = i
-                if role == openvr.TrackedControllerRole_LeftHand:
+                elif not left:
                     left = i
         return left, right
 

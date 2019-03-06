@@ -39,7 +39,8 @@ class Demo(object):
         self.state_finish = False
         self.omg_standby = False
         self.airborne = False
-        self.trackpad_buffer = False
+        self.trackpad_held = False
+        self.menu_button_held = False
         self.task_dict = {"standby": [],
                           "invalid measurement": ["emergency"],
                           "take-off": ["take-off"],
@@ -67,11 +68,11 @@ class Demo(object):
         rospy.Subscriber(
             'fsm/task', String, self.switch_task)
         rospy.Subscriber(
-            'ctrl_keypress/rmenu_button', Empty, self.take_off_land)
+            'ctrl_keypress/rmenu_button', Bool, self.take_off_land)
         rospy.Subscriber(
             'controller/state_finish', Empty, self.ctrl_state_finish)
         rospy.Subscriber(
-            'ctrl_keypress/rtrackpad', Empty, self.switch_state)
+            'ctrl_keypress/rtrackpad', Bool, self.switch_state)
         rospy.Subscriber(
             'ctrl_keypress/rtrigger', Bool, self.r_trigger)
 
@@ -214,37 +215,42 @@ class Demo(object):
         self.new_task = True
         print cyan(' Bebop_core received a new task:', task.data)
 
-    def take_off_land(self, empty):
+    def take_off_land(self, pressed):
         '''Check if menu button is pressed and switch to take-off or land
         sequence depending on last task that was executed.
         '''
         if not ((self.state == "take-off") and (self.state == "land")):
-            if self.airborne:
-                self.state_sequence = self.task_dict.get("land", [])
-            else:
-                self.state_sequence = self.task_dict.get("take-off", [])
-            self.airborne = not self.airborne
-            self.new_task = True
-            print cyan(
-                ' Bebop_core received a new task:', self.state_sequence[0])
+            if pressed.data and not self.menu_button_held:
+                if self.airborne:
+                    self.state_sequence = self.task_dict.get("land", [])
+                else:
+                    self.state_sequence = self.task_dict.get("take-off", [])
+                self.airborne = not self.airborne
+                self.new_task = True
+                print cyan(
+                    ' Bebop_core received a new task:', self.state_sequence[0])
+                self.menu_button_held = True
+            elif not pressed.data and self.menu_button_held:
+                self.menu_button_held = False
 
 ####################
 # Helper functions #
 ####################
 
-    def switch_state(self, empty):
+    def switch_state(self, trackpad_pressed):
         '''When controller trackpad is pressed changes change_state variable
         to true to allow fsm to switch states in state sequence.
         '''
-        if self.state == "omg standby":
-            self.omg_standby = False
-            self.new_task = False
-        if not self.trackpad_buffer:
+        if trackpad_pressed.data and not self.trackpad_held:
+            self.trackpad_held = True
+            if self.state == "omg standby":
+                self.omg_standby = False
+                self.new_task = False
             self.change_state = True
             print highlight_blue(' Switching to next state ')
-            self.trackpad_buffer = True
-            rospy.sleep(2.)
-            self.trackpad_buffer = False
+
+        elif not trackpad_pressed.data and self.trackpad_held:
+            self.trackpad_held = False
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
