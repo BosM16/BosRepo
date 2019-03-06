@@ -65,6 +65,10 @@ class VelCommander(object):
         self.K_theta = rospy.get_param('vel_cmd/K_theta', 0.3)
         self.max_input = rospy.get_param('vel_cmd/max_input', 0.5)
         self.max_vel = rospy.get_param('motionplanner/vmax', 0.5)
+        self.room_width = rospy.get_param('motionplanner/room_width', 1.)
+        self.room_depth = rospy.get_param('motionplanner/room_depth', 1.)
+        self.room_height = rospy.get_param('motionplanner/room_height', 1.)
+        self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
         self.safety_treshold = rospy.get_param('vel_cmd/safety_treshold', 0.5)
         self.pos_nrm_tol = rospy.get_param(
                                         'vel_cmd/goal_reached_pos_tol', 0.05)
@@ -99,7 +103,11 @@ class VelCommander(object):
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
+        self.ctrl_l_pos = Pose()
         self.draw = False
+        self.drawn_pos_x = []
+        self.drawn_pos_y = []
+        self.drawn_pos_z = []
         self.drag = False
 
         self.cmd_twist_convert = TwistStamped()
@@ -136,6 +144,8 @@ class VelCommander(object):
             'motionplanner/desired_path', Marker, queue_size=1)
         self.trajectory_real = rospy.Publisher(
             'motionplanner/real_path', Marker, queue_size=1)
+        self.trajectory_drawn = rospy.Publisher(
+            'motionplanner/drawn_path', Marker, queue_size=1)
         self.trajectory_smoothed = rospy.Publisher(
             'motionplanner/smoothed_path', Marker, queue_size=1)
         self.current_ff_vel_pub = rospy.Publisher(
@@ -151,9 +161,12 @@ class VelCommander(object):
                          self.get_mp_result)
         rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst)
         rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
+        rospy.Subscriber('ctrl_keypress/ltrigger', Bool, self.l_trigger)
         rospy.Subscriber('ctrl_keypress/rtrackpad', Empty, self.trackpad_press)
         rospy.Subscriber(
             'vive_localization/c1_pose', PoseStamped, self.get_ctrl_r_pos)
+        rospy.Subscriber(
+            'vive_localization/c2_pose', PoseStamped, self.get_ctrl_l_pos)
         rospy.Subscriber('fsm/state', String, self.switch_state)
 
     def initialize_vel_model(self):
@@ -543,32 +556,38 @@ class VelCommander(object):
         '''Start building a trajectory according to the trajectory of the
         controller.
         '''
-        print highlight_green('---- Start drawing path while holding'
-                              ' trigger ----')
-        while not (self.state_changed or rospy.is_shutdown()):
+        print highlight_green('---- Start drawing path with left Vive'
+                              ' controller while holding trigger ----')
+        self.stop_drawing = False
+        while not (self.stop_drawing or rospy.is_shutdown()):
             if self.draw:
                 self.drawn_path.points = []
                 while self.draw and not rospy.is_shutdown():
                     self.rate.sleep()
 
                 print yellow('---- Trigger button has been released,'
-                              'path will be calculated ----')
+                             'path will be calculated ----')
 
-                # Process the drawn trajectory so the drone is able tt follow
+                # Process the drawn trajectory so the drone is able to follow
                 # this path.
-                self.diff_interp_traj()
-                self.low_pass_filter_drawn_traj()
-                self.differentiate_traj()
+                if len(self.drawn_pos_x) > 50:
+                    self.diff_interp_traj()
+                    self.low_pass_filter_drawn_traj()
+                    self.differentiate_traj()
+                else:
+                    print highlight_red(
+                                    ' Path too short, draw a longer path! ')
 
-            if self.state_changed:
-                self.state_changed = False
-                break
             rospy.sleep(0.1)
 
     def fly_to_start(self):
         '''Sets goal equal to starting position of trajectory and triggers
         omgtools to fly the drone towards it.
         '''
+        # If no path drawn, do nothing.
+        if not len(self.drawn_pos_x):
+            return
+
         goal = Pose()
         goal.position.x = self.drawn_pos_x[0]
         goal.position.y = self.drawn_pos_y[0]
@@ -579,6 +598,9 @@ class VelCommander(object):
     def follow_traj(self):
         '''Lets the drone fly along the drawn path.
         '''
+        # If no path drawn, do nothing.
+        if not len(self.drawn_pos_x):
+            return
 
         # Preparing hover setpoint for when trajectory is completed.
         self._goal = Pose()
@@ -615,9 +637,9 @@ class VelCommander(object):
         self.finish_drag = False
         while not (rospy.is_shutdown() or self.state_killed):
             drag_offset = Point(
-                x=(self._drone_est_pose.position.x-self.ctrl_r_pos.position.x),
-                y=(self._drone_est_pose.position.y-self.ctrl_r_pos.position.y),
-                z=(self._drone_est_pose.position.z-self.ctrl_r_pos.position.z))
+                x=(self._drone_est_pose.position.x-self.ctrl_l_pos.position.x),
+                y=(self._drone_est_pose.position.y-self.ctrl_l_pos.position.y),
+                z=(self._drone_est_pose.position.z-self.ctrl_l_pos.position.z))
 
             while (self.drag and not (
                                     self.state_killed or rospy.is_shutdown())):
@@ -625,9 +647,15 @@ class VelCommander(object):
                 # hover setpoint, until trigger is released.
                 # print yellow('in den drag while, drag = ', self.drag)
                 self.hover_setpoint.position = Point(
-                    x=(self.ctrl_r_pos.position.x + drag_offset.x),
-                    y=(self.ctrl_r_pos.position.y + drag_offset.y),
-                    z=(self.ctrl_r_pos.position.z + drag_offset.z))
+                    x=max(- (self.room_width/2. - self.drone_radius),
+                          min((self.room_width/2. - self.drone_radius),
+                              (self.ctrl_l_pos.position.x + drag_offset.x))),
+                    y=max(- (self.room_depth/2. - self.drone_radius),
+                          min((self.room_depth/2. - self.drone_radius),
+                              (self.ctrl_l_pos.position.y + drag_offset.y))),
+                    z=max(self.drone_radius * 2,
+                          min(self.room_height - self.drone_radius,
+                              (self.ctrl_l_pos.position.z + drag_offset.z))))
                 self.hover()
                 self.rate.sleep()
 
@@ -885,6 +913,12 @@ class VelCommander(object):
         '''Retrieves the position of the right hand controller.
         '''
         self.ctrl_r_pos = ctrl_pose.pose
+
+    def get_ctrl_l_pos(self, ctrl_pose):
+        '''Retrieves the position of the left hand controller and executes
+        drawing when trigger is pressed.
+        '''
+        self.ctrl_l_pos = ctrl_pose.pose
         if self.draw:
             self.draw_ctrl_path()
 
@@ -893,12 +927,12 @@ class VelCommander(object):
         return to standby hover.
         '''
         if (self.state == "drag drone") or (self.state == "draw path"):
-            self.state_changed = True
+            self.stop_drawing = True
 
     def r_trigger(self, button_pushed):
         '''When button is pushed on the right hand controller, depending on the
         current state, either sets goal to be equal to the position of the
-        controller, or allows path that the controller describes to be saved.
+        controller.
         '''
 
         if (((self.state == "omg fly") or (self.state == "omg standby"))
@@ -910,7 +944,13 @@ class VelCommander(object):
             goal.position.z = self.ctrl_r_pos.position.z
             self.set_omg_goal(goal)
 
-        elif self.state == "draw path":
+    def l_trigger(self, button_pushed):
+        '''When button is pushed on the left hand controller, depending on the
+        current state, allows path that the controller describes to be saved or
+        enables dragging of the drone.
+        '''
+
+        if self.state == "draw path":
             # Start drawing and saving path
             if (button_pushed.data and not self.draw):
                 self.drawn_pos_x = []
@@ -1111,9 +1151,9 @@ class VelCommander(object):
         '''Resets all Rviz markers (except for obstacles).
         '''
         self._desired_path.points = []
-        self.drawn_path.points = []
-        self.trajectory_desired.publish(self.drawn_path)
         self.trajectory_desired.publish(self._desired_path)
+        self.drawn_path.points = []
+        self.trajectory_drawn.publish(self.drawn_path)
         self._real_path.points = []
         self.trajectory_real.publish(self._real_path)
         self.current_ff_vel.points = []
@@ -1193,16 +1233,16 @@ class VelCommander(object):
         '''
         self.drawn_path.header.stamp = rospy.get_rostime()
 
-        point = Point(x=self.ctrl_r_pos.position.x,
-                      y=self.ctrl_r_pos.position.y,
-                      z=self.ctrl_r_pos.position.z)
+        point = Point(x=self.ctrl_l_pos.position.x,
+                      y=self.ctrl_l_pos.position.y,
+                      z=self.ctrl_l_pos.position.z)
         self.drawn_path.points.append(point)
 
         self.drawn_pos_x += [point.x]
         self.drawn_pos_y += [point.y]
         self.drawn_pos_z += [point.z]
 
-        self.trajectory_desired.publish(self.drawn_path)
+        self.trajectory_drawn.publish(self.drawn_path)
 
     def draw_smoothed_path(self):
         '''Publish the smoothed x and y trajectory to topic for visualisation
