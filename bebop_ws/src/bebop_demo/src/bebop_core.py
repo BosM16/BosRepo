@@ -9,8 +9,11 @@ from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 import numpy as np
 import math as m
 import rospy
-import tf2_ros       # kijken wat nog weg mag door verplaatsen naar kalman file
+import tf2_ros
 import tf2_geometry_msgs as tf2_geom
+
+from fabulous.color import (highlight_red, highlight_green, highlight_blue,
+                            cyan, green)
 
 from perception import *
 from world_model import *
@@ -43,6 +46,7 @@ class Demo(object):
                           "point to point": ["omg standby", "omg fly"],
                           "draw follow traj": ["land", "draw path", "take-off",
                                                "fly to start", "follow path"],
+                          "drag drone": ["drag drone"],
                           "undamped spring": ["undamped spring", "reset_PID"],
                           "viscous fluid": ["viscous fluid", "reset_PID"]}
 
@@ -78,7 +82,7 @@ class Demo(object):
         out the current state and returns to the standby state when task is
         completed.
         '''
-        print '-------------------- \n Demo started \n --------------------'
+        print green('----    Bebop core running     ----')
 
         while not rospy.is_shutdown():
             if self.new_task:
@@ -89,7 +93,7 @@ class Demo(object):
                 # Run over sequence of states corresponding to current task.
                 for state in self.state_sequence:
                     self.state = state
-                    print "bebop_core state changed to:", self.state
+                    print cyan(' Bebop_core state changed to:', self.state)
                     self.fsm_state.publish(state)
 
                     # Omg tools should return to its own standby status unless
@@ -102,7 +106,7 @@ class Demo(object):
                     # switch state based on controller input.
                     while not ((self.state_finish and (
                                 self.change_state or task_final_state)) or
-                               self.new_task):
+                               self.new_task or rospy.is_shutdown()):
                         # Remaining in state. Allow state action to continue.
                         rospy.sleep(0.1)
 
@@ -114,7 +118,7 @@ class Demo(object):
                     # User forces leaving omg with trackpad or other new task
                     # received --> leave the for loop for the current task.
                     if (leave_omg or self.new_task):
-                        print 'BROKE FOR LOOP'
+                        # print cyan('---- Broke for loop ----')
                         break
 
                 # Make sure that omg-tools task is repeated until force quit.
@@ -124,7 +128,7 @@ class Demo(object):
                 # Except for repetitive tasks (back to first state in task).
                 if not self.new_task:
                     self.fsm_state.publish("standby")
-                    print "bebop_core state changed to:", "standby"
+                    print cyan(' Bebop_core state changed to:', "standby")
 
             rospy.sleep(0.1)
 
@@ -202,11 +206,12 @@ class Demo(object):
         '''Reads out the task topic and switches to the desired task.
         '''
         if task.data not in self.task_dict:
-            print "Not a valid task, drone will remain in standby state."
+            print highlight_red(
+                    ' Not a valid task, drone will remain in standby state.')
 
         self.state_sequence = self.task_dict.get(task.data, [])
         self.new_task = True
-        print "bebop_core received a new task:", task.data
+        print cyan(' Bebop_core received a new task:', task.data)
 
     def take_off_land(self, empty):
         '''Check if menu button is pressed and switch to take-off or land
@@ -219,7 +224,8 @@ class Demo(object):
                 self.state_sequence = self.task_dict.get("take-off", [])
             self.airborne = not self.airborne
             self.new_task = True
-            print "bebop_core received a new task:", self.state_sequence[0]
+            print cyan(
+                ' Bebop_core received a new task:', self.state_sequence[0])
 
 ####################
 # Helper functions #
@@ -233,6 +239,7 @@ class Demo(object):
             self.omg_standby = False
             self.new_task = False
         self.change_state = True
+        print highlight_blue(' Switching to next state')
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
