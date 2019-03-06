@@ -224,18 +224,14 @@ class VelCommander(object):
 
         while not rospy.is_shutdown():
             if self.state_changed:
-                print highlight_yellow('In de if stch')
                 self.state_changed = False
 
                 self.executing_state = True
                 # Execute state function.
-                print highlight_yellow('state ', self.state)
                 self.state_dict[self.state]()
-                print highlight_yellow("functie gedaan")
                 self.executing_state = False
 
                 # State has not finished if it has been killed!
-                print highlight_yellow('state killed = ', self.state_killed)
                 if not self.state_killed:
                     self.ctrl_state_finish.publish(Empty())
                     print yellow('---- State finished ----')
@@ -243,17 +239,13 @@ class VelCommander(object):
 
                 # Adjust goal to make sure hover uses PID actions to stay in
                 # current place.
-                print highlight_yellow('before get pose est service')
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
                 (self._drone_est_pose, self.vhat,
                  self.real_yaw, measurement_valid) = self.get_pose_est()
-                print highlight_yellow('after get pose est service')
                 self.hover_setpoint.position = self._drone_est_pose.position
 
             if not self.state == "initialization":
-                print highlight_yellow('hovering in controller')
                 self.hover()
-                print highlight_yellow('self state changed', self.state_changed)
             self.rate.sleep()
 
     def configure(self):
@@ -540,7 +532,7 @@ class VelCommander(object):
 
         if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
-            rospy.sleep(3.)
+            rospy.sleep(2.8)
             self.airborne = True
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
@@ -684,38 +676,37 @@ class VelCommander(object):
         '''Adapts gains for the undamped spring (only Kp) or viscous fluid
         (only Kd) illustration.
         '''
+        self.hover_setpoint.position.z = 1.7
+
         if self.state == "undamped spring":
-            self.Kp_x = self.Kp_x/4.
+            self.Kp_x = self.Kp_x/2.
             self.Ki_x = 0.
             self.Kd_x = 0.
-            self.Kp_y = self.Kp_y/4.
+            self.Kp_y = self.Kp_y/2.
             self.Ki_y = 0.
             self.Kd_y = 0.
-            self.Kp_z = self.Kp_z/4.
+            self.Kp_z = self.Kp_z/2.
             self.Ki_z = 0.
 
         elif self.state == "viscous fluid":
             self.Kp_x = 0.
             self.Ki_x = 0.
-            self.Kd_x = self.Kd_x/4.
+            self.Kd_x = self.Kd_x/8.
             self.Kp_y = 0.
             self.Ki_y = 0.
-            self.Kd_y = self.Kd_y/4.
+            self.Kd_y = self.Kd_y/8.
             self.Kp_z = self.Kp_z/4.
             self.Ki_z = 0.
 
         while not (self.state_changed or
                    rospy.is_shutdown() or self.state_killed):
             self.hover()
-            print highlight_yellow('stuck in while')
             self.rate.sleep()
-        print highlight_yellow('stuck at endend of function')
 
     def reset_PID_gains(self):
         '''Resets the PID gains to the rosparam vaules after tasks "undamped
         spring" or "viscous fluid".
         '''
-        print highlight_yellow('reset PID begint')
         self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
         self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
         self.Kd_x = rospy.get_param('vel_cmd/Kd_x', 0.6864)
@@ -724,7 +715,6 @@ class VelCommander(object):
         self.Kd_y = rospy.get_param('vel_cmd/Kd_y', 0.6864)
         self.Kp_z = rospy.get_param('vel_cmd/Kp_z', 0.5)
         self.Ki_z = rospy.get_param('vel_cmd/Ki_z', 1.5792)
-        print highlight_yellow('reset PID gedaan')
 
 ####################
 # Helper functions #
@@ -782,76 +772,81 @@ class VelCommander(object):
         '''
         feedback_cmd = Twist()
 
-        # # PD
-        # pos_error = PointStamped()
-        # pos_error.header.frame_id = "world"
-        # pos_error.point.x = pos_desired.point.x - self._drone_est_pose.position.x
-        # pos_error.point.y = pos_desired.point.y - self._drone_est_pose.position.y
-        # pos_error.point.z = pos_desired.point.z - self._drone_est_pose.position.z
-        #
-        # vel_error = PointStamped()
-        # vel_error.header.frame_id = "world"
-        # vel_error.point.x = vel_desired.point.x - self.vhat.x
-        # vel_error.point.y = vel_desired.point.y - self.vhat.y
-        #
-        # pos_error = self.transform_point(pos_error, "world", "world_rot")
-        # vel_error = self.transform_point(vel_error, "world", "world_rot")
-        # print 'pos error', pos_error.point
-        # print 'vel error\n', self.vhat, vel_error.point
-        #
-        # feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
-        #         self.Kp_x*pos_error.point.x +
-        #         self.Kd_x*vel_error.point.x)))
-        # feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
-        #         self.Kp_y*pos_error.point.y +
-        #         self.Kd_y*vel_error.point.y)))
-        # feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
-        #         self.Kp_z*pos_error.point.z)))
+        if ((self.state == "undamped spring") or
+           (self.state == "viscous fluid")):
+            # # PD
+            pos_error = PointStamped()
+            pos_error.header.frame_id = "world"
+            pos_error.point.x = (pos_desired.point.x -
+                                 self._drone_est_pose.position.x)
+            pos_error.point.y = (pos_desired.point.y -
+                                 self._drone_est_pose.position.y)
+            pos_error.point.z = (pos_desired.point.z -
+                                 self._drone_est_pose.position.z)
 
-        # # PID
-        pos_error_prev = self.pos_error_prev
-        pos_error = PointStamped()
-        pos_error.header.frame_id = "world"
-        pos_error.point.x = (pos_desired.point.x
-                             - self._drone_est_pose.position.x)
-        pos_error.point.y = (pos_desired.point.y
-                             - self._drone_est_pose.position.y)
-        pos_error.point.z = (pos_desired.point.z
-                             - self._drone_est_pose.position.z)
+            vel_error = PointStamped()
+            vel_error.header.frame_id = "world"
+            vel_error.point.x = vel_desired.point.x - self.vhat.x
+            vel_error.point.y = vel_desired.point.y - self.vhat.y
 
-        vel_error_prev = self.vel_error_prev
-        vel_error = PointStamped()
-        vel_error.header.frame_id = "world"
-        vel_error.point.x = vel_desired.point.x - self.vhat.x
-        vel_error.point.y = vel_desired.point.y - self.vhat.y
+            pos_error = self.transform_point(pos_error, "world", "world_rot")
+            vel_error = self.transform_point(vel_error, "world", "world_rot")
+            print 'pos error', pos_error.point
+            print 'vel error\n', self.vhat, vel_error.point
 
-        # print yellow('error before transform\n', pos_error)
-        pos_error = self.transform_point(pos_error, "world", "world_rot")
-        vel_error = self.transform_point(vel_error, "world", "world_rot")
-        # print yellow('error after transform\n', pos_error)
+            feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
+                    self.Kp_x*pos_error.point.x +
+                    self.Kd_x*vel_error.point.x)))
+            feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
+                    self.Kp_y*pos_error.point.y +
+                    self.Kd_y*vel_error.point.y)))
+            feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
+                    self.Kp_z*pos_error.point.z)))
+        else:
+            # # PID
+            pos_error_prev = self.pos_error_prev
+            pos_error = PointStamped()
+            pos_error.header.frame_id = "world"
+            pos_error.point.x = (pos_desired.point.x
+                                 - self._drone_est_pose.position.x)
+            pos_error.point.y = (pos_desired.point.y
+                                 - self._drone_est_pose.position.y)
+            pos_error.point.z = (pos_desired.point.z
+                                 - self._drone_est_pose.position.z)
 
-        feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
-                self.feedback_cmd_prev.linear.x +
-                (self.Kp_x + self.Ki_x*self._sample_time/2) *
-                pos_error.point.x +
-                (-self.Kp_x + self.Ki_x*self._sample_time/2) *
-                pos_error_prev.point.x +
-                self.Kd_x*(vel_error.point.x - vel_error_prev.point.x))))
+            vel_error_prev = self.vel_error_prev
+            vel_error = PointStamped()
+            vel_error.header.frame_id = "world"
+            vel_error.point.x = vel_desired.point.x - self.vhat.x
+            vel_error.point.y = vel_desired.point.y - self.vhat.y
 
-        feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
-                self.feedback_cmd_prev.linear.y +
-                (self.Kp_y + self.Ki_y*self._sample_time/2) *
-                pos_error.point.y +
-                (-self.Kp_y + self.Ki_y*self._sample_time/2) *
-                pos_error_prev.point.y +
-                self.Kd_y*(vel_error.point.y - vel_error_prev.point.y))))
+            # print yellow('error before transform\n', pos_error)
+            pos_error = self.transform_point(pos_error, "world", "world_rot")
+            vel_error = self.transform_point(vel_error, "world", "world_rot")
+            # print yellow('error after transform\n', pos_error)
 
-        feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
-                self.feedback_cmd_prev.linear.z +
-                (self.Kp_z + self.Ki_z*self._sample_time/2) *
-                pos_error.point.z +
-                (-self.Kp_z + self.Ki_z*self._sample_time/2) *
-                pos_error_prev.point.z)))
+            feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
+                    self.feedback_cmd_prev.linear.x +
+                    (self.Kp_x + self.Ki_x*self._sample_time/2) *
+                    pos_error.point.x +
+                    (-self.Kp_x + self.Ki_x*self._sample_time/2) *
+                    pos_error_prev.point.x +
+                    self.Kd_x*(vel_error.point.x - vel_error_prev.point.x))))
+
+            feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
+                    self.feedback_cmd_prev.linear.y +
+                    (self.Kp_y + self.Ki_y*self._sample_time/2) *
+                    pos_error.point.y +
+                    (-self.Kp_y + self.Ki_y*self._sample_time/2) *
+                    pos_error_prev.point.y +
+                    self.Kd_y*(vel_error.point.y - vel_error_prev.point.y))))
+
+            feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
+                    self.feedback_cmd_prev.linear.z +
+                    (self.Kp_z + self.Ki_z*self._sample_time/2) *
+                    pos_error.point.z +
+                    (-self.Kp_z + self.Ki_z*self._sample_time/2) *
+                    pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
         feedback_cmd.angular.z = (
