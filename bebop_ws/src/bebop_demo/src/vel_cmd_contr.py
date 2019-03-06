@@ -11,7 +11,7 @@ from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 
 import rospy
 import numpy as np
-from scipy.signal import butter, lfilter, filtfilt
+from scipy.signal import butter, filtfilt
 import tf
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
