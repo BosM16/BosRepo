@@ -30,8 +30,6 @@ fprintf('\n----------------- x direction -----------------\n')
 [xsys_cl,xPIDparams] = PID_design(xmodel, PM_des, options);
 fprintf('\n----------------- y direction -----------------\n')
 [ysys_cl,yPIDparams] = PID_design(ymodel, PM_des, options);
-
-% -------------------------------------------------------------------------
 fprintf('\n----------------- z direction -----------------\n')
 [zsys_cl,zPIparams] = PI_design(zmodel, PM_des, options);
 
@@ -71,7 +69,7 @@ Ti = 3.73/w_c;
 
 %% D and I part separately
 % D(s) = K * (1 + Td*s) * (1 + 1/(s Ti))
-% Dd(s) = (1 + Td*s), Di(s) = ((1 + 1/(s Ti)), D(s) = K*Dd(s)*Di(s)
+% Dd(s) = (1 + Td*s), Di(s) = (1 + 1/(s Ti)), D(s) = K*Dd(s)*Di(s)
 Dd = (1 + Td*s);
 Di = (1 + 1/(Ti*s));
 
@@ -128,6 +126,15 @@ if options.figures
 %     hl2 = flipud(findobj(h(2),'type','Line'));
  
     legend(h(1),hl1(3:4),'Uncompensated','PID Compensated')
+    
+    
+    figure('Name','Closed loop frequency response')
+    bodeplot(sys_cl,'b')
+    lineHandle = findobj(gcf,'Type','line','-and','Color','b');
+    set(lineHandle,'Color',[0.3010, 0.7450, 0.9330]);
+    set(findall(gcf,'type','line'),'linewidth',2)
+    grid on
+    
 end
 
 % Display margins, poles in command window
@@ -229,6 +236,15 @@ if options.figures
 %     hl2 = flipud(findobj(h(2),'type','Line'));
  
     legend(h(1),hl1(3:4),'Uncompensated','PI Compensated')
+    
+    
+    figure('Name','Closed loop frequency response')
+    bodeplot(sys_cl,'b')
+    lineHandle = findobj(gcf,'Type','line','-and','Color','b');
+    set(lineHandle,'Color',[0.3010, 0.7450, 0.9330]);
+    set(findall(gcf,'type','line'),'linewidth',2)
+    grid on
+    
 end
 
 % Display margins, poles in command window
