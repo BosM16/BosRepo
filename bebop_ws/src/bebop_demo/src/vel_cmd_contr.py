@@ -5,7 +5,7 @@ from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
 from std_msgs.msg import Bool, Empty, String
 from visualization_msgs.msg import Marker
 
-from bebop_demo.msg import PID_gains, Trigger, Trajectories, Obstacle
+from bebop_demo.msg import Trigger, Trajectories, Obstacle
 
 from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 
@@ -15,7 +15,6 @@ from scipy.signal import butter, filtfilt
 import tf
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
-import time
 
 from fabulous.color import (highlight_red, highlight_green, highlight_blue,
                             green, yellow)
@@ -641,7 +640,6 @@ class VelCommander(object):
         '''Adapts hover setpoint to follow vive right controller when trigger
         is pressed.
         '''
-        self.finish_drag = False
         while not (rospy.is_shutdown() or self.state_killed):
             drag_offset = Point(
                 x=(self._drone_est_pose.position.x-self.ctrl_l_pos.position.x),
@@ -698,6 +696,11 @@ class VelCommander(object):
             self.Ki_z = 0.
 
         while not (rospy.is_shutdown() or self.state_killed):
+            print yellow(self.state_changed)
+            if self.state_changed:
+                self.state_changed = False
+                break
+            print self.Kp_x, self.Ki_x, self.Kd_x
             self.hover()
             self.rate.sleep()
 
@@ -974,8 +977,12 @@ class VelCommander(object):
         '''If state is equal to drag drone state and trackpad is pressed,
         return to standby hover.
         '''
-        if (self.state == "drag drone") or (self.state == "draw path"):
+        if (self.state == "draw path"):
             self.stop_drawing = True
+        elif (self.state == "drag drone" or
+              self.state == "viscous fluid" or
+              self.state == "undamped spring"):
+            self.state_changed = True
 
     def r_trigger(self, button_pushed):
         '''When button is pushed on the right hand controller, depending on the
