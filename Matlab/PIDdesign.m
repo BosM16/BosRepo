@@ -200,8 +200,13 @@ D = K*Di;
 PIparams.Ti = Ti;
 PIparams.K = K;
 
-PIparams.Kp = K;
-PIparams.Ki = K/Ti;
+% PIparams.Kp = K;
+% PIparams.Ki = K/Ti;
+% Try some self chosen params:
+PIparams.Kp = 4.0;
+PIparams.Ki = 2.0;
+D = PIparams.Kp + PIparams.Ki/s;
+
 
 % Display calculated parameters in command window
 if options.prints
