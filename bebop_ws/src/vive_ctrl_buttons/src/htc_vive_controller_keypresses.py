@@ -7,6 +7,9 @@ import pprint
 import openvr
 import rospy
 
+from fabulous.color import (highlight_red, highlight_green, highlight_blue,
+                            white, green)
+
 
 class KeyPress(object):
     '''
@@ -48,43 +51,30 @@ class KeyPress(object):
         '''
         rospy.init_node('ctrl_keypress')
 
-        self.reading_rate_hz = 4
+        self.reading_rate_hz = 10
         self.show_only_new_events = True
         self.last_unPacketNum_left = 0
         self.last_unPacketNum_right = 0
+        self.vive_loc_ready = False
 
         self.rtrigger_pressed = rospy.Publisher(
             'ctrl_keypress/rtrigger', Bool, queue_size=1)
         self.ltrigger_pressed = rospy.Publisher(
             'ctrl_keypress/ltrigger', Bool, queue_size=1)
         self.rmenu_button = rospy.Publisher(
-            'ctrl_keypress/rmenu_button', Empty, queue_size=1)
+            'ctrl_keypress/rmenu_button', Bool, queue_size=1)
         self.rtrackpad = rospy.Publisher(
-            'ctrl_keypress/rtrackpad', Empty, queue_size=1)
+            'ctrl_keypress/rtrackpad', Bool, queue_size=1)
 
-        print("===========================")
-        print("Initializing OpenVR...")
+        rospy.Subscriber(
+                    'vive_localization/ready', Empty, self.vive_localization_ready)
 
-        try:
-            # was: openvr.init(openvr.VRApplication_Scene),
-            # but that gives 306 error. Don't need HMD.
-            openvr.init(openvr.VRApplication_Other)
-
-        except openvr.OpenVRError as e:
-            print("Error when initializing OpenVR (try {} / {})".format(
-                  retries + 1, max_init_retries))
-            print(e)
-            time.sleep(2.0)
-
-        print("Success!")
-        print("===========================")
+        openvr.init(openvr.VRApplication_Other)
         self.vrsystem = openvr.VRSystem()
-
         # Let system choose id's at first to make sure both controllers are
         # found.
         self.left_id, self.right_id = None, None
-        print("===========================")
-        print("Waiting for controllers...")
+        print white(' Waiting for Vive controllers ...')
         try:
             while (not rospy.is_shutdown()) and (
                     self.left_id is None or self.right_id is None):
@@ -92,21 +82,18 @@ class KeyPress(object):
                 self.left_id, self.right_id = (
                     self.get_controller_ids(self.vrsystem))
                 if self.left_id and self.right_id:
-                    # Now both controllers are found, make sure that right
-                    # corresonds to 1.
-                    self.right_id, self.left_id = 1, 2
                     break
-                print("Waiting for controllers...")
+                print white(' Waiting for Vive controllers ...')
                 time.sleep(1.0)
         except KeyboardInterrupt:
-            print("Control+C pressed, shutting down...")
+            print white('----Control+C pressed, shutting down... ----')
             openvr.shutdown()
 
-        print '==========================='
-        print " Trigger id's: "
-        print(" * Right controller ID: " + str(self.right_id))
-        print(" * Left controller ID: " + str(self.left_id))
-        print("===========================")
+        # print '==========================='
+        # print " Trigger id's: "
+        # print(" * Right controller ID: " + str(self.right_id))
+        # print(" * Left controller ID: " + str(self.left_id))
+        # print("===========================")
 
         self.pp = pprint.PrettyPrinter(indent=4)
 
@@ -115,13 +102,16 @@ class KeyPress(object):
         Let user identify which is right and which is left controller by
         pulling triggers. Controller hand is displayed in terminal.
         '''
-        print '====================='
-        print '* Pull each trigger *'
-        print '====================='
+        while not (rospy.is_shutdown() or self.vive_loc_ready):
+            rospy.sleep(0.1)
+
+        if not rospy.is_shutdown():
+            print highlight_green(' Pull each trigger ')
+
         identify_right = True
         identify_left = True
-        while identify_right or identify_left:
-            time.sleep(1.0 / self.reading_rate_hz)
+        while (identify_right or identify_left) and not rospy.is_shutdown():
+
             (result, pControllerState) = (
                 self.vrsystem.getControllerState(self.left_id))
             d = self.from_controller_state_to_dict(pControllerState)
@@ -131,9 +121,7 @@ class KeyPress(object):
                 # print("Left controller:")
                 # self.pp.pprint(d)
                 if d['trigger'] == 1.0:
-                    print '==============='
-                    print '  Left trigger '
-                    print '==============='
+                    print highlight_blue(' Left  trigger ')
                     identify_left = False
 
             (result, pControllerState) = (
@@ -144,16 +132,17 @@ class KeyPress(object):
                     != d['unPacketNum']):
                 self.last_unPacketNum_right = d['unPacketNum']
                 if d['trigger'] == 1.0:
-                    print '==============='
-                    print ' Right trigger '
-                    print '==============='
+                    print highlight_blue(' Right trigger ')
                     identify_right = False
 
+            rospy.sleep(1.0 / self.reading_rate_hz)
+
     def publish_events(self):
-        print(" Monitoring controller events! ")
+        if not rospy.is_shutdown():
+            print white(" Monitoring controller events! ")
         try:
             while not rospy.is_shutdown():
-                time.sleep(1.0 / self.reading_rate_hz)
+                rospy.sleep(1.0 / self.reading_rate_hz)
 
                 (result, pControllerState) = (
                     self.vrsystem.getControllerState(self.left_id))
@@ -166,6 +155,8 @@ class KeyPress(object):
                     # self.pp.pprint(d)
                     if d['trigger'] == 1.0:
                         self.ltrigger_pressed.publish(True)
+                    if d['trigger'] == 0.0:
+                        self.ltrigger_pressed.publish(False)
 
                 (result, pControllerState) = (
                     self.vrsystem.getControllerState(self.right_id))
@@ -181,12 +172,16 @@ class KeyPress(object):
                     if d['trigger'] == 0.0:
                         self.rtrigger_pressed.publish(False)
                     if d['menu_button'] == 1.0:
-                        self.rmenu_button.publish(Empty())
+                        self.rmenu_button.publish(True)
+                    if d['menu_button'] == 0.0:
+                        self.rmenu_button.publish(False)
                     if d['trackpad_pressed'] == 1.0:
-                        self.rtrackpad.publish(Empty())
+                        self.rtrackpad.publish(True)
+                    if d['trackpad_pressed'] == 0.0:
+                        self.rtrackpad.publish(False)
 
         except KeyboardInterrupt:
-            print("Control+C pressed, shutting down...")
+            print white("Control+C pressed, shutting down...")
             openvr.shutdown()
 
     def get_controller_ids(self, vrsys=None):
@@ -196,14 +191,15 @@ class KeyPress(object):
             vrsys = vrsys
         left = None
         right = None
+
         for i in range(openvr.k_unMaxTrackedDeviceCount):
             device_class = vrsys.getTrackedDeviceClass(i)
             if device_class == openvr.TrackedDeviceClass_Controller:
-                role = vrsys.getControllerRoleForTrackedDeviceIndex(i)
-                if role == openvr.TrackedControllerRole_RightHand:
+                if not right:
                     right = i
-                if role == openvr.TrackedControllerRole_LeftHand:
+                elif not left:
                     left = i
+        print 'right and left id', right, left
         return left, right
 
     def from_controller_state_to_dict(self, pControllerState):
@@ -236,6 +232,12 @@ class KeyPress(object):
         # System button can't be read, if you press it
         # the controllers stop reporting
         return d
+
+    def vive_localization_ready(self, empty):
+        '''Sets variable vive_loc_ready to true when vive localizaiton is
+        running.
+        '''
+        self.vive_loc_ready = True
 
 
 if __name__ == '__main__':

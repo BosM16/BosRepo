@@ -12,6 +12,8 @@ import numpy as np
 import omgtools as omg
 import rospy
 
+from fabulous.color import highlight_red, magenta, green
+
 
 class MotionPlanner(object):
 
@@ -49,9 +51,6 @@ class MotionPlanner(object):
         Args:
             obstacles : contains the obstacles sent over the configure service.
         """
-        print '----------------------------'
-        print 'Motionplanner configuring...'
-        print '----------------------------'
         mp_configured = False
 
         self._vehicle = omg.Holonomic3D(
@@ -90,13 +89,9 @@ class MotionPlanner(object):
         environment.add_obstacle(self._obstacles)
 
         # Create problem.
-        print '----------------------------------'
-        print 'Motionplanner Creating Problem ...'
-        print '----------------------------------'
-
         problem = omg.Point2point(self._vehicle, environment, freeT=True)
         problem.set_options({'solver_options': {'ipopt': {
-            # 'ipopt.linear_solver': 'ma57',
+            'ipopt.linear_solver': 'ma57',
             'ipopt.print_level': 0}}})
         problem.set_options({
             'hard_term_con': False, 'horizon_time': self.horizon_time,
@@ -110,6 +105,7 @@ class MotionPlanner(object):
         self._deployer.reset()
 
         mp_configured = True
+        print green('----   Motionplanner running   ----')
 
         return ConfigMotionplannerResponse(mp_configured)
 
@@ -121,10 +117,6 @@ class MotionPlanner(object):
         self._goal.position.x = np.inf
         self._goal.position.y = np.inf
         self._goal.position.z = np.inf
-
-        print '---------------------------'
-        print '- Motionplanner Listening -'
-        print '---------------------------'
 
         rospy.spin()
 
@@ -148,9 +140,8 @@ class MotionPlanner(object):
                  self._goal.position.y,
                  self._goal.position.z])
             self._deployer.reset()
-            print '-------------------------------------------'
-            print 'New Goal - Motionplanner Resetted Deployer!'
-            print '-------------------------------------------'
+            print magenta('---- Motionplanner received a new goal -'
+                         ' deployer resetted ----')
 
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
@@ -160,8 +151,8 @@ class MotionPlanner(object):
 
         if (self._deployer.problem.problem.stats()['return_status']
                 == 'Infeasible_Problem_Detected'):
-            print ('send trajectory of zero input commands since problem'
-                   ' is infeasible')
+            print highlight_red('Send trajectory of zero input commands since'
+                                ' problem is infeasible')
             self._result = Trajectories(
                 u_traj=100*[0],
                 v_traj=100*[0],
