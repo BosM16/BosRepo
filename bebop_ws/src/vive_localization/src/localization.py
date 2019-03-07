@@ -240,7 +240,7 @@ class ViveLocalization(object):
         pose[3:6] = pose[3:6]*np.pi/180.
         # Rotate controller 90° to align rviz arrow with wand.
         if object[0:10] == "controller":
-            pose[5] += 90.
+            pose[5] += np.pi/2.
 
         quat = tf.transformations.quaternion_from_euler(
             pose[5], pose[4], pose[3])
