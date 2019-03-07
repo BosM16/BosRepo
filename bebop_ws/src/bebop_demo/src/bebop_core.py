@@ -48,7 +48,9 @@ class Demo(object):
                           "point to point": ["omg standby", "omg fly"],
                           "draw follow traj": ["land", "draw path", "take-off",
                                                "fly to start", "follow path"],
-                          "drag drone": ["drag drone"]}
+                          "drag drone": ["drag drone"],
+                          "undamped spring": ["undamped spring", "reset_PID"],
+                          "viscous fluid": ["viscous fluid", "reset_PID"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
@@ -127,6 +129,7 @@ class Demo(object):
                 # Only publish standby state when task is finished.
                 # Except for repetitive tasks (back to first state in task).
                 if not self.new_task:
+                    self.state = "standby"
                     self.fsm_state.publish("standby")
                     print cyan(' Bebop_core state changed to:', "standby")
 
