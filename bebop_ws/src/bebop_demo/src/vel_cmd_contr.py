@@ -15,10 +15,9 @@ from scipy.signal import butter, filtfilt
 import tf
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
-import time
 
 from fabulous.color import (highlight_red, highlight_green, highlight_blue,
-                            green, yellow)
+                            green, yellow, highlight_yellow)
 
 
 class VelCommander(object):
@@ -46,7 +45,11 @@ class VelCommander(object):
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
                            "follow path": self.follow_traj,
+                           "undamped spring": self.hover_changed_gains,
+                           "viscous fluid": self.hover_changed_gains,
+                           "reset_PID": self.reset_pid_gains,
                            "drag drone": self.drag_drone}
+
         self.state_changed = False
         self.executing_state = False
         self.state_killed = False
@@ -138,7 +141,12 @@ class VelCommander(object):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-        self.cmd_vel = rospy.Publisher('bebop/cmd_vel', Twist, queue_size=1)
+        self.cmd_vel = rospy.Publisher(
+            'bebop/cmd_vel', Twist, queue_size=1)
+        self.take_off = rospy.Publisher(
+            'bebop/takeoff', Empty, queue_size=1)
+        self.land = rospy.Publisher(
+            'bebop/land', Empty, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
             'motionplanner/trigger', Trigger, queue_size=1)
         self.trajectory_desired = rospy.Publisher(
@@ -155,8 +163,8 @@ class VelCommander(object):
             'motionplanner/rviz_obst', Marker, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
             'controller/state_finish', Empty, queue_size=1)
-        self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
-        self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
+        self.pos_error_pub = rospy.Publisher(
+            'controller/position_error', Point, queue_size=1)
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
@@ -229,7 +237,7 @@ class VelCommander(object):
                     print yellow('---- State finished ----')
                 self.state_killed = False
 
-                # Adjust goal to make sure hover uses PD actions to stay in
+                # Adjust goal to make sure hover uses PID actions to stay in
                 # current place.
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
                 (self._drone_est_pose, self.vhat,
@@ -238,7 +246,7 @@ class VelCommander(object):
 
             if not self.state == "initialization":
                 self.hover()
-            rospy.sleep(0.01)
+            self.rate.sleep()
 
     def configure(self):
         '''Configures the controller by loading in the room and static
@@ -488,7 +496,7 @@ class VelCommander(object):
 
     def hover(self):
         '''When state is equal to the standby state, drone keeps itself in same
-        location through a PD controller.
+        location through a PID controller.
         '''
         if self.airborne:
             (self._drone_est_pose,
@@ -503,9 +511,7 @@ class VelCommander(object):
                                       y=self.hover_setpoint.position.y,
                                       z=self.hover_setpoint.position.z)
             vel_desired = PointStamped()
-            vel_desired.point = Point(x=0.0,
-                                      y=0.0,
-                                      z=0.0)
+            vel_desired.point = Point()
             feedback_cmd = self.feedback(pos_desired, vel_desired)
 
             self.cmd_twist_convert.twist = feedback_cmd
@@ -520,7 +526,7 @@ class VelCommander(object):
 
         if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
-            rospy.sleep(3.)
+            rospy.sleep(2.8)
             self.airborne = True
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
@@ -534,6 +540,7 @@ class VelCommander(object):
         # Preparing omg standby hover setpoint for when omgtools finishes.
         self.hover_setpoint = self._goal
         self.omg_index = 1
+        self.set_ff_pid_gains()
 
         while not (rospy.is_shutdown() or self.target_reached):
             if self.state_killed:
@@ -545,6 +552,7 @@ class VelCommander(object):
                 self.check_goal_reached()
             self.rate.sleep()
 
+        self.reset_pid_gains()
         self.startup = False
 
     def draw_traj(self):
@@ -583,6 +591,8 @@ class VelCommander(object):
         if not len(self.drawn_pos_x):
             return
 
+        self.set_ff_pid_gains()
+
         goal = Pose()
         goal.position.x = self.drawn_pos_x[0]
         goal.position.y = self.drawn_pos_y[0]
@@ -590,12 +600,16 @@ class VelCommander(object):
         self.set_omg_goal(goal)
         self.omg_fly()
 
+        self.reset_pid_gains()
+
     def follow_traj(self):
         '''Lets the drone fly along the drawn path.
         '''
         # If no path drawn, do nothing.
         if not len(self.drawn_pos_x):
             return
+
+        self.set_ff_pid_gains()
 
         # Preparing hover setpoint for when trajectory is completed.
         self._goal = Pose()
@@ -625,11 +639,12 @@ class VelCommander(object):
 
             self.rate.sleep()
 
+        self.reset_pid_gains()
+
     def drag_drone(self):
         '''Adapts hover setpoint to follow vive right controller when trigger
         is pressed.
         '''
-        self.finish_drag = False
         while not (rospy.is_shutdown() or self.state_killed):
             drag_offset = Point(
                 x=(self._drone_est_pose.position.x-self.ctrl_l_pos.position.x),
@@ -660,6 +675,63 @@ class VelCommander(object):
 
             self.hover()
             self.rate.sleep()
+
+    def hover_changed_gains(self):
+        '''Adapts gains for the undamped spring (only Kp) or viscous fluid
+        (only Kd) illustration.
+        '''
+        self.hover_setpoint.position.z = 1.7
+
+        if self.state == "undamped spring":
+            self.Kp_x = self.Kp_x/2.
+            self.Ki_x = 0.
+            self.Kd_x = 0.
+            self.Kp_y = self.Kp_y/2.
+            self.Ki_y = 0.
+            self.Kd_y = 0.
+            self.Kp_z = self.Kp_z/2.
+            self.Ki_z = 0.
+
+        elif self.state == "viscous fluid":
+            self.Kp_x = 0.
+            self.Ki_x = 0.
+            self.Kd_x = self.Kd_x/8.
+            self.Kp_y = 0.
+            self.Ki_y = 0.
+            self.Kd_y = self.Kd_y/8.
+            self.Kp_z = self.Kp_z/4.
+            self.Ki_z = 0.
+
+        while not (self.state_changed or
+                   rospy.is_shutdown() or self.state_killed):
+            self.hover()
+            self.rate.sleep()
+
+    def set_ff_pid_gains(self):
+        '''Sets pid gains to a lower setting for combination with feedforward
+        flight to keep the controller stable.
+        '''
+        self.Kp_x = rospy.get_param('vel_cmd/Kp_ff_x', 0.6864)
+        self.Ki_x = rospy.get_param('vel_cmd/Ki_ff_x', 0.6864)
+        self.Kd_x = rospy.get_param('vel_cmd/Kd_ff_x', 0.6864)
+        self.Kp_y = rospy.get_param('vel_cmd/Kp_ff_y', 0.6864)
+        self.Ki_y = rospy.get_param('vel_cmd/Ki_ff_y', 0.6864)
+        self.Kd_y = rospy.get_param('vel_cmd/Kd_ff_y', 0.6864)
+        self.Kp_z = rospy.get_param('vel_cmd/Kp_ff_z', 0.5)
+        self.Ki_z = rospy.get_param('vel_cmd/Ki_ff_z', 1.5792)
+
+    def reset_pid_gains(self):
+        '''Resets the PID gains to the rosparam vaules after tasks "undamped
+        spring" or "viscous fluid".
+        '''
+        self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
+        self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
+        self.Kd_x = rospy.get_param('vel_cmd/Kd_x', 0.6864)
+        self.Kp_y = rospy.get_param('vel_cmd/Kp_y', 0.6864)
+        self.Ki_y = rospy.get_param('vel_cmd/Ki_y', 0.6864)
+        self.Kd_y = rospy.get_param('vel_cmd/Kd_y', 0.6864)
+        self.Kp_z = rospy.get_param('vel_cmd/Kp_z', 0.5)
+        self.Ki_z = rospy.get_param('vel_cmd/Ki_z', 1.5792)
 
 ####################
 # Helper functions #
@@ -717,74 +789,81 @@ class VelCommander(object):
         '''
         feedback_cmd = Twist()
 
-        # # PD
-        # pos_error = PointStamped()
-        # pos_error.header.frame_id = "world"
-        # pos_error.point.x = pos_desired.point.x - self._drone_est_pose.position.x
-        # pos_error.point.y = pos_desired.point.y - self._drone_est_pose.position.y
-        # pos_error.point.z = pos_desired.point.z - self._drone_est_pose.position.z
-        #
-        # vel_error = PointStamped()
-        # vel_error.header.frame_id = "world"
-        # vel_error.point.x = vel_desired.point.x - self.vhat.x
-        # vel_error.point.y = vel_desired.point.y - self.vhat.y
-        #
-        # pos_error = self.transform_point(pos_error, "world", "world_rot")
-        # vel_error = self.transform_point(vel_error, "world", "world_rot")
-        #
-        # feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
-        #         self.Kp_x*pos_error.point.x +
-        #         self.Kd_x*vel_error.point.x)))
-        # feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
-        #         self.Kp_y*pos_error.point.y +
-        #         self.Kd_y*vel_error.point.y)))
-        # feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
-        #         self.Kp_z*pos_error.point.z)))
+        if ((self.state == "undamped spring") or
+           (self.state == "viscous fluid")):
+            # # PD
+            pos_error = PointStamped()
+            pos_error.header.frame_id = "world"
+            pos_error.point.x = (pos_desired.point.x -
+                                 self._drone_est_pose.position.x)
+            pos_error.point.y = (pos_desired.point.y -
+                                 self._drone_est_pose.position.y)
+            pos_error.point.z = (pos_desired.point.z -
+                                 self._drone_est_pose.position.z)
 
-        # # PID
-        pos_error_prev = self.pos_error_prev
-        pos_error = PointStamped()
-        pos_error.header.frame_id = "world"
-        pos_error.point.x = (pos_desired.point.x
-                             - self._drone_est_pose.position.x)
-        pos_error.point.y = (pos_desired.point.y
-                             - self._drone_est_pose.position.y)
-        pos_error.point.z = (pos_desired.point.z
-                             - self._drone_est_pose.position.z)
+            vel_error = PointStamped()
+            vel_error.header.frame_id = "world"
+            vel_error.point.x = vel_desired.point.x - self.vhat.x
+            vel_error.point.y = vel_desired.point.y - self.vhat.y
 
-        vel_error_prev = self.vel_error_prev
-        vel_error = PointStamped()
-        vel_error.header.frame_id = "world"
-        vel_error.point.x = vel_desired.point.x - self.vhat.x
-        vel_error.point.y = vel_desired.point.y - self.vhat.y
+            pos_error = self.transform_point(pos_error, "world", "world_rot")
+            vel_error = self.transform_point(vel_error, "world", "world_rot")
+            print 'pos error', pos_error.point
+            print 'vel error\n', self.vhat, vel_error.point
 
-        # print yellow('error before transform\n', pos_error)
-        pos_error = self.transform_point(pos_error, "world", "world_rot")
-        vel_error = self.transform_point(vel_error, "world", "world_rot")
-        # print yellow('error after transform\n', pos_error)
+            feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
+                    self.Kp_x*pos_error.point.x +
+                    self.Kd_x*vel_error.point.x)))
+            feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
+                    self.Kp_y*pos_error.point.y +
+                    self.Kd_y*vel_error.point.y)))
+            feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
+                    self.Kp_z*pos_error.point.z)))
+        else:
+            # # PID
+            pos_error_prev = self.pos_error_prev
+            pos_error = PointStamped()
+            pos_error.header.frame_id = "world"
+            pos_error.point.x = (pos_desired.point.x
+                                 - self._drone_est_pose.position.x)
+            pos_error.point.y = (pos_desired.point.y
+                                 - self._drone_est_pose.position.y)
+            pos_error.point.z = (pos_desired.point.z
+                                 - self._drone_est_pose.position.z)
 
-        feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
-                self.feedback_cmd_prev.linear.x +
-                (self.Kp_x + self.Ki_x*self._sample_time/2) *
-                pos_error.point.x +
-                (-self.Kp_x + self.Ki_x*self._sample_time/2) *
-                pos_error_prev.point.x +
-                self.Kd_x*(vel_error.point.x - vel_error_prev.point.x))))
+            vel_error_prev = self.vel_error_prev
+            vel_error = PointStamped()
+            vel_error.header.frame_id = "world"
+            vel_error.point.x = vel_desired.point.x - self.vhat.x
+            vel_error.point.y = vel_desired.point.y - self.vhat.y
 
-        feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
-                self.feedback_cmd_prev.linear.y +
-                (self.Kp_y + self.Ki_y*self._sample_time/2) *
-                pos_error.point.y +
-                (-self.Kp_y + self.Ki_y*self._sample_time/2) *
-                pos_error_prev.point.y +
-                self.Kd_y*(vel_error.point.y - vel_error_prev.point.y))))
+            # print yellow('error before transform\n', pos_error)
+            pos_error = self.transform_point(pos_error, "world", "world_rot")
+            vel_error = self.transform_point(vel_error, "world", "world_rot")
+            # print yellow('error after transform\n', pos_error)
 
-        feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
-                self.feedback_cmd_prev.linear.z +
-                (self.Kp_z + self.Ki_z*self._sample_time/2) *
-                pos_error.point.z +
-                (-self.Kp_z + self.Ki_z*self._sample_time/2) *
-                pos_error_prev.point.z)))
+            feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
+                    self.feedback_cmd_prev.linear.x +
+                    (self.Kp_x + self.Ki_x*self._sample_time/2) *
+                    pos_error.point.x +
+                    (-self.Kp_x + self.Ki_x*self._sample_time/2) *
+                    pos_error_prev.point.x +
+                    self.Kd_x*(vel_error.point.x - vel_error_prev.point.x))))
+
+            feedback_cmd.linear.y = max(- self.max_input, min(self.max_input, (
+                    self.feedback_cmd_prev.linear.y +
+                    (self.Kp_y + self.Ki_y*self._sample_time/2) *
+                    pos_error.point.y +
+                    (-self.Kp_y + self.Ki_y*self._sample_time/2) *
+                    pos_error_prev.point.y +
+                    self.Kd_y*(vel_error.point.y - vel_error_prev.point.y))))
+
+            feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
+                    self.feedback_cmd_prev.linear.z +
+                    (self.Kp_z + self.Ki_z*self._sample_time/2) *
+                    pos_error.point.z +
+                    (-self.Kp_z + self.Ki_z*self._sample_time/2) *
+                    pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
         feedback_cmd.angular.z = (
@@ -920,8 +999,12 @@ class VelCommander(object):
         return to standby hover.
         '''
         if trackpad_pressed.data and not self.trackpad_held:
-            if (self.state == "drag drone") or (self.state == "draw path"):
+            if (self.state == "draw path"):
                 self.stop_drawing = True
+            elif (self.state == "drag drone" or
+                  self.state == "viscous fluid" or
+                  self.state == "undamped spring"):
+                self.state_changed = True
             self.trackpad_held = True
 
         elif not trackpad_pressed.data and self.trackpad_held:
