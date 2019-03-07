@@ -129,6 +129,7 @@ class Demo(object):
                 # Only publish standby state when task is finished.
                 # Except for repetitive tasks (back to first state in task).
                 if not self.new_task:
+                    self.state = "standby"
                     self.fsm_state.publish("standby")
                     print cyan(' Bebop_core state changed to:', "standby")
 

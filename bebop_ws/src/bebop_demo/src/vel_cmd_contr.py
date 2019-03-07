@@ -47,7 +47,7 @@ class VelCommander(object):
                            "follow path": self.follow_traj,
                            "undamped spring": self.hover_changed_gains,
                            "viscous fluid": self.hover_changed_gains,
-                           "reset_PID": self.reset_PID_gains,
+                           "reset_PID": self.reset_pid_gains,
                            "drag drone": self.drag_drone}
 
         self.state_changed = False
@@ -546,6 +546,7 @@ class VelCommander(object):
         # Preparing omg standby hover setpoint for when omgtools finishes.
         self.hover_setpoint = self._goal
         self.omg_index = 1
+        self.set_ff_pid_gains()
 
         while not (rospy.is_shutdown() or self.target_reached):
             if self.state_killed:
@@ -557,6 +558,7 @@ class VelCommander(object):
                 self.check_goal_reached()
             self.rate.sleep()
 
+        self.reset_pid_gains()
         self.startup = False
 
     def draw_traj(self):
@@ -595,6 +597,8 @@ class VelCommander(object):
         if not len(self.drawn_pos_x):
             return
 
+        self.set_ff_pid_gains()
+
         goal = Pose()
         goal.position.x = self.drawn_pos_x[0]
         goal.position.y = self.drawn_pos_y[0]
@@ -602,12 +606,16 @@ class VelCommander(object):
         self.set_omg_goal(goal)
         self.omg_fly()
 
+        self.reset_pid_gains()
+
     def follow_traj(self):
         '''Lets the drone fly along the drawn path.
         '''
         # If no path drawn, do nothing.
         if not len(self.drawn_pos_x):
             return
+
+        self.set_ff_pid_gains()
 
         # Preparing hover setpoint for when trajectory is completed.
         self._goal = Pose()
@@ -636,6 +644,8 @@ class VelCommander(object):
                 self.check_goal_reached()
 
             self.rate.sleep()
+
+        self.reset_pid_gains()
 
     def drag_drone(self):
         '''Adapts hover setpoint to follow vive right controller when trigger
@@ -703,7 +713,20 @@ class VelCommander(object):
             self.hover()
             self.rate.sleep()
 
-    def reset_PID_gains(self):
+    def set_ff_pid_gains(self):
+        '''Sets pid gains to a lower setting for combination with feedforward
+        flight to keep the controller stable.
+        '''
+        self.Kp_x = rospy.get_param('vel_cmd/Kp_ff_x', 0.6864)
+        self.Ki_x = rospy.get_param('vel_cmd/Ki_ff_x', 0.6864)
+        self.Kd_x = rospy.get_param('vel_cmd/Kd_ff_x', 0.6864)
+        self.Kp_y = rospy.get_param('vel_cmd/Kp_ff_y', 0.6864)
+        self.Ki_y = rospy.get_param('vel_cmd/Ki_ff_y', 0.6864)
+        self.Kd_y = rospy.get_param('vel_cmd/Kd_ff_y', 0.6864)
+        self.Kp_z = rospy.get_param('vel_cmd/Kp_ff_z', 0.5)
+        self.Ki_z = rospy.get_param('vel_cmd/Ki_ff_z', 1.5792)
+
+    def reset_pid_gains(self):
         '''Resets the PID gains to the rosparam vaules after tasks "undamped
         spring" or "viscous fluid".
         '''
