@@ -392,7 +392,7 @@ class VelCommander(object):
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
-        self.desired_yaw = np.arctan2(vel.y, vel.x)
+        self.desired_yaw = np.atan2(vel.y, vel.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
@@ -446,7 +446,7 @@ class VelCommander(object):
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
-        self.desired_yaw = np.arctan2(vel.y, vel.x)
+        self.desired_yaw = np.atan2(vel.y, vel.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
@@ -868,15 +868,12 @@ class VelCommander(object):
                     pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
-        feedback_cmd.angular.z = (
-                            self.K_theta*(self.desired_yaw - self.real_yaw))
+        angle_error = self.desired_yaw - self.real_yaw
+        feedback_cmd.angular.z = (self.K_theta*(
+                                    ((angle_error - np.pi) % 2*np.pi) - np.pi))
 
         self.pos_error_prev = pos_error
         self.vel_error_prev = vel_error
-        # print yellow('* 1. feedback cmd\n'), feedback_cmd.linear
-        # print yellow('* 2. feedback pos errors\n'), pos_desired.x - self._drone_est_pose.position.x
-        # print yellow('* 3. vhat\n'), self.vhat
-        # print '* 3. goal (pos des)\n', pos_desired
         self.feedback_cmd_prev = feedback_cmd
 
         return feedback_cmd
