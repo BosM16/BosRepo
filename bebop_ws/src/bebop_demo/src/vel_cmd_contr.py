@@ -400,9 +400,9 @@ class VelCommander(object):
         pos_fb = pos
         vel_fb = PointStamped()
         vel_fb.header.frame_id = "world"
-        vel_fb.point = Point(x=self._traj['u'][self.omg_index],
-                             y=self._traj['v'][self.omg_index],
-                             z=self._traj['w'][self.omg_index])
+        vel_fb.point = Point(x=self._traj['u'][self.omg_index + 1],
+                             y=self._traj['v'][self.omg_index + 1],
+                             z=self._traj['w'][self.omg_index + 1])
         self.combine_ff_fb(pos_fb, vel_fb)
 
         self.omg_index += 1
@@ -437,13 +437,13 @@ class VelCommander(object):
         pos = PointStamped()
         pos.header.frame_id = "world"
         pos.point = Point(x=self.drawn_pos_x[index],
-                    y=self.drawn_pos_y[index],
-                    z=self.drawn_pos_z[index])
+                          y=self.drawn_pos_y[index],
+                          z=self.drawn_pos_z[index])
         vel = PointStamped()
         vel.header.frame_id = "world"
         vel.point = Point(x=self.drawn_vel_x[index],
-                    y=self.drawn_vel_y[index],
-                    z=self.drawn_vel_z[index])
+                          y=self.drawn_vel_y[index],
+                          z=self.drawn_vel_z[index])
         self.publish_current_ff_vel(pos, vel)
 
         # Transform feedforward command from frame world to world_rotated.
@@ -453,13 +453,7 @@ class VelCommander(object):
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
-        pos_fb = pos
-        vel_fb = PointStamped()
-        vel_fb.header.frame_id = "world"
-        vel_fb.point = Point(x=self.drawn_vel_x[index - 1],
-                       y=self.drawn_vel_y[index - 1],
-                       z=self.drawn_vel_z[index - 1])
-        self.combine_ff_fb(pos_fb, vel_fb)
+        self.combine_ff_fb(pos, vel)
 
     def check_goal_reached(self):
         '''Determines whether goal is reached.
