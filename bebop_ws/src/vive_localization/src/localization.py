@@ -224,6 +224,8 @@ class ViveLocalization(object):
                 pose_c_in_v = self.get_pose_vive(self.tracked_objects[i])
                 pose_c_in_w = self.transform_pose(pose_c_in_v, "vive", "world")
 
+
+
                 self.c_publishers[i-1].publish(pose_c_in_w)
 
             self.rate.sleep()
@@ -235,8 +237,11 @@ class ViveLocalization(object):
         pose = np.array(
             self.v.devices[object].get_pose_euler())
 
-
         pose[3:6] = pose[3:6]*np.pi/180.
+        # Rotate controller 90° to align rviz arrow with wand.
+        if object[0:10] == "controller":
+            pose[5] += 90.
+
         quat = tf.transformations.quaternion_from_euler(
             pose[5], pose[4], pose[3])
 
