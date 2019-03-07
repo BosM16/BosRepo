@@ -23,9 +23,14 @@ options.figures = true;
 options.prints = false;
 
 % Desired phase margin
-PM_des = 45;
+% --------------------
+% % Combined with feedforward:
+% PM_des = 45;
+% Purely feedback (positioning):
+PM_des = 35;
 
 % Function calls
+% --------------
 fprintf('\n----------------- x direction -----------------\n')
 [xsys_cl,xPIDparams] = PID_design(xmodel, PM_des, options);
 fprintf('\n----------------- y direction -----------------\n')
