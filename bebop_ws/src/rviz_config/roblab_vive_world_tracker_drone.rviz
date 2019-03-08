@@ -21,6 +21,8 @@ Panels:
         - /Marker6
         - /Pose1
         - /Pose2
+        - /Marker7
+        - /Marker8
       Splitter Ratio: 0.5
     Tree Height: 843
   - Class: rviz/Selection
@@ -46,7 +48,7 @@ Visualization Manager:
   Class: ""
   Displays:
     - Alpha: 0.5
-      Cell Size: 0.550000012
+      Cell Size: 1
       Class: rviz/Grid
       Color: 160; 160; 164
       Enabled: true
@@ -60,12 +62,12 @@ Visualization Manager:
         Y: 0
         Z: 0
       Plane: XY
-      Plane Cell Count: 10
+      Plane Cell Count: 8
       Reference Frame: <Fixed Frame>
       Value: true
     - Class: rviz/Axes
       Enabled: true
-      Length: 3
+      Length: 2
       Name: Axes
       Radius: 0.0199999996
       Reference Frame: world
@@ -126,7 +128,7 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /motionplanner/omg_vel
+      Marker Topic: /motionplanner/current_ff_vel
       Name: Marker
       Namespaces:
         {}
@@ -186,6 +188,22 @@ Visualization Manager:
       Topic: /vive_localization/c2_pose
       Unreliable: false
       Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /motionplanner/room_contours
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/Marker
+      Enabled: true
+      Marker Topic: /motionplanner/vhat_vector
+      Name: Marker
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -211,25 +229,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/XYOrbit
-      Distance: 7.20593691
+      Distance: 9.66793919
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -1.03183687
-        Y: 0.304880381
+        X: 0.34157595
+        Y: -0.950095177
         Z: 5.96046448e-07
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.964796126
+      Pitch: 1.48979688
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 4.72308683
+      Yaw: 4.10308933
     Saved: ~
 Window Geometry:
   Displays:
