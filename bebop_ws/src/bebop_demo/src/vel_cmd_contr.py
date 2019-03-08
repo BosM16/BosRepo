@@ -122,7 +122,7 @@ class VelCommander(object):
         self._trigger = Trigger()
 
         # Obstacle setup
-        self.Sjaaakie = [0.35, 1.3, 1.5, 1.5, 0.75]
+        self.Sjaaakie = [0.35, 2.5, 0.0, 0.0, 1.25]  # radius, height, xpos, ypos, zpos
 
         # Marker setup
         self.marker_setup()
@@ -397,13 +397,7 @@ class VelCommander(object):
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
-        pos_fb = pos
-        vel_fb = PointStamped()
-        vel_fb.header.frame_id = "world"
-        vel_fb.point = Point(x=self._traj['u'][self.omg_index + 1],
-                             y=self._traj['v'][self.omg_index + 1],
-                             z=self._traj['w'][self.omg_index + 1])
-        self.combine_ff_fb(pos_fb, vel_fb)
+        self.combine_ff_fb(pos, vel)
 
         self.omg_index += 1
 
@@ -808,8 +802,6 @@ class VelCommander(object):
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
-            print 'pos error', pos_error.point
-            print 'vel error\n', self.vhat, vel_error.point
 
             feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
                     self.Kp_x*pos_error.point.x +
