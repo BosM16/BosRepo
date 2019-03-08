@@ -161,6 +161,8 @@ class VelCommander(object):
             'motionplanner/current_ff_vel', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', Marker, queue_size=1)
+        self.draw_room = rospy.Publisher(
+            'motionplanner/room_contours', Marker, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
             'controller/state_finish', Empty, queue_size=1)
         self.pos_error_pub = rospy.Publisher(
@@ -219,6 +221,7 @@ class VelCommander(object):
         '''Configures,
         Starts the controller's periodical loop.
         '''
+        self.draw_room_contours()
         self.configure()
         print green('----    Controller running     ----')
 
@@ -1228,6 +1231,22 @@ class VelCommander(object):
         self.smooth_path.color.a = 1.0
         self.smooth_path.lifetime = rospy.Duration(0)
 
+        # Room contours
+        self.room_contours = Marker()
+        self.room_contours.header.frame_id = 'world'
+        self.room_contours.ns = "room_contours"
+        self.room_contours.id = 6
+        self.room_contours.type = 4  # Line List.
+        self.room_contours.action = 0
+        self.room_contours.scale.x = 0.03
+        # self.room_contours.scale.y = 0.03
+        # self.room_contours.scale.z = 0.0
+        self.room_contours.color.r = 0.8
+        self.room_contours.color.g = 0.8
+        self.room_contours.color.b = 0.8
+        self.room_contours.color.a = 1.0
+        self.room_contours.lifetime = rospy.Duration(0)
+
     def reset_markers(self):
         '''Resets all Rviz markers (except for obstacles).
         '''
@@ -1339,6 +1358,27 @@ class VelCommander(object):
             self.smooth_path.points.append(point)
 
         self.trajectory_smoothed.publish(self.smooth_path)
+
+    def draw_room_contours(self):
+        '''Publish the smoothed x and y trajectory to topic for visualisation
+        in rviz.
+        '''
+        self.room_contours.header.stamp = rospy.get_rostime()
+        self.room_contours.points = []
+
+        bottom_left = Point(x=-self.room_width/2.,
+                            y=-self.room_depth/2.)
+        bottom_right = Point(x=self.room_width/2.,
+                             y=-self.room_depth/2.)
+        top_right = Point(x=self.room_width/2.,
+                          y=self.room_depth/2.)
+        top_left = Point(x=-self.room_width/2.,
+                         y=self.room_depth/2.)
+        corners = [bottom_left, bottom_right, top_right, top_left, bottom_left]
+        for point in corners:
+            self.room_contours.points.append(point)
+
+        self.draw_room.publish(self.room_contours)
 
 
 if __name__ == '__main__':
