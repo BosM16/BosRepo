@@ -50,6 +50,7 @@ class Kalman(object):
         Arguments:
             vel_cmd: TwistStamped
         '''
+        print 'Pos predict\n==========\n'
         # print '---------------self.X_r before', self.X_r
         (self.X_r, yhat_r, vhat_r, self.Phat) = self.predict_step_calc(
             vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
@@ -74,7 +75,7 @@ class Kalman(object):
         Arguments:
             measurement_world: PoseStamped expressed in "world" frame.
         '''
-
+        print 'pos correct\n===========\n'
         self.vel_list_corr = self.vel_list_corr + self.vel_cmd_list
         self.vel_cmd_list = []
 
@@ -166,6 +167,8 @@ class Kalman(object):
             - vel_cmd_stamped = TwistStamped
             - Ts = varying step size over which to integrate.
         """
+        print 'predict\n---------\n', vel_cmd_stamped
+
         vel_cmd = vel_cmd_stamped.twist
 
         u = np.array([[vel_cmd.linear.x],
@@ -201,6 +204,7 @@ class Kalman(object):
         Argument:
             - pos_meas = PoseStamped expressed in "world_rot" frame.
         """
+        print 'correct\n---------\n', pos_meas
         y = np.array([[pos_meas.pose.position.x],
                       [pos_meas.pose.position.y],
                       [pos_meas.pose.position.z]])

@@ -199,21 +199,22 @@ class ViveLocalization(object):
             # =========
             # DUMMY - NO HARDWARE ATTACHED - MAKE SURE IT DOESNT TRY TO READ IT.
             # pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
-            quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=self.index * 2.*np.pi/360., z=0))
+            # quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=self.index * 2.*np.pi/360., z=0))
+            quat = self.get_quat_angles(Point(x=0., y=0., z=self.index * 2.*np.pi/360))
             self.index += 1
-            pose_t_in_v = PoseStamped()
-            pose_t_in_v.header.frame_id = "vive"
-            pose_t_in_v.header.stamp = rospy.Time.now()
-            pose_t_in_v.pose.position.x = 1.
-            pose_t_in_v.pose.position.y = 1.
-            pose_t_in_v.pose.position.z = 1.
-            pose_t_in_v.pose.orientation.x = quat[0]
-            pose_t_in_v.pose.orientation.y = quat[1]
-            pose_t_in_v.pose.orientation.z = quat[2]
-            pose_t_in_v.pose.orientation.w = quat[3]
-            self.tf_t_in_v = self.pose_to_tf(pose_t_in_v, "tracker")
+            pose_t_in_w = PoseStamped()
+            pose_t_in_w.header.frame_id = "world"
+            pose_t_in_w.header.stamp = rospy.Time.now()
+            pose_t_in_w.pose.position.x = 1.
+            pose_t_in_w.pose.position.y = 1.
+            pose_t_in_w.pose.position.z = 1.
+            pose_t_in_w.pose.orientation.x = quat[0]
+            pose_t_in_w.pose.orientation.y = quat[1]
+            pose_t_in_w.pose.orientation.z = quat[2]
+            pose_t_in_w.pose.orientation.w = quat[3]
+            self.tf_t_in_w = self.pose_to_tf(pose_t_in_w, "tracker")
 
-            self.broadc.sendTransform(self.tf_t_in_v)
+            self.broadc.sendTransform(self.tf_t_in_w)
             self.stbroadc.sendTransform(self.tf_d_in_t)
 
             # Calculate and publish pose of drone in world frame and also
@@ -227,7 +228,6 @@ class ViveLocalization(object):
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
-
 
             data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
             self.pos_update.publish(data)
@@ -289,7 +289,7 @@ class ViveLocalization(object):
         return euler
 
     def get_quat_angles(self, transf):
-        '''
+        '''transf = Point
         '''
         euler = (transf.x,
                  transf.y,
