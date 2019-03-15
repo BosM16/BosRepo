@@ -19,10 +19,10 @@ Panels:
         - /Marker4
         - /Marker5
         - /Marker6
-        - /Pose1
-        - /Pose2
         - /Marker7
         - /Marker8
+        - /PointStamped2
+        - /PointStamped3
       Splitter Ratio: 0.5
     Tree Height: 843
   - Class: rviz/Selection
@@ -115,7 +115,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/desired_path
       Name: Marker
       Namespaces:
-        {}
+        trajectory_desired: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -123,7 +123,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/real_path
       Name: Marker
       Namespaces:
-        {}
+        trajectory_real: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -131,7 +131,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/current_ff_vel
       Name: Marker
       Namespaces:
-        {}
+        current_ff_vel: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -139,7 +139,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/rviz_obst
       Name: Marker
       Namespaces:
-        {}
+        obstacle: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -147,7 +147,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/drawn_path
       Name: Marker
       Namespaces:
-        {}
+        drawn_path: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -155,45 +155,15 @@ Visualization Manager:
       Marker Topic: /motionplanner/smoothed_path
       Name: Marker
       Namespaces:
-        {}
+        smooth_path: true
       Queue Size: 100
-      Value: true
-    - Alpha: 1
-      Axes Length: 1
-      Axes Radius: 0.100000001
-      Class: rviz/Pose
-      Color: 150; 0; 10
-      Enabled: true
-      Head Length: 0.100000001
-      Head Radius: 0.100000001
-      Name: Pose
-      Shaft Length: 0.200000003
-      Shaft Radius: 0.0500000007
-      Shape: Arrow
-      Topic: /vive_localization/c1_pose
-      Unreliable: false
-      Value: true
-    - Alpha: 1
-      Axes Length: 1
-      Axes Radius: 0.100000001
-      Class: rviz/Pose
-      Color: 255; 255; 255
-      Enabled: true
-      Head Length: 0.100000001
-      Head Radius: 0.100000001
-      Name: Pose
-      Shaft Length: 0.200000003
-      Shaft Radius: 0.0500000007
-      Shape: Arrow
-      Topic: /vive_localization/c2_pose
-      Unreliable: false
       Value: true
     - Class: rviz/Marker
       Enabled: true
       Marker Topic: /motionplanner/room_contours
       Name: Marker
       Namespaces:
-        {}
+        room_contours: true
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -201,8 +171,28 @@ Visualization Manager:
       Marker Topic: /motionplanner/vhat_vector
       Name: Marker
       Namespaces:
-        {}
+        vhat_vector: true
       Queue Size: 100
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 255; 255; 255
+      Enabled: true
+      History Length: 1
+      Name: PointStamped
+      Radius: 0.100000001
+      Topic: /vive_localization/c1_position
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Class: rviz/PointStamped
+      Color: 150; 0; 10
+      Enabled: true
+      History Length: 1
+      Name: PointStamped
+      Radius: 0.100000001
+      Topic: /vive_localization/c2_position
+      Unreliable: false
       Value: true
   Enabled: true
   Global Options:
@@ -244,10 +234,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 1.48979688
+      Pitch: 0.379796922
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 4.10308933
+      Yaw: 4.26809025
     Saved: ~
 Window Geometry:
   Displays:
