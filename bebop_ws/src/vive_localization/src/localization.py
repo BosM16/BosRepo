@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import PoseStamped, TransformStamped
+from geometry_msgs.msg import PointStamped, PoseStamped, TransformStamped
 from std_msgs.msg import Empty
 from vive_localization.msg import PoseMeas
 
@@ -38,15 +38,25 @@ class ViveLocalization(object):
         self.pose_c2_in_w = PoseStamped()
         self.pose_c2_in_w.header.frame_id = "world"
 
+        self.pos_c1_in_w = PointStamped()
+        self.pos_c1_in_w.header.frame_id = "world"
+        self.pos_c2_in_w = PointStamped()
+        self.pos_c2_in_w.header.frame_id = "world"
+
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseMeas, queue_size=1)
         # Note that the following could made more general for any number of
         # tracked objects.
-        self.c1_pos_update = rospy.Publisher(
+        self.c1_pose_update = rospy.Publisher(
             'vive_localization/c1_pose', PoseStamped, queue_size=1)
-        self.c2_pos_update = rospy.Publisher(
+        self.c2_pose_update = rospy.Publisher(
             'vive_localization/c2_pose', PoseStamped, queue_size=1)
-        self.c_publishers = [self.c1_pos_update, self.c2_pos_update]
+        self.c1_pos_update = rospy.Publisher(
+            'vive_localization/c1_position', PointStamped, queue_size=1)
+        self.c2_pos_update = rospy.Publisher(
+            'vive_localization/c2_position', PointStamped, queue_size=1)
+        self.c_publishers = [self.c1_pose_update, self.c1_pos_update,
+                             self.c2_pose_update, self.c1_pos_update]
 
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
@@ -224,7 +234,12 @@ class ViveLocalization(object):
                 pose_c_in_v = self.get_pose_vive(self.tracked_objects[i])
                 pose_c_in_w = self.transform_pose(pose_c_in_v, "vive", "world")
 
-                self.c_publishers[i-1].publish(pose_c_in_w)
+                pos_c_in_w = PointStamped()
+                pos_c_in_w.header = pose_c_in_w.header
+                pos_c_in_w.point = pose_c_in_w.pose.position
+
+                self.c_publishers[2*i-2].publish(pose_c_in_w)
+                self.c_publishers[2*i-1].publish(pos_c_in_w)
 
             self.rate.sleep()
 
