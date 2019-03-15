@@ -864,8 +864,11 @@ class VelCommander(object):
                     pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
-        feedback_cmd.angular.z = (
-                            self.K_theta*(self.desired_yaw - self.real_yaw))
+        angle_error = ((((self.desired_yaw - self.real_yaw) -
+                         np.pi) % (2*np.pi)) - np.pi)
+        K_theta = self.K_theta + (np.pi - abs(angle_error))/np.pi*0.2
+        feedback_cmd.angular.z = (K_theta*angle_error)
+        # feedback_cmd.angular.z = (self.K_theta*angle_error)
 
         self.pos_error_prev = pos_error
         self.vel_error_prev = vel_error
@@ -1247,7 +1250,7 @@ class VelCommander(object):
         self.vhat_vector.header.frame_id = 'world'
         self.vhat_vector.ns = "vhat_vector"
         self.vhat_vector.id = 7
-        self.vhat_vector.type = 2  # Arrow.
+        self.vhat_vector.type = 0  # Arrow.
         self.vhat_vector.action = 0
         self.vhat_vector.scale.x = 0.06  # shaft diameter
         self.vhat_vector.scale.y = 0.1  # head diameter
@@ -1267,8 +1270,10 @@ class VelCommander(object):
         self.trajectory_drawn.publish(self.drawn_path)
         self._real_path.points = []
         self.trajectory_real.publish(self._real_path)
-        self.current_ff_vel.points = []
+        self.current_ff_vel.points = [Point(), Point()]
         self.current_ff_vel_pub.publish(self.current_ff_vel)
+        self.vhat_vector_pub.points = [Point(), Point()]
+        self.vhat_vector_pub.publish(self.vhat_vector)
         self.vhat_vector.points = []
         self.vhat_vector_pub.publish(self.vhat_vector)
         self.smooth_path.points = []
@@ -1391,25 +1396,6 @@ class VelCommander(object):
     def draw_room_contours(self):
         '''Publish the smoothed x and y trajectory to topic for visualisation
         in rviz.
-        '''
-        self.room_contours.header.stamp = rospy.get_rostime()
-
-        bottom_left = Point(x=-self.room_width/2.,
-                            y=-self.room_depth/2.)
-        bottom_right = Point(x=self.room_width/2.,
-                             y=-self.room_depth/2.)
-        top_right = Point(x=self.room_width/2.,
-                          y=self.room_depth/2.)
-        top_left = Point(x=-self.room_width/2.,
-                         y=self.room_depth/2.)
-        corners = [bottom_left, bottom_right, top_right, top_left, bottom_left]
-        for point in corners:
-            self.room_contours.points.append(point)
-
-        self.draw_room.publish(self.room_contours)
-
-    def draw_room_contours(self):
-        '''Publish the 2D contours of the room in rviz.
         '''
         self.room_contours.header.stamp = rospy.get_rostime()
 

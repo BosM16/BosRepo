@@ -41,7 +41,7 @@
   <param name='vel_cmd/Kp_z' value="4.0" />
   <param name='vel_cmd/Ki_z' value="0.0" /> -->
 
-  <param name='vel_cmd/K_theta' value="0.2" />
+  <param name='vel_cmd/K_theta' value="0.1" />
   <param name='vel_cmd/max_input' value="1.0" />
   <param name='vel_cmd/safety_treshold' value="0.2" />
 
