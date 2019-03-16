@@ -28,9 +28,6 @@ class ViveLocalization(object):
         self.index = 1
         self.calib = rospy.get_param('vive_localization/calibrate', True)
 
-        self.pose_t_in_w = PoseStamped()
-        self.pose_t_in_w.header.frame_id = "world"
-
         self.pose_c1_in_w = PoseStamped()
         self.pose_c1_in_w.header.frame_id = "world"
         self.pose_c2_in_w = PoseStamped()
@@ -217,14 +214,16 @@ class ViveLocalization(object):
 
             self.broadc.sendTransform(self.tf_t_in_w)
             self.stbroadc.sendTransform(self.tf_d_in_t)
-
-            # Calculate pose of drone in world frame as well as yaw.
+            rospy.sleep(0.010)
+            # Calculate pose of drone in world frame as well as yaw angle.
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
-            pose_t_in_w = self.tf_to_pose(tf_d_in_w)
+            pose_d_in_w = self.tf_to_pose(tf_d_in_w)
 
             # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
+            print '\n tf d in w\n', tf_d_in_w
+            print '\n pose t in w\n', pose_d_in_w
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
@@ -238,9 +237,10 @@ class ViveLocalization(object):
             self.tf_r_in_w.transform.rotation.w = quat[3]
             self.tf_r_in_w.header.stamp = rospy.Time.now()
             self.broadc.sendTransform(self.tf_r_in_w)
+            rospy.sleep(0.010)
 
-            # Publish pose of drone in world frame as well as yaw.
-            data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
+            # Publish pose of drone in world frame as well as yaw angle.
+            data = PoseMeas(meas_world=pose_d_in_w, yaw=yaw)
             self.pos_update.publish(data)
 
             # =============
