@@ -43,6 +43,8 @@ class Demo(object):
                           "draw follow traj": ["land", "draw path", "take-off",
                                                "fly to start", "follow path"]}
 
+        self.meas_rot = rospy.Publisher(
+            'world_mode/meas_rot', PoseStamped, queue_size=1)
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
         self.pose_r_pub = rospy.Publisher(
@@ -146,7 +148,7 @@ class Demo(object):
 
             # print '---------------------kalman predict step velocity used', req_vel.vel_cmd.twist.linear
             self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                    self.kalman.latest_vel_cmd, self.wm.yhat_r)
+                                    self.kalman.latest_vel_cmd)
 
             # Transform the rotated yhat and vhat to world frame.
             self.wm.yhat = self.transform_point(
@@ -173,6 +175,8 @@ class Demo(object):
 
         measurement = self.kalman.transform_pose(
                                 self.pc.pose_vive, "world", "world_rot")
+        self.meas_rot.publish(measurement)
+
         if self.measurement_valid:
             if self.kalman.init:
                 self.wm.yhat_r_t0.header = measurement.header

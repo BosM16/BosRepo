@@ -238,6 +238,7 @@ class ViveLocalization(object):
             self.tf_r_in_w.transform.rotation.y = quat[1]
             self.tf_r_in_w.transform.rotation.z = quat[2]
             self.tf_r_in_w.transform.rotation.w = quat[3]
+            self.tf_r_in_w.header.stamp = rospy.Time.now()
             self.broadc.sendTransform(self.tf_r_in_w)
 
             # =============
