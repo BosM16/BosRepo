@@ -227,7 +227,7 @@ class ViveLocalization(object):
                 rate.sleep()
             # Calculate pose of drone in world frame as well as yaw angle.
             pose_d_in_w = self.tf_to_pose(tf_d_in_w)
-            self.tf_t_in_w_timestamp_old = pose_t_in_w.header.stamp
+            self.tf_t_in_w_timestamp_old = tf_d_in_w.header.stamp
 
             # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
@@ -251,8 +251,7 @@ class ViveLocalization(object):
             while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old:
                 tf_r_in_w = self.get_transform("world", "world_rot")
                 rate.sleep()
-            print '\n tf_r_in_w\n', tf_r_in_w
-            self.tf_r_in_w_timestamp_old = self.tf_r_in_w.header.stamp
+            self.tf_r_in_w_timestamp_old = tf_r_in_w.header.stamp
 
             # Publish pose of drone in world frame as well as yaw angle.
             data = PoseMeas(meas_world=pose_d_in_w, yaw=yaw)
