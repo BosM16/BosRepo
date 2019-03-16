@@ -24,6 +24,8 @@ class ViveLocalization(object):
         '''
         rospy.init_node('bebop_demo')
 
+        self.yaw = 0.
+
         self.tracked_objects = ["tracker_1"] #, "controller_1"]  # "controller_2"
         self.index = 1
         self.calib = rospy.get_param('vive_localization/calibrate', True)
@@ -201,6 +203,7 @@ class ViveLocalization(object):
             # DUMMY - NO HARDWARE ATTACHED - MAKE SURE IT DOESNT TRY TO READ IT.
             # pose_t_in_v = self.get_pose_vive(self.tracked_objects[0])
             # quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=self.index * 2.*np.pi/360., z=0))
+
             quat = self.get_quat_angles(Point(x=0., y=0., z=self.index * 2.*np.pi/360))
             self.index += 1
             pose_t_in_w = PoseStamped()
@@ -225,9 +228,10 @@ class ViveLocalization(object):
             while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old:
                 tf_d_in_w = self.get_transform("drone", "world")
                 rate.sleep()
+            self.tf_t_in_w_timestamp_old = tf_d_in_w.header.stamp
+
             # Calculate pose of drone in world frame as well as yaw angle.
             pose_d_in_w = self.tf_to_pose(tf_d_in_w)
-            self.tf_t_in_w_timestamp_old = tf_d_in_w.header.stamp
 
             # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
@@ -249,7 +253,7 @@ class ViveLocalization(object):
             tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
             rate = rospy.Rate(20./self.sample_time)
             while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old:
-                tf_r_in_w = self.get_transform("world", "world_rot")
+                tf_r_in_w = self.get_transform("world_rot", "world")
                 rate.sleep()
             self.tf_r_in_w_timestamp_old = tf_r_in_w.header.stamp
 
@@ -275,7 +279,6 @@ class ViveLocalization(object):
         '''
         pose = np.array(
             self.v.devices[object].get_pose_euler())
-
 
         pose[3:6] = pose[3:6]*np.pi/180.
         quat = tf.transformations.quaternion_from_euler(

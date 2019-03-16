@@ -29,6 +29,8 @@ class Demo(object):
 
         rospy.init_node('bebop_demo')
 
+        self.transfoldstamp = 0.0
+
         self.state = "initialization"
         self.state_sequence = []
         self.change_state = False
@@ -188,6 +190,7 @@ class Demo(object):
             # Apply correction step.
             self.wm.yhat_r, self.wm.yhat_r_t0 = self.kalman.kalman_pos_correct(
                                                 measurement, self.wm.yhat_r_t0)
+            print 'yhat corr'
             self.wm.yhat = self.transform_point(
                 self.wm.yhat_r, "world_rot", "world")
             self.pose_pub.publish(self.wm.yhat)
@@ -248,6 +251,11 @@ class Demo(object):
             - _from, _to = string, name of frame
         '''
         transform = self.kalman.get_transform(_from, _to)
+        if self.transfoldstamp == transform.header.stamp:
+            print 'equal'
+        self.transfoldstamp = transform.header.stamp
+        print transform.header.stamp
+
         point_transformed = tf2_geom.do_transform_point(point, transform)
 
         return point_transformed
