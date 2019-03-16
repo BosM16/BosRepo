@@ -33,6 +33,9 @@ class ViveLocalization(object):
         self.pose_c2_in_w = PoseStamped()
         self.pose_c2_in_w.header.frame_id = "world"
 
+        self.tf_r_in_w_timestamp_old = rospy.Time.now()
+        self.tf_t_in_w_timestamp_old = rospy.Time.now()
+
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseMeas, queue_size=1)
         # Note that the following could made more general for any number of
@@ -199,10 +202,10 @@ class ViveLocalization(object):
             # quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=self.index * 2.*np.pi/360., z=0))
             quat = self.get_quat_angles(Point(x=0., y=0., z=self.index * 2.*np.pi/360))
             self.index += 1
-            print '\nreal yaw\n', self.index * 2.*np.pi/360
             pose_t_in_w = PoseStamped()
             pose_t_in_w.header.frame_id = "world"
             pose_t_in_w.header.stamp = rospy.Time.now()
+            self.tf_r_in_w.header.stamp = rospy.Time.now()
             pose_t_in_w.pose.position.x = 1.
             pose_t_in_w.pose.position.y = 1.
             pose_t_in_w.pose.position.z = 1.
@@ -210,24 +213,29 @@ class ViveLocalization(object):
             pose_t_in_w.pose.orientation.y = quat[1]
             pose_t_in_w.pose.orientation.z = quat[2]
             pose_t_in_w.pose.orientation.w = quat[3]
-            self.tf_t_in_w = self.pose_to_tf(pose_t_in_w, "tracker")
 
+            self.tf_t_in_w = self.pose_to_tf(pose_t_in_w, "tracker")
             self.broadc.sendTransform(self.tf_t_in_w)
             self.stbroadc.sendTransform(self.tf_d_in_t)
-            rospy.sleep(0.010)
-            # Calculate pose of drone in world frame as well as yaw angle.
+
+            # Wait until transform has been updated
             tf_d_in_w = TransformStamped()
-            tf_d_in_w = self.get_transform("drone", "world")
+            tf_d_in_w.header.stamp = self.tf_t_in_w_timestamp_old
+            while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old:
+                print 'in while loop 1'
+                tf_d_in_w = self.get_transform("drone", "world")
+                print 'before sleep'
+                rospy.sleep(0.001)
+            # Calculate pose of drone in world frame as well as yaw angle.
+            print 'left while loop'
             pose_d_in_w = self.tf_to_pose(tf_d_in_w)
+            self.tf_t_in_w_timestamp_old = pose_t_in_w.header.stamp
 
             # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
-            print '\n tf d in w\n', tf_d_in_w
-            print '\n pose t in w\n', pose_d_in_w
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
-            print '\nyaw angle\n', yaw
 
             # - Yaw only (roll and pitch 0.0) to quaternions.
             quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
@@ -235,9 +243,18 @@ class ViveLocalization(object):
             self.tf_r_in_w.transform.rotation.y = quat[1]
             self.tf_r_in_w.transform.rotation.z = quat[2]
             self.tf_r_in_w.transform.rotation.w = quat[3]
-            self.tf_r_in_w.header.stamp = rospy.Time.now()
+            # self.tf_r_in_w.header.stamp = rospy.Time.now()
             self.broadc.sendTransform(self.tf_r_in_w)
-            rospy.sleep(0.010)
+
+            # Wait until transform has been updated
+            tf_r_in_w = TransformStamped()
+            tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
+            rate = rospy.Rate(0.001)
+            while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old:
+                print 'in while loop 2'
+                tf_r_in_w = self.get_transform("world", "world_rot")
+                rate.sleep()
+            self.tf_r_in_w_timestamp_old = self.tf_r_in_w.header.stamp
 
             # Publish pose of drone in world frame as well as yaw angle.
             data = PoseMeas(meas_world=pose_d_in_w, yaw=yaw)
@@ -313,8 +330,7 @@ class ViveLocalization(object):
         '''
         '''
         transf = TransformStamped()
-        transf.header.stamp = rospy.Time.now()
-        transf.header.frame_id = pose.header.frame_id
+        transf.header = pose.header
         transf.child_frame_id = child_frame_id
         transf.transform.translation = pose.pose.position
         transf.transform.rotation = pose.pose.orientation
