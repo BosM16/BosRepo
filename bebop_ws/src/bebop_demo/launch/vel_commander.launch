@@ -3,8 +3,8 @@
   <node name="vel_commander" pkg="bebop_demo" type="vel_cmd_contr.py" output="screen"/>
   <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
 
-  <param name="vel_cmd/update_time" value="25.0" />
-  <param name="vel_cmd/sample_time" value="0.5" />
+  <param name="vel_cmd/update_time" value="0.5" />
+  <param name="vel_cmd/sample_time" value="0.01" />
   <param name='vel_cmd/goal_reached_pos_tol' value="0.10" />
   <param name='vel_cmd/goal_reached_angle_tol' value="0.05" />
   <param name='vel_cmd/Kp_x' value="0.9790" />
