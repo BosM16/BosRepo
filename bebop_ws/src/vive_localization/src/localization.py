@@ -192,7 +192,7 @@ class ViveLocalization(object):
         print '-------------------------'
         print ' Vive Localization READY '
         print '-------------------------'
-        # rospy.sleep(10.)
+
         while not rospy.is_shutdown():
             # =========
             #  TRACKER
@@ -202,6 +202,7 @@ class ViveLocalization(object):
             # quat = self.get_quat_angles(Point(x=self.index * 2.*np.pi/360., y=self.index * 2.*np.pi/360., z=0))
             quat = self.get_quat_angles(Point(x=0., y=0., z=self.index * 2.*np.pi/360))
             self.index += 1
+            print '\nreal yaw\n', self.index * 2.*np.pi/360
             pose_t_in_w = PoseStamped()
             pose_t_in_w.header.frame_id = "world"
             pose_t_in_w.header.stamp = rospy.Time.now()
@@ -217,8 +218,7 @@ class ViveLocalization(object):
             self.broadc.sendTransform(self.tf_t_in_w)
             self.stbroadc.sendTransform(self.tf_d_in_t)
 
-            # Calculate and publish pose of drone in world frame and also
-            # include yaw.
+            # Calculate pose of drone in world frame as well as yaw.
             tf_d_in_w = TransformStamped()
             tf_d_in_w = self.get_transform("drone", "world")
             pose_t_in_w = self.tf_to_pose(tf_d_in_w)
@@ -228,9 +228,7 @@ class ViveLocalization(object):
             euler = self.get_euler_angles(tf_d_in_w)
             # - Get yaw.
             yaw = euler[2]
-
-            data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
-            self.pos_update.publish(data)
+            print '\nyaw angle\n', yaw
 
             # - Yaw only (roll and pitch 0.0) to quaternions.
             quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
@@ -240,6 +238,10 @@ class ViveLocalization(object):
             self.tf_r_in_w.transform.rotation.w = quat[3]
             self.tf_r_in_w.header.stamp = rospy.Time.now()
             self.broadc.sendTransform(self.tf_r_in_w)
+
+            # Publish pose of drone in world frame as well as yaw.
+            data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
+            self.pos_update.publish(data)
 
             # =============
             #  CONTROLLERS

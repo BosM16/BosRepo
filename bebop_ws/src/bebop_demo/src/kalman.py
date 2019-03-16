@@ -50,7 +50,7 @@ class Kalman(object):
         Arguments:
             vel_cmd: TwistStamped
         '''
-        print 'Pos predict\n==========\n'
+        # print 'Pos predict\n==========\n'
         # print '---------------self.X_r before', self.X_r
         (self.X_r, yhat_r, vhat_r, self.Phat) = self.predict_step_calc(
             vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
@@ -75,10 +75,10 @@ class Kalman(object):
         Arguments:
             measurement_world: PoseStamped expressed in "world" frame.
         '''
-        print '\n ===========\n pos correct\n ===========\n'
+        # print '\n ===========\n pos correct\n ===========\n'
         self.vel_list_corr = self.vel_list_corr + self.vel_cmd_list
         self.vel_cmd_list = []
-        print 'velocity list', self.vel_list_corr
+        # print 'velocity list', self.vel_list_corr
 
         if (len(self.vel_list_corr) > 1) and self.get_time_diff(
                 yhat_r_t0, self.vel_list_corr[1]) > 0:
@@ -106,7 +106,7 @@ class Kalman(object):
             case3 = True
             Ts = self.get_time_diff(
                 measurement, yhat_r_t0)
-        print '\n kalman first predict step Ts, X_r_t0\n', Ts, '\n', self.X_r_t0
+        # print '\n kalman first predict step Ts, X_r_t0\n', Ts, '\n', self.X_r_t0
         (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                 self.vel_list_corr[0], Ts, self.X_r_t0, self.Phat_t0)
 
@@ -117,7 +117,7 @@ class Kalman(object):
             for i in range(vel_len - 2):
                 Ts = self.get_time_diff(
                     self.vel_list_corr[i+2], self.vel_list_corr[i+1])
-                print '\n kalman second predict step Ts and yhat_r\n', Ts, '\n', yhat_r.point
+                # print '\n kalman second predict step Ts and yhat_r\n', Ts, '\n', yhat_r.point
                 (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                     self.vel_list_corr[i+1], Ts, X, Phat)
 
@@ -128,7 +128,7 @@ class Kalman(object):
 
         # Now make prediction up to new t0 if not case 3.
         if not case3:
-            print '\n kalman third predict step Ts and yhat_r\n', B, '\n', yhat_r.point
+            # print '\n kalman third predict step Ts and yhat_r\n', B, '\n', yhat_r.point
             (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                 self.vel_list_corr[-1], B, X, Phat)
         else:
@@ -145,7 +145,7 @@ class Kalman(object):
 
         # Now predict until next point t that coincides with next timepoint
         # for the controller.
-        print '\n kalman fourth predict step Ts and yhat_r\n', (1 + self.case5)*self.vel_cmd_Ts - B, '\n', yhat_r_t0.point
+        # print '\n kalman fourth predict step Ts and yhat_r\n', (1 + self.case5)*self.vel_cmd_Ts - B, '\n', yhat_r_t0.point
         (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                                 self.vel_list_corr[-1],
                                 (1 + self.case5)*self.vel_cmd_Ts - B,
@@ -168,7 +168,7 @@ class Kalman(object):
             - vel_cmd_stamped = TwistStamped
             - Ts = varying step size over which to integrate.
         """
-        print '\n ---------\n predict\n ---------\n', vel_cmd_stamped
+        # print '\n ---------\n predict\n ---------\n', vel_cmd_stamped
 
         vel_cmd = vel_cmd_stamped.twist
 
@@ -205,7 +205,7 @@ class Kalman(object):
         Argument:
             - pos_meas = PoseStamped expressed in "world_rot" frame.
         """
-        print '\n ---------\n correct\n ---------\n', pos_meas
+        # print '\n ---------\n correct\n ---------\n', pos_meas
         y = np.array([[pos_meas.pose.position.x],
                       [pos_meas.pose.position.y],
                       [pos_meas.pose.position.z]])
