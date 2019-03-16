@@ -27,6 +27,7 @@ class ViveLocalization(object):
         self.tracked_objects = ["tracker_1"] #, "controller_1"]  # "controller_2"
         self.index = 1
         self.calib = rospy.get_param('vive_localization/calibrate', True)
+        self.sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
 
         self.pose_c1_in_w = PoseStamped()
         self.pose_c1_in_w.header.frame_id = "world"
@@ -140,8 +141,8 @@ class ViveLocalization(object):
         '''
         Starts running of localization node.
         '''
-        sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
-        self.rate = rospy.Rate(1./sample_time)
+        self.sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
+        self.rate = rospy.Rate(1./self.sample_time)
 
         self.v = triad_openvr.triad_openvr()
         self.v.print_discovered_objects()
@@ -205,7 +206,6 @@ class ViveLocalization(object):
             pose_t_in_w = PoseStamped()
             pose_t_in_w.header.frame_id = "world"
             pose_t_in_w.header.stamp = rospy.Time.now()
-            self.tf_r_in_w.header.stamp = rospy.Time.now()
             pose_t_in_w.pose.position.x = 1.
             pose_t_in_w.pose.position.y = 1.
             pose_t_in_w.pose.position.z = 1.
@@ -221,13 +221,11 @@ class ViveLocalization(object):
             # Wait until transform has been updated
             tf_d_in_w = TransformStamped()
             tf_d_in_w.header.stamp = self.tf_t_in_w_timestamp_old
+            rate = rospy.Rate(20./self.sample_time)
             while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old:
-                print 'in while loop 1'
                 tf_d_in_w = self.get_transform("drone", "world")
-                print 'before sleep'
-                rospy.sleep(0.001)
+                rate.sleep()
             # Calculate pose of drone in world frame as well as yaw angle.
-            print 'left while loop'
             pose_d_in_w = self.tf_to_pose(tf_d_in_w)
             self.tf_t_in_w_timestamp_old = pose_t_in_w.header.stamp
 
@@ -243,17 +241,17 @@ class ViveLocalization(object):
             self.tf_r_in_w.transform.rotation.y = quat[1]
             self.tf_r_in_w.transform.rotation.z = quat[2]
             self.tf_r_in_w.transform.rotation.w = quat[3]
-            # self.tf_r_in_w.header.stamp = rospy.Time.now()
+            self.tf_r_in_w.header.stamp = rospy.Time.now()
             self.broadc.sendTransform(self.tf_r_in_w)
 
             # Wait until transform has been updated
             tf_r_in_w = TransformStamped()
             tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
-            rate = rospy.Rate(0.001)
+            rate = rospy.Rate(20./self.sample_time)
             while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old:
-                print 'in while loop 2'
                 tf_r_in_w = self.get_transform("world", "world_rot")
                 rate.sleep()
+            print '\n tf_r_in_w\n', tf_r_in_w
             self.tf_r_in_w_timestamp_old = self.tf_r_in_w.header.stamp
 
             # Publish pose of drone in world frame as well as yaw angle.
