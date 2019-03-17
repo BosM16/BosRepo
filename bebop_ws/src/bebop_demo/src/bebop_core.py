@@ -190,7 +190,7 @@ class Demo(object):
             # Apply correction step.
             self.wm.yhat_r, self.wm.yhat_r_t0 = self.kalman.kalman_pos_correct(
                                                 measurement, self.wm.yhat_r_t0)
-            print 'yhat corr'
+
             self.wm.yhat = self.transform_point(
                 self.wm.yhat_r, "world_rot", "world")
             self.pose_pub.publish(self.wm.yhat)
@@ -252,7 +252,22 @@ class Demo(object):
         '''
         transform = self.kalman.get_transform(_from, _to)
         if self.transfoldstamp == transform.header.stamp:
-            print 'equal'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
+            print '--------------------EQUALLL----------------'
         self.transfoldstamp = transform.header.stamp
         print transform.header.stamp
 
