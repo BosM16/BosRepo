@@ -1020,7 +1020,8 @@ class Controller(object):
                 self.stop_drawing = True
             elif (self.state == "drag drone" or
                   self.state == "viscous fluid" or
-                  self.state == "undamped spring"):
+                  self.state == "undamped spring" or
+                  self.state == "place cylindrical obstacles"):
                 self.state_changed = True
             self.trackpad_held = True
 
