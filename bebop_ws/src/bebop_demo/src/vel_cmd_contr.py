@@ -222,7 +222,6 @@ class VelCommander(object):
         Starts the controller's periodical loop.
         '''
         self.draw_room_contours()
-        print 'draw stuff'
         self.configure()
         print green('----    Controller running     ----')
 
@@ -1380,7 +1379,6 @@ class VelCommander(object):
             self.room_contours.points.append(point)
 
         self.draw_room.publish(self.room_contours)
-        print 'draw publish', self.room_contours
 
 
 if __name__ == '__main__':

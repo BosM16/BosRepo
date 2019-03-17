@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from geometry_msgs.msg import PoseStamped, TransformStamped
+from geometry_msgs.msg import PointStamped, PoseStamped, TransformStamped
 from std_msgs.msg import Empty
 from vive_localization.msg import PoseMeas
 
@@ -38,15 +38,28 @@ class ViveLocalization(object):
         self.pose_c2_in_w = PoseStamped()
         self.pose_c2_in_w.header.frame_id = "world"
 
+        self.pos_c1_in_w = PointStamped()
+        self.pos_c1_in_w.header.frame_id = "world"
+        self.pos_c2_in_w = PointStamped()
+        self.pos_c2_in_w.header.frame_id = "world"
+
+        self.tf_r_in_w_timestamp_old = rospy.Time.now()
+        self.tf_t_in_w_timestamp_old = rospy.Time.now()
+
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseMeas, queue_size=1)
         # Note that the following could made more general for any number of
         # tracked objects.
-        self.c1_pos_update = rospy.Publisher(
+        self.c1_pose_update = rospy.Publisher(
             'vive_localization/c1_pose', PoseStamped, queue_size=1)
-        self.c2_pos_update = rospy.Publisher(
+        self.c2_pose_update = rospy.Publisher(
             'vive_localization/c2_pose', PoseStamped, queue_size=1)
-        self.c_publishers = [self.c1_pos_update, self.c2_pos_update]
+        self.c1_pos_update = rospy.Publisher(
+            'vive_localization/c1_position', PointStamped, queue_size=1)
+        self.c2_pos_update = rospy.Publisher(
+            'vive_localization/c2_position', PointStamped, queue_size=1)
+        self.c_publishers = [self.c1_pose_update, self.c1_pos_update,
+                             self.c2_pose_update, self.c1_pos_update]
 
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
@@ -182,7 +195,6 @@ class ViveLocalization(object):
         '''
         self.ready.publish(Empty())
         print green('---- Vive Localization running ----')
-        # rospy.sleep(10.)
         while not rospy.is_shutdown():
             # =========
             #  TRACKER
@@ -193,11 +205,17 @@ class ViveLocalization(object):
             self.broadc.sendTransform(self.tf_t_in_v)
             self.stbroadc.sendTransform(self.tf_d_in_t)
 
-            # Calculate and publish pose of drone in world frame and also
-            # include yaw.
+            # Wait until transform has been updated
             tf_d_in_w = TransformStamped()
-            tf_d_in_w = self.get_transform("drone", "world")
-            pose_t_in_w = self.tf_to_pose(tf_d_in_w)
+            tf_d_in_w.header.stamp = self.tf_t_in_w_timestamp_old
+            rate = rospy.Rate(20./self.sample_time)
+            while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old:
+                tf_d_in_w = self.get_transform("drone", "world")
+                rate.sleep()
+            self.tf_t_in_w_timestamp_old = tf_d_in_w.header.stamp
+
+            # Calculate pose of drone in world frame as well as yaw angle.
+            pose_d_in_w = self.tf_to_pose(tf_d_in_w)
 
             # Calculate and broadcast the rotating world frame.
             # - Tf drone in world to euler angles.
@@ -205,16 +223,27 @@ class ViveLocalization(object):
             # - Get yaw.
             yaw = euler[2]
 
-            data = PoseMeas(meas_world=pose_t_in_w, yaw=yaw)
-            self.pos_update.publish(data)
-
             # - Yaw only (roll and pitch 0.0) to quaternions.
             quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
             self.tf_r_in_w.transform.rotation.x = quat[0]
             self.tf_r_in_w.transform.rotation.y = quat[1]
             self.tf_r_in_w.transform.rotation.z = quat[2]
             self.tf_r_in_w.transform.rotation.w = quat[3]
+            self.tf_r_in_w.header.stamp = rospy.Time.now()
             self.broadc.sendTransform(self.tf_r_in_w)
+
+            # Wait until transform has been updated
+            tf_r_in_w = TransformStamped()
+            tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
+            rate = rospy.Rate(20./self.sample_time)
+            while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old:
+                tf_r_in_w = self.get_transform("world_rot", "world")
+                rate.sleep()
+            self.tf_r_in_w_timestamp_old = tf_r_in_w.header.stamp
+
+            # Publish pose of drone in world frame as well as yaw angle.
+            data = PoseMeas(meas_world=pose_d_in_w, yaw=yaw)
+            self.pos_update.publish(data)
 
             # =============
             #  CONTROLLERS
@@ -224,7 +253,12 @@ class ViveLocalization(object):
                 pose_c_in_v = self.get_pose_vive(self.tracked_objects[i])
                 pose_c_in_w = self.transform_pose(pose_c_in_v, "vive", "world")
 
-                self.c_publishers[i-1].publish(pose_c_in_w)
+                pos_c_in_w = PointStamped()
+                pos_c_in_w.header = pose_c_in_w.header
+                pos_c_in_w.point = pose_c_in_w.pose.position
+
+                self.c_publishers[2*i-2].publish(pose_c_in_w)
+                self.c_publishers[2*i-1].publish(pos_c_in_w)
 
             self.rate.sleep()
 
@@ -235,8 +269,11 @@ class ViveLocalization(object):
         pose = np.array(
             self.v.devices[object].get_pose_euler())
 
-
         pose[3:6] = pose[3:6]*np.pi/180.
+        # Rotate controller 90° to align rviz arrow with wand.
+        if object[0:10] == "controller":
+            pose[5] += np.pi/2.
+
         quat = tf.transformations.quaternion_from_euler(
             pose[5], pose[4], pose[3])
 
