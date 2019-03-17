@@ -1,6 +1,6 @@
 <launch>
 
-  <node name="vel_commander" pkg="bebop_demo" type="vel_cmd_contr.py" output="screen"/>
+  <node name="controller" pkg="bebop_demo" type="controller.py" output="screen"/>
   <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
 
   <param name="vel_cmd/update_time" value="0.2" />
