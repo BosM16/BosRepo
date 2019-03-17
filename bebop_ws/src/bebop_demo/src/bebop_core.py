@@ -252,22 +252,7 @@ class Demo(object):
         '''
         transform = self.kalman.get_transform(_from, _to)
         if self.transfoldstamp == transform.header.stamp:
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
-            print '--------------------EQUALLL----------------'
+            print '------------------------equal'
         self.transfoldstamp = transform.header.stamp
         print transform.header.stamp
 
