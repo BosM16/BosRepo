@@ -41,16 +41,21 @@ class Demo(object):
         self.airborne = False
         self.trackpad_held = False
         self.menu_button_held = False
-        self.task_dict = {"standby": [],
-                          "invalid measurement": ["emergency"],
-                          "take-off": ["take-off"],
-                          "land": ["land"],
-                          "point to point": ["omg standby", "omg fly"],
-                          "draw follow traj": ["land", "draw path", "take-off",
-                                               "fly to start", "follow path"],
-                          "drag drone": ["drag drone"],
-                          "undamped spring": ["undamped spring", "reset_PID"],
-                          "viscous fluid": ["viscous fluid", "reset_PID"]}
+        self.task_dict = {
+            "standby": [],
+            "invalid measurement": ["emergency"],
+            "take-off": ["take-off"],
+            "land": ["land"],
+            "point to point": ["omg standby", "omg fly"],
+            "place cylindrical obstacles": ["land",
+                                            "place cylindrical obstacles",
+                                            "configure motionplanner",
+                                            "take-off"],
+            "draw follow traj": ["land", "draw path", "take-off",
+                                 "fly to start", "follow path"],
+            "drag drone": ["drag drone"],
+            "undamped spring": ["undamped spring", "reset_PID"],
+            "viscous fluid": ["viscous fluid", "reset_PID"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)

@@ -3,7 +3,7 @@
 from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
                                Pose, PoseStamped)
 from std_msgs.msg import Bool, Empty, String
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
 
@@ -24,17 +24,9 @@ class Controller(object):
 
     def __init__(self):
         """Initialization of Controller object.
-
-        Args:
-            sample_time : Period between computed velocity samples.
-            omg_update_time : Period of problem solving.
         """
-        rospy.init_node("vel_commander_node")
+        rospy.init_node("controller")
 
-        self.airborne = False
-        self.calc_succeeded = False
-        self.target_reached = False
-        self.startup = False
         self.state = "initialization"
         self.state_dict = {"standby": self.hover,
                            "emergency": self.repeat_safety_brake,
@@ -42,6 +34,8 @@ class Controller(object):
                            "land": self.take_off_land,
                            "omg standby": self.hover,
                            "omg fly": self.omg_fly,
+                           "place cylindrical obstacles": self.place_cyl_obst,
+                           "configure motionplanner": self.config_mp,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
                            "follow path": self.follow_traj,
@@ -50,137 +44,19 @@ class Controller(object):
                            "reset_PID": self.reset_pid_gains,
                            "drag drone": self.drag_drone}
 
-        self.state_changed = False
-        self.executing_state = False
-        self.state_killed = False
-        self.trackpad_held = False
-
-        rospy.set_param(
-            "/bebop/bebop_driver/SpeedSettingsMaxRotationSpeedCurrent", 360.0)
-
-        self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
-        self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
-        self.Kd_x = rospy.get_param('vel_cmd/Kd_x', 0.6864)
-        self.Kp_y = rospy.get_param('vel_cmd/Kp_y', 0.6864)
-        self.Ki_y = rospy.get_param('vel_cmd/Ki_y', 0.6864)
-        self.Kd_y = rospy.get_param('vel_cmd/Kd_y', 0.6864)
-        self.Kp_z = rospy.get_param('vel_cmd/Kp_z', 0.5)
-        self.Ki_z = rospy.get_param('vel_cmd/Ki_z', 1.5792)
-        self.K_theta = rospy.get_param('vel_cmd/K_theta', 0.3)
-        self.max_input = rospy.get_param('vel_cmd/max_input', 0.5)
-        self.max_vel = rospy.get_param('motionplanner/vmax', 0.5)
-        self.room_width = rospy.get_param('motionplanner/room_width', 1.)
-        self.room_depth = rospy.get_param('motionplanner/room_depth', 1.)
-        self.room_height = rospy.get_param('motionplanner/room_height', 1.)
-        self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
-        self.safety_treshold = rospy.get_param('vel_cmd/safety_treshold', 0.5)
-        self.pos_nrm_tol = rospy.get_param(
-                                        'vel_cmd/goal_reached_pos_tol', 0.05)
-        # self.angle_nrm_tol = rospy.get_param(
-        #                                 'vel_cmd/goal_reached_angle_tol', 0.05)
-
-        self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
-        self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
-        self.rate = rospy.Rate(1./self._sample_time)
-        self.omg_index = 1
-
-        # Setup low pass filter for trajectory drawing task.
-        cutoff_freq_LPF = rospy.get_param('vel_cmd/LPF_cutoff', 0.5)
-        LPF_order = rospy.get_param('vel_cmd/LPF_order', 4)
-
-        norm_fc_LPF = cutoff_freq_LPF/(0.5)*self._sample_time
-        self.butter_b, self.butter_a = butter(
-            LPF_order, norm_fc_LPF, btype='low', analog=False)
-
-        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.desired_yaw = np.pi/2.
-        self.real_yaw = 0.0
-        self.pos_nrm = np.inf
-        self.x_error = 0.
-        self.y_error = 0.
-        self.z_error = 0.
-        self.feedback_cmd_prev = Twist()
-        self.pos_error_prev = PointStamped()
-        self.vel_error_prev = PointStamped()
-        self.measurement_valid = False
-        self.safe = False
-        self._goal = Pose()
-        self.hover_setpoint = Pose()
-        self.ctrl_r_pos = Pose()
-        self.ctrl_l_pos = Pose()
-        self.draw = False
-        self.drawn_pos_x = []
-        self.drawn_pos_y = []
-        self.drawn_pos_z = []
-        self.drag = False
-
-        self.cmd_twist_convert = TwistStamped()
-        self.cmd_twist_convert.header.frame_id = "world_rot"
-        self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self.feedforward_cmd = Twist()
-        self.vhat = Point()
-        self._trigger = Trigger()
-
         # Obstacle setup
         self.Sjaaakie = [0.35, 1.3, 1.5, 1.5, 0.75]
 
-        # Marker setup
-        self.marker_setup()
-
-        # Coefficients for inverted model of velocity to input angle
-        self.initialize_vel_model()
-
-        self._drone_est_pose = Pose()
-        self.vive_frame_pose = PoseStamped()
-
-        self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
-                      'x': [0.0], 'y': [0.0], 'z': [0.0]}
-        self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
-                           'x': [0.0], 'y': [0.0], 'z': [0.0]}
+        self._init_params()
+        self._init_variables()
+        self._marker_setup()
+        self._init_vel_model()
+        self._init_topics()
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-        self.cmd_vel = rospy.Publisher(
-            'bebop/cmd_vel', Twist, queue_size=1)
-        self.take_off = rospy.Publisher(
-            'bebop/takeoff', Empty, queue_size=1)
-        self.land = rospy.Publisher(
-            'bebop/land', Empty, queue_size=1)
-        self._mp_trigger_topic = rospy.Publisher(
-            'motionplanner/trigger', Trigger, queue_size=1)
-        self.trajectory_desired = rospy.Publisher(
-            'motionplanner/desired_path', Marker, queue_size=1)
-        self.trajectory_real = rospy.Publisher(
-            'motionplanner/real_path', Marker, queue_size=1)
-        self.trajectory_drawn = rospy.Publisher(
-            'motionplanner/drawn_path', Marker, queue_size=1)
-        self.trajectory_smoothed = rospy.Publisher(
-            'motionplanner/smoothed_path', Marker, queue_size=1)
-        self.current_ff_vel_pub = rospy.Publisher(
-            'motionplanner/current_ff_vel', Marker, queue_size=1)
-        self.obst_pub = rospy.Publisher(
-            'motionplanner/rviz_obst', Marker, queue_size=1)
-        self.draw_room = rospy.Publisher(
-            'motionplanner/room_contours', Marker, queue_size=1)
-        self.ctrl_state_finish = rospy.Publisher(
-            'controller/state_finish', Empty, queue_size=1)
-        self.pos_error_pub = rospy.Publisher(
-            'controller/position_error', Point, queue_size=1)
-
-        rospy.Subscriber('motionplanner/result', Trajectories,
-                         self.get_mp_result)
-        rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst)
-        rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
-        rospy.Subscriber('ctrl_keypress/ltrigger', Bool, self.l_trigger)
-        rospy.Subscriber('ctrl_keypress/rtrackpad', Bool, self.trackpad_press)
-        rospy.Subscriber(
-            'vive_localization/c1_pose', PoseStamped, self.get_ctrl_r_pos)
-        rospy.Subscriber(
-            'vive_localization/c2_pose', PoseStamped, self.get_ctrl_l_pos)
-        rospy.Subscriber('fsm/state', String, self.switch_state)
-
-    def initialize_vel_model(self):
+    def _init_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
         angle inputs.
         State space model x[k+1] = A*x[k] + B*u[k] in observable canonical
@@ -217,12 +93,144 @@ class Controller(object):
                            [0.0, 0.7709, 0.0],
                            [0.0, 0.0, 1.036]])
 
+    def _init_topics(self):
+        '''Initializes rostopic Publishers and Subscribers.
+        '''
+        self.cmd_vel = rospy.Publisher(
+            'bebop/cmd_vel', Twist, queue_size=1)
+        self.take_off = rospy.Publisher(
+            'bebop/takeoff', Empty, queue_size=1)
+        self.land = rospy.Publisher(
+            'bebop/land', Empty, queue_size=1)
+        self._mp_trigger_topic = rospy.Publisher(
+            'motionplanner/trigger', Trigger, queue_size=1)
+        self.obst_pub = rospy.Publisher(
+            'motionplanner/rviz_obst', MarkerArray, queue_size=1)
+        self.trajectory_desired = rospy.Publisher(
+            'motionplanner/desired_path', Marker, queue_size=1)
+        self.trajectory_real = rospy.Publisher(
+            'motionplanner/real_path', Marker, queue_size=1)
+        self.trajectory_drawn = rospy.Publisher(
+            'motionplanner/drawn_path', Marker, queue_size=1)
+        self.trajectory_smoothed = rospy.Publisher(
+            'motionplanner/smoothed_path', Marker, queue_size=1)
+        self.current_ff_vel_pub = rospy.Publisher(
+            'motionplanner/current_ff_vel', Marker, queue_size=1)
+        self.draw_room = rospy.Publisher(
+            'motionplanner/room_contours', Marker, queue_size=1)
+        self.ctrl_state_finish = rospy.Publisher(
+            'controller/state_finish', Empty, queue_size=1)
+        self.pos_error_pub = rospy.Publisher(
+            'controller/position_error', Point, queue_size=1)
+
+        rospy.Subscriber('motionplanner/result', Trajectories,
+                         self.get_mp_result)
+        rospy.Subscriber('vive_localization/ready', Empty, self.draw_obst)
+        rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
+        rospy.Subscriber('ctrl_keypress/ltrigger', Bool, self.l_trigger)
+        rospy.Subscriber('ctrl_keypress/rtrackpad', Bool, self.trackpad_press)
+        rospy.Subscriber(
+            'vive_localization/c1_pose', PoseStamped, self.get_ctrl_r_pos)
+        rospy.Subscriber(
+            'vive_localization/c2_pose', PoseStamped, self.get_ctrl_l_pos)
+        rospy.Subscriber('fsm/state', String, self.switch_state)
+
+    def _init_params(self):
+        '''Initializes (reads and sets) externally configurable parameters
+        (rosparams).
+        '''
+        rospy.set_param(
+            "/bebop/bebop_driver/SpeedSettingsMaxRotationSpeedCurrent", 360.0)
+
+        self.Kp_x = rospy.get_param('controller/Kp_x', 0.6864)
+        self.Ki_x = rospy.get_param('controller/Ki_x', 0.6864)
+        self.Kd_x = rospy.get_param('controller/Kd_x', 0.6864)
+        self.Kp_y = rospy.get_param('controller/Kp_y', 0.6864)
+        self.Ki_y = rospy.get_param('controller/Ki_y', 0.6864)
+        self.Kd_y = rospy.get_param('controller/Kd_y', 0.6864)
+        self.Kp_z = rospy.get_param('controller/Kp_z', 0.5)
+        self.Ki_z = rospy.get_param('controller/Ki_z', 1.5792)
+        self.K_theta = rospy.get_param('controller/K_theta', 0.3)
+        self.max_input = rospy.get_param('controller/max_input', 0.5)
+        self.max_vel = rospy.get_param('motionplanner/vmax', 0.5)
+        self.room_width = rospy.get_param('motionplanner/room_width', 1.)
+        self.room_depth = rospy.get_param('motionplanner/room_depth', 1.)
+        self.room_height = rospy.get_param('motionplanner/room_height', 1.)
+        self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
+        self.safety_treshold = rospy.get_param('controller/safety_treshold', 0.5)
+        self.pos_nrm_tol = rospy.get_param(
+                                        'controller/goal_reached_pos_tol', 0.05)
+        # self.angle_nrm_tol = rospy.get_param(
+        #                               'controller/goal_reached_angle_tol', 0.05)
+
+        self._sample_time = rospy.get_param('controller/sample_time', 0.01)
+        self._update_time = rospy.get_param('controller/update_time', 0.5)
+        self.rate = rospy.Rate(1./self._sample_time)
+        self.omg_index = 1
+
+        # Setup low pass filter for trajectory drawing task.
+        cutoff_freq_LPF = rospy.get_param('controller/LPF_cutoff', 0.5)
+        LPF_order = rospy.get_param('controller/LPF_order', 4)
+
+        norm_fc_LPF = cutoff_freq_LPF/(0.5)*self._sample_time
+        self.butter_b, self.butter_a = butter(
+            LPF_order, norm_fc_LPF, btype='low', analog=False)
+
+    def _init_variables(self):
+        '''Initializes variables that are used later on.
+        '''
+        # State related variables
+        self.airborne = False
+        self.calc_succeeded = False
+        self.target_reached = False
+        self.startup = False
+        self.state_changed = False
+        self.executing_state = False
+        self.state_killed = False
+        self.trackpad_held = False
+
+        # Other
+        self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
+                      'x': [0.0], 'y': [0.0], 'z': [0.0]}
+        self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
+                           'x': [0.0], 'y': [0.0], 'z': [0.0]}
+        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
+        self.desired_yaw = np.pi/2.
+        self.real_yaw = 0.0
+        self.pos_nrm = np.inf
+        self.x_error = 0.
+        self.y_error = 0.
+        self.z_error = 0.
+        self.feedback_cmd_prev = Twist()
+        self.pos_error_prev = PointStamped()
+        self.vel_error_prev = PointStamped()
+        self.measurement_valid = False
+        self._goal = Pose()
+        self.hover_setpoint = Pose()
+        self.ctrl_r_pos = Pose()
+        self.ctrl_l_pos = Pose()
+        self.draw = False
+        self.drawn_pos_x = []
+        self.drawn_pos_y = []
+        self.drawn_pos_z = []
+        self.drag = False
+
+        self.cmd_twist_convert = TwistStamped()
+        self.cmd_twist_convert.header.frame_id = "world_rot"
+        self.cmd_twist_convert.header.stamp = rospy.Time.now()
+        self.feedforward_cmd = Twist()
+        self.vhat = Point()
+        self._trigger = Trigger()
+
+        self._drone_est_pose = Pose()
+        self.vive_frame_pose = PoseStamped()
+
     def start(self):
         '''Configures,
         Starts the controller's periodical loop.
         '''
         self.draw_room_contours()
-        self.configure()
+        self.config_mp()
         print green('----    Controller running     ----')
 
         while not rospy.is_shutdown():
@@ -251,25 +259,17 @@ class Controller(object):
                 self.hover()
             self.rate.sleep()
 
-    def configure(self):
-        '''Configures the controller by loading in the room and static
-        obstacles.
-        Sends Settings to Motionplanner.
-        Settings constists of
-            - environment
-        Waits for Motionplanner to set mp_status to configured.
+    def config_mp(self):
+        '''Configures the motionplanner over ConfigMotionplanner Service
+        by loading in the room and static obstacles. Waits for Motionplanner to
+        set mp_status to configured.
         '''
-
-        # List containing obstacles of type Obstacle()
-        Sjaaakie = Obstacle(shape=self.Sjaaakie[0:2], pose=self.Sjaaakie[2:])
-        # self.obstacles = [Sjaaakie]
-        self.obstacles = []
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
-            config_mp = rospy.ServiceProxy(
+            config_mp_resp = rospy.ServiceProxy(
                 "/motionplanner/config_motionplanner", ConfigMotionplanner)
-            config_success = config_mp(self.obstacles)
+            config_success = config_mp_resp(self.obstacles)
         except rospy.ServiceException, e:
             print highlight_red('Service call failed: %s') % e
             config_success = False
@@ -293,7 +293,7 @@ class Controller(object):
         (self._drone_est_pose, self.vhat,
          self.real_yaw, measurement_valid) = self.get_pose_est()
 
-        self.marker_setup()
+        self._marker_setup()
 
         self._goal = goal
         self.fire_motionplanner()
@@ -458,15 +458,10 @@ class Controller(object):
             not stop: boolean whether goal is reached. If not, controller
                       proceeds to goal.
         '''
-        pos_nrm = np.linalg.norm(np.array([self._drone_est_pose.position.x,
-                                           self._drone_est_pose.position.y,
-                                           self._drone_est_pose.position.z])
-                                 - np.array([self._goal.position.x,
-                                             self._goal.position.y,
-                                             self._goal.position.z]))
+        pos_nrm = self.position_diff_norm(self._drone_est_pose.position,
+                                          self._goal.position)
 
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
-
         if self.target_reached:
             print yellow('---- Target Reached! ----')
 
@@ -487,7 +482,7 @@ class Controller(object):
         if state.data == "standby":
             self.reset_markers()
 
-        # If new state received before old one is finished, kil current state.
+        # If new state received before old one is finished, kill current state.
         if self.executing_state:
             self.state_killed = True
 
@@ -499,7 +494,6 @@ class Controller(object):
             (self._drone_est_pose,
              self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
 
-            # print 'pose + meas valid\n', self._drone_est_pose, '\n', measurement_valid
             if not measurement_valid:
                 self.safety_brake()
                 return
@@ -530,6 +524,32 @@ class Controller(object):
             self.land.publish(Empty())
             rospy.sleep(8.)
             self.airborne = False
+
+    def place_cyl_obst(self):
+        '''The user places cylindrical obstacles with the left controller.
+        Dragging the Vive controller determines the radius of the obstacle.
+        Obstacles are saved and drawn in rviz.
+        '''
+        self.obstacles = []
+        height = self.room_height
+        while not (self.state_changed or
+                   rospy.is_shutdown() or self.state_killed):
+            if self.draw:
+                center = Point(x=self.ctrl_l_pos.position.x,
+                               y=self.ctrl_l_pos.position.y,
+                               z=obstacle_height/2.)
+                while self.draw:
+                    rate.sleep()
+                edge = Point(x=self.ctrl_l_pos.position.x,
+                             y=self.ctrl_l_pos.position.y,
+                             z=obstacle_height/2.)
+                radius = self.position_diff_norm(edge, center)
+                Sjaaakie = Obstacle(shape=[radius, obstacle_height],
+                                    pose=[center.x, center.y, center.z])
+                self.obstacles.append(Sjaaakie)
+                self.draw_obstacles()
+
+            self.rate.sleep()
 
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
@@ -677,7 +697,8 @@ class Controller(object):
         '''Adapts gains for the undamped spring (only Kp) or viscous fluid
         (only Kd) illustration.
         '''
-        self.hover_setpoint.position.z = 1.7
+        self.hover_setpoint.position.z = rospy.get_param(
+            'controller/standard_height', 1.5)
 
         if self.state == "undamped spring":
             self.Kp_x = self.Kp_x/2.
@@ -708,27 +729,27 @@ class Controller(object):
         '''Sets pid gains to a lower setting for combination with feedforward
         flight to keep the controller stable.
         '''
-        self.Kp_x = rospy.get_param('vel_cmd/Kp_ff_x', 0.6864)
-        self.Ki_x = rospy.get_param('vel_cmd/Ki_ff_x', 0.6864)
-        self.Kd_x = rospy.get_param('vel_cmd/Kd_ff_x', 0.6864)
-        self.Kp_y = rospy.get_param('vel_cmd/Kp_ff_y', 0.6864)
-        self.Ki_y = rospy.get_param('vel_cmd/Ki_ff_y', 0.6864)
-        self.Kd_y = rospy.get_param('vel_cmd/Kd_ff_y', 0.6864)
-        self.Kp_z = rospy.get_param('vel_cmd/Kp_ff_z', 0.5)
-        self.Ki_z = rospy.get_param('vel_cmd/Ki_ff_z', 1.5792)
+        self.Kp_x = rospy.get_param('controller/Kp_ff_x', 0.6864)
+        self.Ki_x = rospy.get_param('controller/Ki_ff_x', 0.6864)
+        self.Kd_x = rospy.get_param('controller/Kd_ff_x', 0.6864)
+        self.Kp_y = rospy.get_param('controller/Kp_ff_y', 0.6864)
+        self.Ki_y = rospy.get_param('controller/Ki_ff_y', 0.6864)
+        self.Kd_y = rospy.get_param('controller/Kd_ff_y', 0.6864)
+        self.Kp_z = rospy.get_param('controller/Kp_ff_z', 0.5)
+        self.Ki_z = rospy.get_param('controller/Ki_ff_z', 1.5792)
 
     def reset_pid_gains(self):
         '''Resets the PID gains to the rosparam vaules after tasks "undamped
         spring" or "viscous fluid".
         '''
-        self.Kp_x = rospy.get_param('vel_cmd/Kp_x', 0.6864)
-        self.Ki_x = rospy.get_param('vel_cmd/Ki_x', 0.6864)
-        self.Kd_x = rospy.get_param('vel_cmd/Kd_x', 0.6864)
-        self.Kp_y = rospy.get_param('vel_cmd/Kp_y', 0.6864)
-        self.Ki_y = rospy.get_param('vel_cmd/Ki_y', 0.6864)
-        self.Kd_y = rospy.get_param('vel_cmd/Kd_y', 0.6864)
-        self.Kp_z = rospy.get_param('vel_cmd/Kp_z', 0.5)
-        self.Ki_z = rospy.get_param('vel_cmd/Ki_z', 1.5792)
+        self.Kp_x = rospy.get_param('controller/Kp_x', 0.6864)
+        self.Ki_x = rospy.get_param('controller/Ki_x', 0.6864)
+        self.Kd_x = rospy.get_param('controller/Kd_x', 0.6864)
+        self.Kp_y = rospy.get_param('controller/Kp_y', 0.6864)
+        self.Ki_y = rospy.get_param('controller/Ki_y', 0.6864)
+        self.Kd_y = rospy.get_param('controller/Kd_y', 0.6864)
+        self.Kp_z = rospy.get_param('controller/Kp_z', 0.5)
+        self.Ki_z = rospy.get_param('controller/Ki_z', 1.5792)
 
 ####################
 # Helper functions #
@@ -987,7 +1008,7 @@ class Controller(object):
         drawing when trigger is pressed.
         '''
         self.ctrl_l_pos = ctrl_pose.pose
-        if self.draw:
+        if (self.state == 'draw path' and self.draw):
             self.draw_ctrl_path()
 
     def trackpad_press(self, trackpad_pressed):
@@ -1044,6 +1065,13 @@ class Controller(object):
                 self.drag = True
             elif (not button_pushed.data and self.drag):
                 self.drag = False
+
+        if self.state == "place cylindrical obstacles":
+            if (button_pushed.data and not self.draw):
+                self.draw = True
+
+            if (not button_pushed.data and self.draw):
+                self.draw = False
 
     def diff_interp_traj(self):
         '''Differentiate obtained trajectory to obtain feedforward velocity
@@ -1115,15 +1143,26 @@ class Controller(object):
         # Plot the smoothed trajectory in Rviz.
         self.draw_smoothed_path()
 
+    def position_diff_norm(point1, point2):
+        '''Returns the norm of the difference vector between two given points.
+        point1 and point2 are geometry_msgs/Point objects.
+        '''
+        norm = np.linalg.norm(np.array([point1.x, point1.y, point1.z])
+                              - np.array([point2.x, point2.y, point2.z]))
+        return norm
+
 #######################################
 # Functions for plotting Rviz markers #
 #######################################
 
-    def marker_setup(self):
+    def _marker_setup(self):
         '''Setup markers to display the desired and real path of the drone in
         rviz, along with the current position in the omg-tools generated
         position list.
         '''
+        # Obstacles
+        self.rviz_obst = MarkerArray()
+
         # Desired path
         self._desired_path = Marker()
         self._desired_path.header.frame_id = 'world'
@@ -1174,23 +1213,6 @@ class Controller(object):
         self.current_ff_vel.color.b = 1.0
         self.current_ff_vel.color.a = 1.0
         self.current_ff_vel.lifetime = rospy.Duration(0)
-
-        # Obstacle
-        self.rviz_obst = Marker()
-        self.rviz_obst.header.frame_id = 'world'
-        self.rviz_obst.ns = "obstacle"
-        self.rviz_obst.id = 3
-        self.rviz_obst.type = 3  # Cylinder
-        self.rviz_obst.action = 0
-        self.rviz_obst.scale.x = self.Sjaaakie[0] * 2  # x-diameter
-        self.rviz_obst.scale.y = self.Sjaaakie[0] * 2  # y-diameter
-        self.rviz_obst.scale.z = self.Sjaaakie[1]  # height
-        self.rviz_obst.pose.orientation.w = 1.0
-        self.rviz_obst.color.r = 1.0
-        self.rviz_obst.color.g = 1.0
-        self.rviz_obst.color.b = 1.0
-        self.rviz_obst.color.a = 0.5
-        self.rviz_obst.lifetime = rospy.Duration(0)
 
         # Controller drawn path
         self.drawn_path = Marker()
@@ -1312,11 +1334,30 @@ class Controller(object):
     def publish_obst(self, empty):
         '''Publish static obstacles.
         '''
-        self.rviz_obst.header.stamp = rospy.get_rostime()
+        for obstacle in self.obstacles:
+            # Marker setup
+            obstacle_marker = Marker()
+            obstacle_marker.header.frame_id = 'world'
+            obstacle_marker.ns = "obstacle"
+            obstacle_marker.id = 3
+            obstacle_marker.type = 3  # Cylinder
+            obstacle_marker.action = 0
+            obstacle_marker.scale.x = obstacle.shape[0] * 2  # x-diameter
+            obstacle_marker.scale.y = obstacle.shape[0] * 2  # y-diameter
+            obstacle_marker.scale.z = obstacle.shape[1]  # height
+            obstacle_marker.pose.orientation.w = 1.0
+            obstacle_marker.color.r = 1.0
+            obstacle_marker.color.g = 1.0
+            obstacle_marker.color.b = 1.0
+            obstacle_marker.color.a = 0.5
+            obstacle_marker.lifetime = rospy.Duration(0)
 
-        point = Point(
-                    x=self.Sjaaakie[2], y=self.Sjaaakie[3], z=self.Sjaaakie[4])
-        self.rviz_obst.pose.position = point
+            obstacle_marker.pose.position = Point(x=obstacle.pose[0],
+                                                  y=obstacle.pose[1],
+                                                  z=obstacle.pose[2])
+            obstacle_marker.header.stamp = rospy.get_rostime()
+            # Append marker to marker array:
+            self.rviz_obst.markers.append(obstacle_marker)
 
         self.obst_pub.publish(self.rviz_obst)
 

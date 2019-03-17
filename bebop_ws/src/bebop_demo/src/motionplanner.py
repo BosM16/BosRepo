@@ -22,8 +22,8 @@ class MotionPlanner(object):
         controller. Sets self as publisher of topics to which controller
         subscribes.
         """
-        self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
-        self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
+        self._sample_time = rospy.get_param('controller/sample_time', 0.01)
+        self._update_time = rospy.get_param('controller/update_time', 0.5)
         self.knots = rospy.get_param('motionplanner/knot_intervals', 10)
         self.horizon_time = rospy.get_param('motionplanner/horizon_time', 10.)
         self.vmax = rospy.get_param('motionplanner/vmax', 0.2)
@@ -41,7 +41,7 @@ class MotionPlanner(object):
         rospy.Subscriber('motionplanner/trigger', Trigger, self.update)
 
         self.configure = rospy.Service(
-            "/motionplanner/config_motionplanner", ConfigMotionplanner,
+            "motionplanner/config_motionplanner", ConfigMotionplanner,
             self.configure)
 
     def configure(self, obstacles):
@@ -176,3 +176,4 @@ class MotionPlanner(object):
 if __name__ == '__main__':
     motionplanner = MotionPlanner()
     motionplanner.start()
+controller

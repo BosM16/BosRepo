@@ -3,47 +3,48 @@
   <node name="controller" pkg="bebop_demo" type="controller.py" output="screen"/>
   <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
 
-  <param name="vel_cmd/update_time" value="0.2" />
-  <param name="vel_cmd/sample_time" value="0.01" />
-  <param name="vel_cmd/LPF_cutoff" value="0.5" />
-  <param name="vel_cmd/LPF_order" value="4" />
-  <param name='vel_cmd/goal_reached_pos_tol' value="0.10" />
-  <param name='vel_cmd/goal_reached_angle_tol' value="0.05" />
+  <param name="controller/update_time" value="0.2" />
+  <param name="controller/sample_time" value="0.01" />
+  <param name="controller/LPF_cutoff" value="0.5" />
+  <param name="controller/LPF_order" value="4" />
+  <param name='controller/goal_reached_pos_tol' value="0.10" />
+  <param name='controller/goal_reached_angle_tol' value="0.05" />
+  <param name='controller/standard_height' value="1.7" />
 
   <!-- PID: -->
   <!-- hovering -->
-  <param name='vel_cmd/Kp_x' value="3.48" />
-  <param name='vel_cmd/Ki_x' value="1.3391" />
-  <param name='vel_cmd/Kd_x' value="1.7900" />
-  <param name='vel_cmd/Kp_y' value="2.6439" />
-  <param name='vel_cmd/Ki_y' value="0.8907" />
-  <param name='vel_cmd/Kd_y' value="1.5528" />
-  <param name='vel_cmd/Kp_z' value="4.1593" />
-  <param name='vel_cmd/Ki_z' value="4.0299" />
+  <param name='controller/Kp_x' value="3.48" />
+  <param name='controller/Ki_x' value="1.3391" />
+  <param name='controller/Kd_x' value="1.7900" />
+  <param name='controller/Kp_y' value="2.6439" />
+  <param name='controller/Ki_y' value="0.8907" />
+  <param name='controller/Kd_y' value="1.5528" />
+  <param name='controller/Kp_z' value="4.1593" />
+  <param name='controller/Ki_z' value="4.0299" />
 
   <!-- ff flying -->
-  <param name='vel_cmd/Kp_ff_x' value="1.0995" />
-  <param name='vel_cmd/Ki_ff_x' value="0.2578" />
-  <param name='vel_cmd/Kd_ff_x' value="0.9279" />
-  <param name='vel_cmd/Kp_ff_y' value="0.9445" />
-  <param name='vel_cmd/Ki_ff_y' value="0.2062" />
-  <param name='vel_cmd/Kd_ff_y' value="0.8560" />
-  <param name='vel_cmd/Kp_ff_z' value="4.1593" />
-  <param name='vel_cmd/Ki_ff_z' value="4.0299" />
+  <param name='controller/Kp_ff_x' value="1.0995" />
+  <param name='controller/Ki_ff_x' value="0.2578" />
+  <param name='controller/Kd_ff_x' value="0.9279" />
+  <param name='controller/Kp_ff_y' value="0.9445" />
+  <param name='controller/Ki_ff_y' value="0.2062" />
+  <param name='controller/Kd_ff_y' value="0.8560" />
+  <param name='controller/Kp_ff_z' value="4.1593" />
+  <param name='controller/Ki_ff_z' value="4.0299" />
 
   <!-- PD: -->
-  <!-- <param name='vel_cmd/Kp_x' value="0.9790" />
-  <param name='vel_cmd/Ki_x' value="0.0" />
-  <param name='vel_cmd/Kd_x' value="1.8532" />
-  <param name='vel_cmd/Kp_y' value="0.7436" />
-  <param name='vel_cmd/Ki_y' value="0.0" />
-  <param name='vel_cmd/Kd_y' value="1.6077" />
-  <param name='vel_cmd/Kp_z' value="4.0" />
-  <param name='vel_cmd/Ki_z' value="0.0" /> -->
+  <!-- <param name='controller/Kp_x' value="0.9790" />
+  <param name='controller/Ki_x' value="0.0" />
+  <param name='controller/Kd_x' value="1.8532" />
+  <param name='controller/Kp_y' value="0.7436" />
+  <param name='controller/Ki_y' value="0.0" />
+  <param name='controller/Kd_y' value="1.6077" />
+  <param name='controller/Kp_z' value="4.0" />
+  <param name='controller/Ki_z' value="0.0" /> -->
 
-  <param name='vel_cmd/K_theta' value="0.2" />
-  <param name='vel_cmd/max_input' value="1.0" />
-  <param name='vel_cmd/safety_treshold' value="0.5" />
+  <param name='controller/K_theta' value="0.2" />
+  <param name='controller/max_input' value="1.0" />
+  <param name='controller/safety_treshold' value="0.5" />
 
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="10.0" />
