@@ -576,10 +576,24 @@ class Controller(object):
 
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
+
+                # option filter first
                 if len(self.drawn_pos_x) > 50:
-                    self.diff_interp_traj()
+                    self.interpolate_list()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
+                    max_vel_ok = (
+                        all(vel <= self.max_vel for vel in self.drawn_vel_x) and
+                        all(vel <= self.max_vel for vel in self.drawn_vel_y) and
+                        all(vel <= self.max_vel for vel in self.drawn_vel_z))
+                    if not max_vel_ok:
+                        self.diff_interp_traj()
+                        self.differentiate_traj()
+                # # option filter last
+                # if len(self.drawn_pos_x) > 50:
+                #     self.diff_interp_traj()
+                #     self.low_pass_filter_drawn_traj()
+                #     self.differentiate_traj()
                 else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
