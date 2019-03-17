@@ -400,13 +400,7 @@ class VelCommander(object):
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
-        pos_fb = pos
-        vel_fb = PointStamped()
-        vel_fb.header.frame_id = "world"
-        vel_fb.point = Point(x=self._traj['u'][self.omg_index + 1],
-                             y=self._traj['v'][self.omg_index + 1],
-                             z=self._traj['w'][self.omg_index + 1])
-        self.combine_ff_fb(pos_fb, vel_fb)
+        self.combine_ff_fb(pos, vel)
 
         self.omg_index += 1
 
@@ -874,11 +868,10 @@ class VelCommander(object):
 
         self.pos_error_prev = pos_error
         self.vel_error_prev = vel_error
-        # print yellow('* 1. feedback cmd\n'), feedback_cmd.linear
-        # print yellow('* 2. feedback pos errors\n'), pos_desired.x - self._drone_est_pose.position.x
-        # print yellow('* 3. vhat\n'), self.vhat
-        # print '* 3. goal (pos des)\n', pos_desired
         self.feedback_cmd_prev = feedback_cmd
+
+        # Publish the position error.
+        self.pos_error_pub.publish(pos_error)
 
         return feedback_cmd
 
