@@ -20,7 +20,7 @@ from fabulous.color import (highlight_red, highlight_green, highlight_blue,
                             green, yellow, highlight_yellow)
 
 
-class VelCommander(object):
+class Controller(object):
 
     def __init__(self):
         """Initialization of Controller object.
@@ -1382,5 +1382,5 @@ class VelCommander(object):
 
 
 if __name__ == '__main__':
-    vel_command = VelCommander()
-    vel_command.start()
+    controller = Controller()
+    controller.start()
