@@ -170,7 +170,7 @@ class Controller(object):
         self.ctrl_state_finish = rospy.Publisher(
             'controller/state_finish', Empty, queue_size=1)
         self.pos_error_pub = rospy.Publisher(
-            'controller/position_error', Point, queue_size=1)
+            'controller/position_error', PointStamped, queue_size=1)
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
@@ -265,8 +265,8 @@ class Controller(object):
 
         # List containing obstacles of type Obstacle()
         Sjaaakie = Obstacle(shape=self.Sjaaakie[0:2], pose=self.Sjaaakie[2:])
-        self.obstacles = [Sjaaakie]
-        # self.obstacles = []
+        # self.obstacles = [Sjaaakie]
+        self.obstacles = []
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
@@ -566,12 +566,31 @@ class Controller(object):
         self.stop_drawing = False
         while not (self.stop_drawing or rospy.is_shutdown()):
             if self.draw:
+                # Erase previous markers in Rviz.
                 self.drawn_path.points = []
+                self.trajectory_drawn.publish(self.drawn_path)
+                self.smooth_path.points = []
+                self.trajectory_smoothed.publish(self.smooth_path)
+
                 while self.draw and not rospy.is_shutdown():
                     self.rate.sleep()
 
                 print yellow('---- Trigger button has been released,'
                              'path will be calculated ----')
+
+                # Clip positions to make sure path does not lie outside room.
+                self.drawn_pos_x = [
+                            max(- (self.room_width/2. - self.drone_radius),
+                                min((self.room_width/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_x]
+                self.drawn_pos_y = [
+                            max(- (self.room_width/2. - self.drone_radius),
+                                min((self.room_width/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_y]
+                self.drawn_pos_z = [
+                            max(- (self.room_width/2. - self.drone_radius),
+                                min((self.room_width/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_z]
 
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
@@ -1253,9 +1272,7 @@ class Controller(object):
         self.trajectory_real.publish(self._real_path)
         self.current_ff_vel.points = [Point(), Point()]
         self.current_ff_vel_pub.publish(self.current_ff_vel)
-        self.vhat_vector_pub.points = [Point(), Point()]
-        self.vhat_vector_pub.publish(self.vhat_vector)
-        self.vhat_vector.points = []
+        self.vhat_vector.points = [Point(), Point()]
         self.vhat_vector_pub.publish(self.vhat_vector)
         self.smooth_path.points = []
         self.trajectory_smoothed.publish(self.smooth_path)

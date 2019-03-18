@@ -94,7 +94,7 @@ class MotionPlanner(object):
         problem.set_options({'solver_options': {'ipopt': {
             'ipopt.linear_solver': 'ma57',
             'ipopt.print_level': 0,
-            'ipopt.tol': 1e-8,
+            'ipopt.tol': 1e-6,
             'ipopt.warm_start_init_point': 'yes',
             'ipopt.warm_start_bound_push': 1e-6,
             'ipopt.warm_start_mult_bound_push': 1e-6,
