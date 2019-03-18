@@ -547,21 +547,21 @@ class Controller(object):
                 self.state_changed = False
                 break
             if self.draw:
+                self.obstacles.append(None)
                 center = Point(x=self.ctrl_l_pos.position.x,
                                y=self.ctrl_l_pos.position.y,
                                z=height/2.)
                 while self.draw:
+                    edge = Point(x=self.ctrl_l_pos.position.x,
+                                 y=self.ctrl_l_pos.position.y,
+                                 z=height/2.)
+                    radius = self.position_diff_norm(edge, center)
+                    Sjaaakie = Obstacle(shape=[radius, height],
+                                        pose=[center.x, center.y, center.z])
+                    self.obstacles[-1] = Sjaaakie
+                    self.publish_obst_room(Empty)
                     self.rate.sleep()
-                edge = Point(x=self.ctrl_l_pos.position.x,
-                             y=self.ctrl_l_pos.position.y,
-                             z=height/2.)
-                radius = self.position_diff_norm(edge, center)
-                Sjaaakie = Obstacle(shape=[radius, height],
-                                    pose=[center.x, center.y, center.z])
-                self.obstacles.append(Sjaaakie)
                 print highlight_blue(' Obstacle added ')
-                self.publish_obst_room(Empty)
-
             self.rate.sleep()
 
     def omg_fly(self):
