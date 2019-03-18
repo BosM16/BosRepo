@@ -199,7 +199,6 @@ class KeyPress(object):
                     right = i
                 elif not left:
                     left = i
-        print 'right and left id', right, left
         return left, right
 
     def from_controller_state_to_dict(self, pControllerState):

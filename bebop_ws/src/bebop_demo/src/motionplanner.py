@@ -58,7 +58,8 @@ class MotionPlanner(object):
             bounds={'vmax': self.vmax, 'vmin': -self.vmax,
                     'amax': self.amax, 'amin': -self.amax})
         self._vehicle.define_knots(knot_intervals=self.knots)
-        self._vehicle.set_options({'safety_distance': self.safety_margin})
+        self._vehicle.set_options({'safety_distance': self.safety_margin,
+                                   'syslimit': 'norm_2'})
         self._vehicle.set_initial_conditions([0., 0., 0.])
         self._vehicle.set_terminal_conditions([0., 0., 0.])
 
@@ -92,7 +93,14 @@ class MotionPlanner(object):
         problem = omg.Point2point(self._vehicle, environment, freeT=True)
         problem.set_options({'solver_options': {'ipopt': {
             'ipopt.linear_solver': 'ma57',
-            'ipopt.print_level': 0}}})
+            'ipopt.print_level': 0,
+            'ipopt.tol': 1e-6,
+            'ipopt.warm_start_init_point': 'yes',
+            'ipopt.warm_start_bound_push': 1e-6,
+            'ipopt.warm_start_mult_bound_push': 1e-6,
+            # 'ipopt.mu_init': 1e-5,
+            'ipopt.hessian_approximation': 'limited-memory'}}})
+
         problem.set_options({
             'hard_term_con': False, 'horizon_time': self.horizon_time,
             'verbose': 1.})

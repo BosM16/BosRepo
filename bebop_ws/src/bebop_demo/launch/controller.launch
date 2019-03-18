@@ -3,7 +3,7 @@
   <node name="controller" pkg="bebop_demo" type="controller.py" output="screen"/>
   <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
 
-  <param name="controller/update_time" value="0.2" />
+  <param name="controller/update_time" value="0.5" />
   <param name="controller/sample_time" value="0.01" />
   <param name="controller/LPF_cutoff" value="0.5" />
   <param name="controller/LPF_order" value="4" />
@@ -42,9 +42,9 @@
   <param name='controller/Kp_z' value="4.0" />
   <param name='controller/Ki_z' value="0.0" /> -->
 
-  <param name='controller/K_theta' value="0.2" />
+  <param name='controller/K_theta' value="0.1" />
   <param name='controller/max_input' value="1.0" />
-  <param name='controller/safety_treshold' value="0.5" />
+  <param name='controller/safety_treshold' value="0.2" />
 
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="10.0" />

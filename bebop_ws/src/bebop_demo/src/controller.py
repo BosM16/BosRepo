@@ -106,6 +106,8 @@ class Controller(object):
             'motionplanner/trigger', Trigger, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', MarkerArray, queue_size=1)
+        self.vhat_vector_pub = rospy.Publisher(
+            'motionplanner/vhat_vector', Marker, queue_size=1)
         self.trajectory_desired = rospy.Publisher(
             'motionplanner/desired_path', Marker, queue_size=1)
         self.trajectory_real = rospy.Publisher(
@@ -121,11 +123,11 @@ class Controller(object):
         self.ctrl_state_finish = rospy.Publisher(
             'controller/state_finish', Empty, queue_size=1)
         self.pos_error_pub = rospy.Publisher(
-            'controller/position_error', Point, queue_size=1)
+            'controller/position_error', PointStamped, queue_size=1)
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
-        rospy.Subscriber('vive_localization/ready', Empty, self.draw_obst)
+        rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst_room)
         rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
         rospy.Subscriber('ctrl_keypress/ltrigger', Bool, self.l_trigger)
         rospy.Subscriber('ctrl_keypress/rtrackpad', Bool, self.trackpad_press)
@@ -344,6 +346,7 @@ class Controller(object):
         # if the velocity command sent above corresponds to time instance [k].
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self._drone_est_pose.position, self.vhat)
 
         # Publish pose to plot in rviz.
         self.publish_real(self._drone_est_pose.position.x,
@@ -420,6 +423,7 @@ class Controller(object):
         # if the velocity command sent above corresponds to time instance [k].
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self._drone_est_pose.position, self.vhat)
 
         # Publish pose to plot in rviz.
         self.publish_real(self._drone_est_pose.position.x,
@@ -581,12 +585,31 @@ class Controller(object):
         self.stop_drawing = False
         while not (self.stop_drawing or rospy.is_shutdown()):
             if self.draw:
+                # Erase previous markers in Rviz.
                 self.drawn_path.points = []
+                self.trajectory_drawn.publish(self.drawn_path)
+                self.smooth_path.points = []
+                self.trajectory_smoothed.publish(self.smooth_path)
+
                 while self.draw and not rospy.is_shutdown():
                     self.rate.sleep()
 
                 print yellow('---- Trigger button has been released,'
                              'path will be calculated ----')
+
+                # Clip positions to make sure path does not lie outside room.
+                self.drawn_pos_x = [
+                            max(- (self.room_width/2. - self.drone_radius),
+                                min((self.room_width/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_x]
+                self.drawn_pos_y = [
+                            max(- (self.room_width/2. - self.drone_radius),
+                                min((self.room_width/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_y]
+                self.drawn_pos_z = [
+                            max(- (self.room_width/2. - self.drone_radius),
+                                min((self.room_width/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_z]
 
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
@@ -826,8 +849,6 @@ class Controller(object):
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
-            print 'pos error', pos_error.point
-            print 'vel error\n', self.vhat, vel_error.point
 
             feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
                     self.Kp_x*pos_error.point.x +
@@ -884,8 +905,11 @@ class Controller(object):
                     pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
-        feedback_cmd.angular.z = (
-                            self.K_theta*(self.desired_yaw - self.real_yaw))
+        angle_error = ((((self.desired_yaw - self.real_yaw) -
+                         np.pi) % (2*np.pi)) - np.pi)
+        K_theta = self.K_theta + (np.pi - abs(angle_error))/np.pi*0.2
+        feedback_cmd.angular.z = (K_theta*angle_error)
+        # feedback_cmd.angular.z = (self.K_theta*angle_error)
 
         self.pos_error_prev = pos_error
         self.vel_error_prev = vel_error
@@ -1075,23 +1099,18 @@ class Controller(object):
                 self.draw = False
 
     def diff_interp_traj(self):
-        '''Differentiate obtained trajectory to obtain feedforward velocity
-        commands.
+        '''Differentiate and interpolate obtained trajectory to obtain
+        feedforward velocity commands.
         '''
-        max_vel_ok = False
-        self.interpolate_list()
+        # self.interpolate_list(self._sample_time/self._localization_rate)
+        self.differentiate_traj()
 
-        while not (rospy.is_shutdown() or max_vel_ok):
-            self.differentiate_traj()
-
-            max_vel_ok = (
-                    all(vel <= self.max_vel for vel in self.drawn_vel_x) and
-                    all(vel <= self.max_vel for vel in self.drawn_vel_y) and
-                    all(vel <= self.max_vel for vel in self.drawn_vel_z))
-
-            # Check if max velocity in list is not above max possible velocity.
-            if not max_vel_ok:
-                self.interpolate_list()
+        # Search for the highest velocity in the trajectory to determine the
+        # step size needed for interpolation.
+        highest_vel = max(max(self.drawn_vel_x),
+                          max(self.drawn_vel_y),
+                          max(self.drawn_vel_z))
+        self.interpolate_list(self.max_vel/highest_vel)
 
     def differentiate_traj(self):
         '''Numerically differentiates position traject to recover a list of
@@ -1101,34 +1120,19 @@ class Controller(object):
         self.drawn_vel_y = np.diff(self.drawn_pos_y)/self._sample_time
         self.drawn_vel_z = np.diff(self.drawn_pos_z)/self._sample_time
 
-    def interpolate_list(self):
-        '''Linearly interpolates a list so that it contains twice the number of
-        elements.
+    def interpolate_list(self, step):
+        '''Linearly interpolates a list so that it contains the desired amount
+        of elements where the element distance is equal to step.
         '''
-        drawn_pos_x_interp = (2*len(self.drawn_pos_x)-1)*[0]
-        drawn_pos_y_interp = (2*len(self.drawn_pos_y)-1)*[0]
-        drawn_pos_z_interp = (2*len(self.drawn_pos_z)-1)*[0]
-
-        drawn_pos_x_interp[0::2] = self.drawn_pos_x
-        drawn_pos_y_interp[0::2] = self.drawn_pos_y
-        drawn_pos_z_interp[0::2] = self.drawn_pos_z
-
-        drawn_pos_x_interp[1::2] = [elem / 2.0 for elem in
-                                    [a + b for a, b in
-                                     zip(self.drawn_pos_x[:-1],
-                                         self.drawn_pos_x[1:])]]
-        drawn_pos_y_interp[1::2] = [elem / 2.0 for elem in
-                                    [a + b for a, b in
-                                     zip(self.drawn_pos_y[:-1],
-                                         self.drawn_pos_y[1:])]]
-        drawn_pos_z_interp[1::2] = [elem / 2.0 for elem in
-                                    [a + b for a, b in
-                                     zip(self.drawn_pos_z[:-1],
-                                         self.drawn_pos_z[1:])]]
-
-        self.drawn_pos_x = drawn_pos_x_interp
-        self.drawn_pos_y = drawn_pos_y_interp
-        self.drawn_pos_z = drawn_pos_z_interp
+        self.drawn_pos_x = np.interp(np.arange(0, len(self.drawn_pos_x), step),
+                                     range(len(self.drawn_pos_x)),
+                                     self.drawn_pos_x).tolist()
+        self.drawn_pos_y = np.interp(np.arange(0, len(self.drawn_pos_y), step),
+                                     range(len(self.drawn_pos_y)),
+                                     self.drawn_pos_y).tolist()
+        self.drawn_pos_z = np.interp(np.arange(0, len(self.drawn_pos_z), step),
+                                     range(len(self.drawn_pos_z)),
+                                     self.drawn_pos_z).tolist()
 
     def low_pass_filter_drawn_traj(self):
         '''Low pass filter the trajectory drawn with the controller in order to
@@ -1172,8 +1176,8 @@ class Controller(object):
         self._desired_path.type = 4  # Line List.
         self._desired_path.action = 0
         self._desired_path.scale.x = 0.03
-        self._desired_path.scale.y = 0.03
-        self._desired_path.scale.z = 0.0
+        # self._desired_path.scale.y = 0.03
+        # self._desired_path.scale.z = 0.0
         self._desired_path.color.r = 1.0
         self._desired_path.color.g = 0.0
         self._desired_path.color.b = 0.0
@@ -1191,15 +1195,15 @@ class Controller(object):
         self._real_path.type = 4  # Line List.
         self._real_path.action = 0
         self._real_path.scale.x = 0.03
-        self._real_path.scale.y = 0.03
-        self._real_path.scale.z = 0.0
+        # self._real_path.scale.y = 0.03
+        # self._real_path.scale.z = 0.0
         self._real_path.color.r = 0.0
         self._real_path.color.g = 1.0
         self._real_path.color.b = 0.0
         self._real_path.color.a = 1.0
         self._real_path.lifetime = rospy.Duration(0)
 
-        # omg-tools position and velocity
+        # feedforward position and velocity
         self.current_ff_vel = Marker()
         self.current_ff_vel.header.frame_id = 'world'
         self.current_ff_vel.ns = "current_ff_vel"
@@ -1263,6 +1267,22 @@ class Controller(object):
         self.room_contours.color.a = 1.0
         self.room_contours.lifetime = rospy.Duration(0)
 
+        # Vhat vector
+        self.vhat_vector = Marker()
+        self.vhat_vector.header.frame_id = 'world'
+        self.vhat_vector.ns = "vhat_vector"
+        self.vhat_vector.id = 7
+        self.vhat_vector.type = 0  # Arrow.
+        self.vhat_vector.action = 0
+        self.vhat_vector.scale.x = 0.06  # shaft diameter
+        self.vhat_vector.scale.y = 0.1  # head diameter
+        self.vhat_vector.scale.z = 0.15  # head length
+        self.vhat_vector.color.r = 1.0
+        self.vhat_vector.color.g = 1.0
+        self.vhat_vector.color.b = 0.3
+        self.vhat_vector.color.a = 1.0
+        self.vhat_vector.lifetime = rospy.Duration(0)
+
     def reset_markers(self):
         '''Resets all Rviz markers (except for obstacles).
         '''
@@ -1272,8 +1292,10 @@ class Controller(object):
         self.trajectory_drawn.publish(self.drawn_path)
         self._real_path.points = []
         self.trajectory_real.publish(self._real_path)
-        self.current_ff_vel.points = []
+        self.current_ff_vel.points = [Point(), Point()]
         self.current_ff_vel_pub.publish(self.current_ff_vel)
+        self.vhat_vector.points = [Point(), Point()]
+        self.vhat_vector_pub.publish(self.vhat_vector)
         self.smooth_path.points = []
         self.trajectory_smoothed.publish(self.smooth_path)
 
@@ -1332,7 +1354,21 @@ class Controller(object):
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)
 
-    def publish_obst(self, empty):
+    def publish_vhat_vector(self, pos, vel):
+        '''Publish current vhat estimate from the kalman filter as a vector
+        with origin equal to the current position estimate.
+        '''
+        self.vhat_vector.header.stamp = rospy.get_rostime()
+
+        point_start = Point(x=pos.x, y=pos.y, z=pos.z)
+        point_end = Point(x=(pos.x + 2.5*vel.x),
+                          y=(pos.y + 2.5*vel.y),
+                          z=(pos.z + 2.5*vel.z))
+        self.vhat_vector.points = [point_start, point_end]
+
+        self.vhat_vector_pub.publish(self.vhat_vector)
+
+    def publish_obst_room(self, empty):
         '''Publish static obstacles.
         '''
         for i, obstacle in enumerate(self.obstacles):
@@ -1360,7 +1396,9 @@ class Controller(object):
             # Append marker to marker array:
             self.rviz_obst.markers.append(obstacle_marker)
 
+        self.reset_markers()
         self.obst_pub.publish(self.rviz_obst)
+        self.draw_room_contours()
 
     def draw_ctrl_path(self):
         '''Publish real x and y trajectory to topic for visualisation in
@@ -1399,7 +1437,6 @@ class Controller(object):
         in rviz.
         '''
         self.room_contours.header.stamp = rospy.get_rostime()
-        self.room_contours.points = []
 
         bottom_left = Point(x=-self.room_width/2.,
                             y=-self.room_depth/2.)
