@@ -572,24 +572,10 @@ class Controller(object):
 
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
-
-                # option filter first
                 if len(self.drawn_pos_x) > 50:
-                    self.interpolate_list()
+                    self.diff_interp_traj()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
-                    max_vel_ok = (
-                        all(vel <= self.max_vel for vel in self.drawn_vel_x) and
-                        all(vel <= self.max_vel for vel in self.drawn_vel_y) and
-                        all(vel <= self.max_vel for vel in self.drawn_vel_z))
-                    if not max_vel_ok:
-                        self.diff_interp_traj()
-                        self.differentiate_traj()
-                # # option filter last
-                # if len(self.drawn_pos_x) > 50:
-                #     self.diff_interp_traj()
-                #     self.low_pass_filter_drawn_traj()
-                #     self.differentiate_traj()
                 else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
@@ -1065,7 +1051,7 @@ class Controller(object):
         '''Differentiate and interpolate obtained trajectory to obtain
         feedforward velocity commands.
         '''
-        self.interpolate_list(self._sample_time/self._localization_rate)
+        # self.interpolate_list(self._sample_time/self._localization_rate)
         self.differentiate_traj()
 
         # Search for the highest velocity in the trajectory to determine the
@@ -1089,13 +1075,13 @@ class Controller(object):
         '''
         self.drawn_pos_x = np.interp(np.arange(0, len(self.drawn_pos_x), step),
                                      range(len(self.drawn_pos_x)),
-                                     self.draw_pos_x).tolist()
+                                     self.drawn_pos_x).tolist()
         self.drawn_pos_y = np.interp(np.arange(0, len(self.drawn_pos_y), step),
                                      range(len(self.drawn_pos_y)),
-                                     self.draw_pos_y).tolist()
+                                     self.drawn_pos_y).tolist()
         self.drawn_pos_z = np.interp(np.arange(0, len(self.drawn_pos_z), step),
                                      range(len(self.drawn_pos_z)),
-                                     self.draw_pos_z).tolist()
+                                     self.drawn_pos_z).tolist()
 
     def low_pass_filter_drawn_traj(self):
         '''Low pass filter the trajectory drawn with the controller in order to

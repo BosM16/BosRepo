@@ -45,6 +45,8 @@ class ViveLocalization(object):
 
         self.tf_r_in_w_timestamp_old = rospy.Time.now()
         self.tf_t_in_w_timestamp_old = rospy.Time.now()
+        self.sample_time = rospy.get_param(
+                                        'vive_localization/sample_time', 0.02)
 
         self.pos_update = rospy.Publisher(
             'vive_localization/pose', PoseMeas, queue_size=1)
@@ -59,7 +61,7 @@ class ViveLocalization(object):
         self.c2_pos_update = rospy.Publisher(
             'vive_localization/c2_position', PointStamped, queue_size=1)
         self.c_publishers = [self.c1_pose_update, self.c1_pos_update,
-                             self.c2_pose_update, self.c1_pos_update]
+                             self.c2_pose_update, self.c2_pos_update]
 
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
@@ -151,8 +153,7 @@ class ViveLocalization(object):
         '''
         Starts running of localization node.
         '''
-        sample_time = rospy.get_param('vive_localization/sample_time', 0.02)
-        self.rate = rospy.Rate(1./sample_time)
+        self.rate = rospy.Rate(1./self.sample_time)
 
         self.v = triad_openvr.triad_openvr()
         # self.v.print_discovered_objects()
