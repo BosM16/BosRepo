@@ -34,7 +34,7 @@ class Controller(object):
                            "land": self.take_off_land,
                            "omg standby": self.hover,
                            "omg fly": self.omg_fly,
-                           "place cylindrical obstacles": self.place_cyl_obst,
+                           "place cyl obstacles": self.place_cyl_obst,
                            "configure motionplanner": self.config_mp,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
@@ -547,7 +547,7 @@ class Controller(object):
                 Sjaaakie = Obstacle(shape=[radius, obstacle_height],
                                     pose=[center.x, center.y, center.z])
                 self.obstacles.append(Sjaaakie)
-                self.draw_obstacles()
+                self.publish_obst()
 
             self.rate.sleep()
 
@@ -1021,7 +1021,7 @@ class Controller(object):
             elif (self.state == "drag drone" or
                   self.state == "viscous fluid" or
                   self.state == "undamped spring" or
-                  self.state == "place cylindrical obstacles"):
+                  self.state == "place cyl obstacles"):
                 self.state_changed = True
             self.trackpad_held = True
 
@@ -1067,7 +1067,7 @@ class Controller(object):
             elif (not button_pushed.data and self.drag):
                 self.drag = False
 
-        if self.state == "place cylindrical obstacles":
+        if self.state == "place cyl obstacles":
             if (button_pushed.data and not self.draw):
                 self.draw = True
 
@@ -1335,12 +1335,12 @@ class Controller(object):
     def publish_obst(self, empty):
         '''Publish static obstacles.
         '''
-        for obstacle in self.obstacles:
+        for i, obstacle in enumerate(self.obstacles):
             # Marker setup
             obstacle_marker = Marker()
             obstacle_marker.header.frame_id = 'world'
-            obstacle_marker.ns = "obstacle"
-            obstacle_marker.id = 3
+            obstacle_marker.ns = "obstacle_" + str(i)
+            obstacle_marker.id = i+7
             obstacle_marker.type = 3  # Cylinder
             obstacle_marker.action = 0
             obstacle_marker.scale.x = obstacle.shape[0] * 2  # x-diameter
