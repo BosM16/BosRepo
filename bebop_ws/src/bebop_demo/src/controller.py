@@ -124,7 +124,7 @@ class Controller(object):
         self._trigger = Trigger()
 
         # Obstacle setup
-        self.Sjaaakie = [0.35, 1.3, 1.5, 1.5, 0.75]
+        self.Sjaaakie = [0.35, 2.5, 0.0, 0.0, 1.25]  # radius, height, xpos, ypos, zpos
 
         # Marker setup
         self.marker_setup()
@@ -161,6 +161,8 @@ class Controller(object):
             'motionplanner/smoothed_path', Marker, queue_size=1)
         self.current_ff_vel_pub = rospy.Publisher(
             'motionplanner/current_ff_vel', Marker, queue_size=1)
+        self.vhat_vector_pub = rospy.Publisher(
+            'motionplanner/vhat_vector', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', Marker, queue_size=1)
         self.draw_room = rospy.Publisher(
@@ -172,7 +174,7 @@ class Controller(object):
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
-        rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst)
+        rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst_room)
         rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
         rospy.Subscriber('ctrl_keypress/ltrigger', Bool, self.l_trigger)
         rospy.Subscriber('ctrl_keypress/rtrackpad', Bool, self.trackpad_press)
@@ -223,7 +225,6 @@ class Controller(object):
         '''Configures,
         Starts the controller's periodical loop.
         '''
-        self.draw_room_contours()
         self.configure()
         print green('----    Controller running     ----')
 
@@ -264,8 +265,8 @@ class Controller(object):
 
         # List containing obstacles of type Obstacle()
         Sjaaakie = Obstacle(shape=self.Sjaaakie[0:2], pose=self.Sjaaakie[2:])
-        # self.obstacles = [Sjaaakie]
-        self.obstacles = []
+        self.obstacles = [Sjaaakie]
+        # self.obstacles = []
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
@@ -346,6 +347,7 @@ class Controller(object):
         # if the velocity command sent above corresponds to time instance [k].
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self._drone_est_pose.position, self.vhat)
 
         # Publish pose to plot in rviz.
         self.publish_real(self._drone_est_pose.position.x,
@@ -422,6 +424,7 @@ class Controller(object):
         # if the velocity command sent above corresponds to time instance [k].
         (self._drone_est_pose,
          self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self._drone_est_pose.position, self.vhat)
 
         # Publish pose to plot in rviz.
         self.publish_real(self._drone_est_pose.position.x,
@@ -807,8 +810,6 @@ class Controller(object):
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
-            print 'pos error', pos_error.point
-            print 'vel error\n', self.vhat, vel_error.point
 
             feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
                     self.Kp_x*pos_error.point.x +
@@ -865,8 +866,11 @@ class Controller(object):
                     pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
-        feedback_cmd.angular.z = (
-                            self.K_theta*(self.desired_yaw - self.real_yaw))
+        angle_error = ((((self.desired_yaw - self.real_yaw) -
+                         np.pi) % (2*np.pi)) - np.pi)
+        K_theta = self.K_theta + (np.pi - abs(angle_error))/np.pi*0.2
+        feedback_cmd.angular.z = (K_theta*angle_error)
+        # feedback_cmd.angular.z = (self.K_theta*angle_error)
 
         self.pos_error_prev = pos_error
         self.vel_error_prev = vel_error
@@ -1114,8 +1118,8 @@ class Controller(object):
         self._desired_path.type = 4  # Line List.
         self._desired_path.action = 0
         self._desired_path.scale.x = 0.03
-        self._desired_path.scale.y = 0.03
-        self._desired_path.scale.z = 0.0
+        # self._desired_path.scale.y = 0.03
+        # self._desired_path.scale.z = 0.0
         self._desired_path.color.r = 1.0
         self._desired_path.color.g = 0.0
         self._desired_path.color.b = 0.0
@@ -1133,15 +1137,15 @@ class Controller(object):
         self._real_path.type = 4  # Line List.
         self._real_path.action = 0
         self._real_path.scale.x = 0.03
-        self._real_path.scale.y = 0.03
-        self._real_path.scale.z = 0.0
+        # self._real_path.scale.y = 0.03
+        # self._real_path.scale.z = 0.0
         self._real_path.color.r = 0.0
         self._real_path.color.g = 1.0
         self._real_path.color.b = 0.0
         self._real_path.color.a = 1.0
         self._real_path.lifetime = rospy.Duration(0)
 
-        # omg-tools position and velocity
+        # feedforward position and velocity
         self.current_ff_vel = Marker()
         self.current_ff_vel.header.frame_id = 'world'
         self.current_ff_vel.ns = "current_ff_vel"
@@ -1222,6 +1226,22 @@ class Controller(object):
         self.room_contours.color.a = 1.0
         self.room_contours.lifetime = rospy.Duration(0)
 
+        # Vhat vector
+        self.vhat_vector = Marker()
+        self.vhat_vector.header.frame_id = 'world'
+        self.vhat_vector.ns = "vhat_vector"
+        self.vhat_vector.id = 7
+        self.vhat_vector.type = 0  # Arrow.
+        self.vhat_vector.action = 0
+        self.vhat_vector.scale.x = 0.06  # shaft diameter
+        self.vhat_vector.scale.y = 0.1  # head diameter
+        self.vhat_vector.scale.z = 0.15  # head length
+        self.vhat_vector.color.r = 1.0
+        self.vhat_vector.color.g = 1.0
+        self.vhat_vector.color.b = 0.3
+        self.vhat_vector.color.a = 1.0
+        self.vhat_vector.lifetime = rospy.Duration(0)
+
     def reset_markers(self):
         '''Resets all Rviz markers (except for obstacles).
         '''
@@ -1231,8 +1251,12 @@ class Controller(object):
         self.trajectory_drawn.publish(self.drawn_path)
         self._real_path.points = []
         self.trajectory_real.publish(self._real_path)
-        self.current_ff_vel.points = []
+        self.current_ff_vel.points = [Point(), Point()]
         self.current_ff_vel_pub.publish(self.current_ff_vel)
+        self.vhat_vector_pub.points = [Point(), Point()]
+        self.vhat_vector_pub.publish(self.vhat_vector)
+        self.vhat_vector.points = []
+        self.vhat_vector_pub.publish(self.vhat_vector)
         self.smooth_path.points = []
         self.trajectory_smoothed.publish(self.smooth_path)
 
@@ -1291,7 +1315,21 @@ class Controller(object):
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)
 
-    def publish_obst(self, empty):
+    def publish_vhat_vector(self, pos, vel):
+        '''Publish current vhat estimate from the kalman filter as a vector
+        with origin equal to the current position estimate.
+        '''
+        self.vhat_vector.header.stamp = rospy.get_rostime()
+
+        point_start = Point(x=pos.x, y=pos.y, z=pos.z)
+        point_end = Point(x=(pos.x + 2.5*vel.x),
+                          y=(pos.y + 2.5*vel.y),
+                          z=(pos.z + 2.5*vel.z))
+        self.vhat_vector.points = [point_start, point_end]
+
+        self.vhat_vector_pub.publish(self.vhat_vector)
+
+    def publish_obst_room(self, empty):
         '''Publish static obstacles.
         '''
         self.rviz_obst.header.stamp = rospy.get_rostime()
@@ -1300,7 +1338,9 @@ class Controller(object):
                     x=self.Sjaaakie[2], y=self.Sjaaakie[3], z=self.Sjaaakie[4])
         self.rviz_obst.pose.position = point
 
+        self.reset_markers()
         self.obst_pub.publish(self.rviz_obst)
+        self.draw_room_contours()
 
     def draw_ctrl_path(self):
         '''Publish real x and y trajectory to topic for visualisation in
@@ -1339,7 +1379,6 @@ class Controller(object):
         in rviz.
         '''
         self.room_contours.header.stamp = rospy.get_rostime()
-        self.room_contours.points = []
 
         bottom_left = Point(x=-self.room_width/2.,
                             y=-self.room_depth/2.)
