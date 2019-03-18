@@ -127,7 +127,8 @@ class Controller(object):
 
         rospy.Subscriber('motionplanner/result', Trajectories,
                          self.get_mp_result)
-        rospy.Subscriber('vive_localization/ready', Empty, self.publish_obst_room)
+        rospy.Subscriber('vive_localization/ready', Empty,
+                         self.publish_obst_room)
         rospy.Subscriber('ctrl_keypress/rtrigger', Bool, self.r_trigger)
         rospy.Subscriber('ctrl_keypress/ltrigger', Bool, self.l_trigger)
         rospy.Subscriber('ctrl_keypress/rtrackpad', Bool, self.trackpad_press)
@@ -159,11 +160,12 @@ class Controller(object):
         self.room_depth = rospy.get_param('motionplanner/room_depth', 1.)
         self.room_height = rospy.get_param('motionplanner/room_height', 1.)
         self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
-        self.safety_treshold = rospy.get_param('controller/safety_treshold', 0.5)
+        self.safety_treshold = rospy.get_param('controller/safety_treshold',
+                                               0.5)
         self.pos_nrm_tol = rospy.get_param(
-                                        'controller/goal_reached_pos_tol', 0.05)
+                                       'controller/goal_reached_pos_tol', 0.05)
         # self.angle_nrm_tol = rospy.get_param(
-        #                               'controller/goal_reached_angle_tol', 0.05)
+        #                            'controller/goal_reached_angle_tol', 0.05)
 
         self._sample_time = rospy.get_param('controller/sample_time', 0.01)
         self._update_time = rospy.get_param('controller/update_time', 0.5)
@@ -197,6 +199,7 @@ class Controller(object):
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
+        self.obstacles = []
         self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
@@ -535,23 +538,29 @@ class Controller(object):
         Obstacles are saved and drawn in rviz.
         '''
         self.obstacles = []
+        self.publish_obst_room(Empty)
         height = self.room_height
-        while not (self.state_changed or
-                   rospy.is_shutdown() or self.state_killed):
+
+        print highlight_green(' Drag left controller to place obstacle ')
+        while not (rospy.is_shutdown() or self.state_killed):
+            if self.state_changed:
+                self.state_changed = False
+                break
             if self.draw:
                 center = Point(x=self.ctrl_l_pos.position.x,
                                y=self.ctrl_l_pos.position.y,
-                               z=obstacle_height/2.)
+                               z=height/2.)
                 while self.draw:
-                    rate.sleep()
+                    self.rate.sleep()
                 edge = Point(x=self.ctrl_l_pos.position.x,
                              y=self.ctrl_l_pos.position.y,
-                             z=obstacle_height/2.)
+                             z=height/2.)
                 radius = self.position_diff_norm(edge, center)
-                Sjaaakie = Obstacle(shape=[radius, obstacle_height],
+                Sjaaakie = Obstacle(shape=[radius, height],
                                     pose=[center.x, center.y, center.z])
                 self.obstacles.append(Sjaaakie)
-                self.publish_obst()
+                print highlight_blue(' Obstacle added ')
+                self.publish_obst_room(Empty)
 
             self.rate.sleep()
 
@@ -1148,7 +1157,7 @@ class Controller(object):
         # Plot the smoothed trajectory in Rviz.
         self.draw_smoothed_path()
 
-    def position_diff_norm(point1, point2):
+    def position_diff_norm(self, point1, point2):
         '''Returns the norm of the difference vector between two given points.
         point1 and point2 are geometry_msgs/Point objects.
         '''
@@ -1371,11 +1380,20 @@ class Controller(object):
     def publish_obst_room(self, empty):
         '''Publish static obstacles.
         '''
+        # Delete markers
+        marker = Marker()
+        marker.ns = "obstacles"
+        marker.action = 3  # 3 deletes markers
+        self.rviz_obst.markers = [marker]
+        self.obst_pub.publish(self.rviz_obst)
+
+        # self.rviz_obst = MarkerArray()
+        # self.obst_pub.publish(self.rviz_obst)
         for i, obstacle in enumerate(self.obstacles):
             # Marker setup
             obstacle_marker = Marker()
             obstacle_marker.header.frame_id = 'world'
-            obstacle_marker.ns = "obstacle_" + str(i)
+            obstacle_marker.ns = "obstacles"
             obstacle_marker.id = i+7
             obstacle_marker.type = 3  # Cylinder
             obstacle_marker.action = 0

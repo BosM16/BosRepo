@@ -149,7 +149,7 @@ class MotionPlanner(object):
                  self._goal.position.z])
             self._deployer.reset()
             print magenta('---- Motionplanner received a new goal -'
-                         ' deployer resetted ----')
+                          ' deployer resetted ----')
 
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
@@ -159,8 +159,7 @@ class MotionPlanner(object):
 
         if (self._deployer.problem.problem.stats()['return_status']
                 == 'Infeasible_Problem_Detected'):
-            print highlight_red('Send trajectory of zero input commands since'
-                                ' problem is infeasible')
+            print highlight_red(' Infeasible problem -- brake! ')
             self._result = Trajectories(
                 u_traj=100*[0],
                 v_traj=100*[0],
@@ -184,4 +183,3 @@ class MotionPlanner(object):
 if __name__ == '__main__':
     motionplanner = MotionPlanner()
     motionplanner.start()
-controller

@@ -247,7 +247,8 @@ class Demo(object):
         '''When controller trackpad is pressed changes change_state variable
         to true to allow fsm to switch states in state sequence.
         '''
-        if trackpad_pressed.data and not self.trackpad_held:
+        if (trackpad_pressed.data and not self.trackpad_held) and not (
+                self.state == "standby" or self.state == "initialization"):
             self.trackpad_held = True
             if self.state == "omg standby":
                 self.omg_standby = False
