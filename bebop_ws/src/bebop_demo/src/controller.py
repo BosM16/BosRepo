@@ -81,6 +81,8 @@ class Controller(object):
 
         self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
         self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
+        self._localization_rate = rospy.get_param(
+                                        'vive_localization/sample_time', 0.02)
         self.rate = rospy.Rate(1./self._sample_time)
         self.omg_index = 1
 
@@ -1060,23 +1062,18 @@ class Controller(object):
                 self.drag = False
 
     def diff_interp_traj(self):
-        '''Differentiate obtained trajectory to obtain feedforward velocity
-        commands.
+        '''Differentiate and interpolate obtained trajectory to obtain
+        feedforward velocity commands.
         '''
-        max_vel_ok = False
-        self.interpolate_list()
+        self.interpolate_list(self._sample_time/self._localization_rate)
+        self.differentiate_traj()
 
-        while not (rospy.is_shutdown() or max_vel_ok):
-            self.differentiate_traj()
-
-            max_vel_ok = (
-                    all(vel <= self.max_vel for vel in self.drawn_vel_x) and
-                    all(vel <= self.max_vel for vel in self.drawn_vel_y) and
-                    all(vel <= self.max_vel for vel in self.drawn_vel_z))
-
-            # Check if max velocity in list is not above max possible velocity.
-            if not max_vel_ok:
-                self.interpolate_list()
+        # Search for the highest velocity in the trajectory to determine the
+        # step size needed for interpolation.
+        highest_vel = max(max(self.drawn_vel_x),
+                          max(self.drawn_vel_y),
+                          max(self.drawn_vel_z))
+        self.interpolate_list(self.max_vel/highest_vel)
 
     def differentiate_traj(self):
         '''Numerically differentiates position traject to recover a list of
@@ -1086,34 +1083,19 @@ class Controller(object):
         self.drawn_vel_y = np.diff(self.drawn_pos_y)/self._sample_time
         self.drawn_vel_z = np.diff(self.drawn_pos_z)/self._sample_time
 
-    def interpolate_list(self):
-        '''Linearly interpolates a list so that it contains twice the number of
-        elements.
+    def interpolate_list(self, step):
+        '''Linearly interpolates a list so that it contains the desired amount
+        of elements where the element distance is equal to step.
         '''
-        drawn_pos_x_interp = (2*len(self.drawn_pos_x)-1)*[0]
-        drawn_pos_y_interp = (2*len(self.drawn_pos_y)-1)*[0]
-        drawn_pos_z_interp = (2*len(self.drawn_pos_z)-1)*[0]
-
-        drawn_pos_x_interp[0::2] = self.drawn_pos_x
-        drawn_pos_y_interp[0::2] = self.drawn_pos_y
-        drawn_pos_z_interp[0::2] = self.drawn_pos_z
-
-        drawn_pos_x_interp[1::2] = [elem / 2.0 for elem in
-                                    [a + b for a, b in
-                                     zip(self.drawn_pos_x[:-1],
-                                         self.drawn_pos_x[1:])]]
-        drawn_pos_y_interp[1::2] = [elem / 2.0 for elem in
-                                    [a + b for a, b in
-                                     zip(self.drawn_pos_y[:-1],
-                                         self.drawn_pos_y[1:])]]
-        drawn_pos_z_interp[1::2] = [elem / 2.0 for elem in
-                                    [a + b for a, b in
-                                     zip(self.drawn_pos_z[:-1],
-                                         self.drawn_pos_z[1:])]]
-
-        self.drawn_pos_x = drawn_pos_x_interp
-        self.drawn_pos_y = drawn_pos_y_interp
-        self.drawn_pos_z = drawn_pos_z_interp
+        self.drawn_pos_x = np.interp(np.arange(0, len(self.drawn_pos_x), step),
+                                     range(len(self.drawn_pos_x)),
+                                     self.draw_pos_x).tolist()
+        self.drawn_pos_y = np.interp(np.arange(0, len(self.drawn_pos_y), step),
+                                     range(len(self.drawn_pos_y)),
+                                     self.draw_pos_y).tolist()
+        self.drawn_pos_z = np.interp(np.arange(0, len(self.drawn_pos_z), step),
+                                     range(len(self.drawn_pos_z)),
+                                     self.draw_pos_z).tolist()
 
     def low_pass_filter_drawn_traj(self):
         '''Low pass filter the trajectory drawn with the controller in order to

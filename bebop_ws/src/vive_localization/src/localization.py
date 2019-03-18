@@ -270,7 +270,7 @@ class ViveLocalization(object):
             self.v.devices[object].get_pose_euler())
 
         pose[3:6] = pose[3:6]*np.pi/180.
-        # Rotate controller 90° to align rviz arrow with wand.
+        # Rotate controller 90degree to align rviz arrow with wand.
         if object[0:10] == "controller":
             pose[5] += np.pi/2.
 
