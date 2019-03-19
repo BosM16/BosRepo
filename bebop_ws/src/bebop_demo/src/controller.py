@@ -726,7 +726,8 @@ class Controller(object):
             self.rate.sleep()
 
     def hover_changed_gains(self):
-        '''Adapts gains for the undamped spring (only Kp) or viscous fluid
+        '''Adapts gains for the undamped spring (only Kp) or 
+        fluid
         (only Kd) illustration.
         '''
         self.hover_setpoint.position.z = rospy.get_param(
@@ -756,6 +757,7 @@ class Controller(object):
                    rospy.is_shutdown() or self.state_killed):
             self.hover()
             self.rate.sleep()
+        self.state_changed = True
 
     def set_ff_pid_gains(self):
         '''Sets pid gains to a lower setting for combination with feedforward
