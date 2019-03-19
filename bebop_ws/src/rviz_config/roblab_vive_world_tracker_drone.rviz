@@ -20,9 +20,9 @@ Panels:
         - /Marker5
         - /Marker6
         - /Marker7
-        - /Marker8
         - /PointStamped2
         - /PointStamped3
+        - /MarkerArray1
       Splitter Ratio: 0.5
     Tree Height: 843
   - Class: rviz/Selection
@@ -136,14 +136,6 @@ Visualization Manager:
       Value: true
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: /motionplanner/rviz_obst
-      Name: Marker
-      Namespaces:
-        {}
-      Queue Size: 100
-      Value: true
-    - Class: rviz/Marker
-      Enabled: true
       Marker Topic: /motionplanner/drawn_path
       Name: Marker
       Namespaces:
@@ -194,6 +186,14 @@ Visualization Manager:
       Topic: /vive_localization/c2_position
       Unreliable: false
       Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /motionplanner/rviz_obst
+      Name: MarkerArray
+      Namespaces:
+        {}
+      Queue Size: 100
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -234,10 +234,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.379796922
+      Pitch: 0.224796697
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 4.26809025
+      Yaw: 4.69309759
     Saved: ~
 Window Geometry:
   Displays:
