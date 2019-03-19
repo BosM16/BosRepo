@@ -41,16 +41,21 @@ class Demo(object):
         self.airborne = False
         self.trackpad_held = False
         self.menu_button_held = False
-        self.task_dict = {"standby": [],
-                          "invalid measurement": ["emergency"],
-                          "take-off": ["take-off"],
-                          "land": ["land"],
-                          "point to point": ["omg standby", "omg fly"],
-                          "draw follow traj": ["land", "draw path", "take-off",
-                                               "fly to start", "follow path"],
-                          "drag drone": ["drag drone"],
-                          "undamped spring": ["undamped spring", "reset_PID"],
-                          "viscous fluid": ["viscous fluid", "reset_PID"]}
+        self.task_dict = {
+            "standby": [],
+            "invalid measurement": ["emergency"],
+            "take-off": ["take-off"],
+            "land": ["land"],
+            "point to point": ["omg standby", "omg fly"],
+            "place cyl obstacles": ["land",
+                                    "place cyl obstacles",
+                                    "configure motionplanner",
+                                    "take-off"],
+            "draw follow traj": ["land", "draw path", "take-off",
+                                 "fly to start", "follow path"],
+            "drag drone": ["drag drone"],
+            "undamped spring": ["undamped spring", "reset_PID"],
+            "viscous fluid": ["viscous fluid", "reset_PID"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
@@ -242,7 +247,8 @@ class Demo(object):
         '''When controller trackpad is pressed changes change_state variable
         to true to allow fsm to switch states in state sequence.
         '''
-        if trackpad_pressed.data and not self.trackpad_held:
+        if (trackpad_pressed.data and not self.trackpad_held) and not (
+                self.state == "standby" or self.state == "initialization"):
             self.trackpad_held = True
             if self.state == "omg standby":
                 self.omg_standby = False

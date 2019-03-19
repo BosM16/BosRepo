@@ -22,8 +22,8 @@ class MotionPlanner(object):
         controller. Sets self as publisher of topics to which controller
         subscribes.
         """
-        self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
-        self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
+        self._sample_time = rospy.get_param('controller/sample_time', 0.01)
+        self._update_time = rospy.get_param('controller/update_time', 0.5)
         self.knots = rospy.get_param('motionplanner/knot_intervals', 10)
         self.horizon_time = rospy.get_param('motionplanner/horizon_time', 10.)
         self.vmax = rospy.get_param('motionplanner/vmax', 0.2)
@@ -41,7 +41,7 @@ class MotionPlanner(object):
         rospy.Subscriber('motionplanner/trigger', Trigger, self.update)
 
         self.configure = rospy.Service(
-            "/motionplanner/config_motionplanner", ConfigMotionplanner,
+            "motionplanner/config_motionplanner", ConfigMotionplanner,
             self.configure)
 
     def configure(self, obstacles):
@@ -149,7 +149,7 @@ class MotionPlanner(object):
                  self._goal.position.z])
             self._deployer.reset()
             print magenta('---- Motionplanner received a new goal -'
-                         ' deployer resetted ----')
+                          ' deployer resetted ----')
 
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
@@ -159,8 +159,7 @@ class MotionPlanner(object):
 
         if (self._deployer.problem.problem.stats()['return_status']
                 == 'Infeasible_Problem_Detected'):
-            print highlight_red('Send trajectory of zero input commands since'
-                                ' problem is infeasible')
+            print highlight_red(' Infeasible problem -- brake! ')
             self._result = Trajectories(
                 u_traj=100*[0],
                 v_traj=100*[0],

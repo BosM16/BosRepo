@@ -24,7 +24,7 @@ class ViveLocalization(object):
         '''
         Initialization of Demo object.
         '''
-        rospy.init_node('bebop_demo')
+        rospy.init_node('vive_localization')
 
         self.tracked_objects = ["tracker_1", "controller_1", "controller_2"]
 
