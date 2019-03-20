@@ -161,9 +161,9 @@ class MotionPlanner(object):
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
         trajectories = self._deployer.update(cmd.current_time, state0, input0)
 
-        if (self._deployer.problem.problem.stats()['return_status']
-                == 'Infeasible_Problem_Detected'):
-            print highlight_red(' Infeasible problem -- brake! ')
+        return_status = self._deployer.problem.problem.stats()['return_status']
+        if (return_status != 'Solve_Succeeded'):
+            print highlight_red(return_status, ' -- brake! ')
             self._result = Trajectories(
                 u_traj=100*[0],
                 v_traj=100*[0],

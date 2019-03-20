@@ -3,7 +3,7 @@
   <node name="controller" pkg="bebop_demo" type="controller.py" output="screen"/>
   <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
 
-  <param name="controller/update_time" value="0.5" />
+  <param name="controller/update_time" value="20." />
   <param name="controller/sample_time" value="0.01" />
   <param name="controller/LPF_cutoff" value="0.5" />
   <param name="controller/LPF_order" value="4" />

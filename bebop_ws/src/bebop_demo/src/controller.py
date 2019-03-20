@@ -229,7 +229,6 @@ class Controller(object):
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.feedforward_cmd = Twist()
         self.vhat = Point()
-        self._trigger = Trigger()
 
         self._drone_est_pose = Pose()
         self.vive_frame_pose = PoseStamped()
@@ -316,12 +315,13 @@ class Controller(object):
     def fire_motionplanner(self):
         '''Publishes inputs to motionplanner via Trigger topic.
         '''
-        self._trigger.goal_pos = self._goal
-        self._trigger.goal_vel = Point()
-        self._trigger.pos_state = self._drone_est_pose
-        self._trigger.vel_state = self.vhat
-        self._trigger.current_time = self._time
-        self._mp_trigger_topic.publish(self._trigger)
+        trigger = Trigger()
+        trigger.goal_pos = self._goal
+        trigger.goal_vel = Point()
+        trigger.pos_state = self._drone_est_pose
+        trigger.vel_state = self.vhat
+        trigger.current_time = self._time
+        self._mp_trigger_topic.publish(trigger)
 
     def get_mp_result(self, data):
         '''Store results of motionplanner calculations.
@@ -364,10 +364,11 @@ class Controller(object):
         if not measurement_valid:
             self.safety_brake()
             return
-        # Check for new trajectories. Trigger Motionplanner or raise
-        # 'overtime'
+        # Check for new trajectories. While calculating, hover.
+        # Trigger Motionplanner or raise 'overtime'
         if self._init:
             if not self._new_trajectories:
+                self.hover()
                 return
             self.omg_index = int(self._update_time/self._sample_time)
             self._init = False
@@ -381,9 +382,11 @@ class Controller(object):
                 self._time += self.omg_index*self._sample_time
                 self.pos_index = self.omg_index
                 self.omg_index = 1
+
                 if not self.calc_succeeded:
                     self.overtime_counter += 1
                 self.calc_succeeded = True
+
                 # Trigger motion planner.
                 self.fire_motionplanner()
 
@@ -391,7 +394,7 @@ class Controller(object):
                 self.calc_succeeded = False
                 if self.overtime_counter > 3:
                     self.safety_brake()
-                    print highlight_red('---- ! Overtime !  ----')
+                    print highlight_yellow('---- WARNING - OVERTIME  ----')
                 return
 
         # publish current pose and velocity calculated by omg-tools
@@ -514,8 +517,7 @@ class Controller(object):
             self.state_killed = True
 
     def hover(self):
-        '''When state is equal to the standby state, drone keeps itself in same
-        location through a PID controller.
+        '''Drone keeps itself in same location through a PID controller.
         '''
         if self.airborne:
             (self._drone_est_pose,
