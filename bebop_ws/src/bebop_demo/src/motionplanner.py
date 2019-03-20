@@ -145,7 +145,8 @@ class MotionPlanner(object):
                 [cmd.pos_state.position.x,
                  cmd.pos_state.position.y,
                  cmd.pos_state.position.z],
-                [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z])
+                # [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
+                )
             self._vehicle.set_terminal_conditions(
                 [self._goal.position.x,
                  self._goal.position.y,

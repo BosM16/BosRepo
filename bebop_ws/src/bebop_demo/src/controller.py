@@ -196,6 +196,7 @@ class Controller(object):
         self.executing_state = False
         self.state_killed = False
         self.trackpad_held = False
+        self.r_trigger_held = False
 
         # Other
         self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
@@ -388,9 +389,9 @@ class Controller(object):
 
             else:
                 self.calc_succeeded = False
-                print highlight_red('---- ! Overtime !  ----')
                 if self.overtime_counter > 3:
                     self.safety_brake()
+                    print highlight_red('---- ! Overtime !  ----')
                 return
 
         # publish current pose and velocity calculated by omg-tools
@@ -1091,13 +1092,17 @@ class Controller(object):
         '''
 
         if (((self.state == "omg fly") or (self.state == "omg standby"))
-           and button_pushed.data):
+           and button_pushed.data and not self.r_trigger_held):
             self.target_reached = False
             goal = Pose()
             goal.position.x = self.ctrl_r_pos.position.x
             goal.position.y = self.ctrl_r_pos.position.y
             goal.position.z = self.ctrl_r_pos.position.z
             self.set_omg_goal(goal)
+            self.r_trigger_held = True
+
+        elif (not button_pushed.data and self.r_trigger_held):
+            self.r_trigger_held = False
 
     def l_trigger(self, button_pushed):
         '''When button is pushed on the left hand controller, depending on the
