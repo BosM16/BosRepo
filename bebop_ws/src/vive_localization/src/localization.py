@@ -210,7 +210,9 @@ class ViveLocalization(object):
             tf_d_in_w = TransformStamped()
             tf_d_in_w.header.stamp = self.tf_t_in_w_timestamp_old
             rate = rospy.Rate(20./self.sample_time)
-            while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old:
+            while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old and (
+                    not rospy.is_shutdown()):
+
                 tf_d_in_w = self.get_transform("drone", "world")
                 rate.sleep()
             self.tf_t_in_w_timestamp_old = tf_d_in_w.header.stamp
@@ -237,7 +239,9 @@ class ViveLocalization(object):
             tf_r_in_w = TransformStamped()
             tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
             rate = rospy.Rate(20./self.sample_time)
-            while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old:
+            while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old and (
+                    not rospy.is_shutdown()):
+
                 tf_r_in_w = self.get_transform("world_rot", "world")
                 rate.sleep()
             self.tf_r_in_w_timestamp_old = tf_r_in_w.header.stamp
