@@ -108,6 +108,10 @@ class Demo(object):
                     if self.state == "omg standby":
                         self.omg_standby = True
 
+                    if self.state == "land":
+                        self.change_state = True
+                    print 'variables before', self.change_state, self.state_finish, self.new_task, self.state_sequence
+
                     task_final_state = (self.state == self.state_sequence[-1])
                     # Check if previous state is finished and if allowed to
                     # switch state based on controller input.
@@ -115,7 +119,9 @@ class Demo(object):
                                 self.change_state or task_final_state)) or
                                self.new_task or rospy.is_shutdown()):
                         # Remaining in state. Allow state action to continue.
+                        print '\n variables before\n ', self.change_state, '\n', self.state_finish, '\n', self.new_task, '\n', self.state_sequence
                         rospy.sleep(0.1)
+                    print 'variables after while', self.change_state, self.state_finish, self.new_task, self.state_sequence
 
                     self.change_state = False
                     self.state_finish = False
@@ -133,6 +139,7 @@ class Demo(object):
                     self.new_task = True
                 # Only publish standby state when task is finished.
                 # Except for repetitive tasks (back to first state in task).
+                print 'variables before end', self.new_task
                 if not self.new_task:
                     self.state = "standby"
                     self.fsm_state.publish("standby")

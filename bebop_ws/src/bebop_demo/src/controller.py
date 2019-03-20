@@ -200,7 +200,7 @@ class Controller(object):
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
         self.obstacles = []
-        self.desired_yaw = np.pi/2.
+        self.desired_yaw = -np.pi/4.  # np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.x_error = 0.
@@ -293,6 +293,7 @@ class Controller(object):
 
         self._time = 0.
         self._new_trajectories = False
+        self.overtime_counter = 0
 
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         (self._drone_est_pose, self.vhat,
@@ -376,13 +377,17 @@ class Controller(object):
                 self._time += self.omg_index*self._sample_time
                 self.pos_index = self.omg_index
                 self.omg_index = 1
+                if not self.calc_succeeded:
+                    self.overtime_counter += 1
+                self.calc_succeeded = True
                 # Trigger motion planner.
                 self.fire_motionplanner()
 
             else:
                 self.calc_succeeded = False
                 print highlight_red('---- ! Overtime !  ----')
-                self.safety_brake()
+                if self.overtime_counter > 3:
+                    self.safety_brake()
                 return
 
         # publish current pose and velocity calculated by omg-tools
@@ -401,7 +406,7 @@ class Controller(object):
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
-        self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
+        # self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
@@ -456,7 +461,7 @@ class Controller(object):
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
-        self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
+        # self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
@@ -492,6 +497,9 @@ class Controller(object):
             self.state = state.data
             self.state_changed = True
             print yellow(' Controller state changed to:', self.state)
+        else:
+            print yellow(' Controller already in the correct state!')
+            self.ctrl_state_finish.publish(Empty())
 
         # When going to standby, remove markers in Rviz from previous task.
         if state.data == "standby":
@@ -926,7 +934,11 @@ class Controller(object):
         # Add theta feedback to remain at zero yaw angle
         angle_error = ((((self.desired_yaw - self.real_yaw) -
                          np.pi) % (2*np.pi)) - np.pi)
+        # print 'desired yaw angle', self.desired_yaw
+        # print 'real yaw angle', self.real_yaw
+        # print 'angle error', angle_error
         K_theta = self.K_theta + (np.pi - abs(angle_error))/np.pi*0.2
+        # print 'K_theta', K_theta
         feedback_cmd.angular.z = (K_theta*angle_error)
         # feedback_cmd.angular.z = (self.K_theta*angle_error)
 

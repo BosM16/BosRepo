@@ -106,7 +106,7 @@ class MotionPlanner(object):
             'verbose': 1.})
 
         problem.init()
-        problem.fullstop = True
+        # problem.fullstop = True
 
         self._deployer = omg.Deployer(
             problem, self._sample_time, self._update_time)
