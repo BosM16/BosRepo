@@ -45,11 +45,15 @@ class Controller(object):
                            "drag drone": self.drag_drone}
 
         # Obstacle setup
-        self.Sjaaakie = [0.35, 1.3, 1.5, 1.5, 0.75]
+        Sjaaakie = Obstacle(shape=[0.35, 2.5],
+                            pose=[0., 0., 1.25])
+        # self.obstacles = [Sjaaakie]
+        self.obstacles = []
 
         self._init_params()
         self._init_variables()
         self._marker_setup()
+
         self._init_vel_model()
         self._init_topics()
 
@@ -199,7 +203,6 @@ class Controller(object):
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.obstacles = []
         self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
@@ -726,8 +729,7 @@ class Controller(object):
             self.rate.sleep()
 
     def hover_changed_gains(self):
-        '''Adapts gains for the undamped spring (only Kp) or 
-        fluid
+        '''Adapts gains for the undamped spring (only Kp) or viscous fluid
         (only Kd) illustration.
         '''
         self.hover_setpoint.position.z = rospy.get_param(
@@ -757,7 +759,6 @@ class Controller(object):
                    rospy.is_shutdown() or self.state_killed):
             self.hover()
             self.rate.sleep()
-        self.state_changed = True
 
     def set_ff_pid_gains(self):
         '''Sets pid gains to a lower setting for combination with feedforward

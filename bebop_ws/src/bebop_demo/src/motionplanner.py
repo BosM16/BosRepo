@@ -88,18 +88,20 @@ class MotionPlanner(object):
 
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
+        print 'obstacles', self._obstacles
 
         # Create problem.
         problem = omg.Point2point(self._vehicle, environment, freeT=True)
         problem.set_options({'solver_options': {'ipopt': {
             'ipopt.linear_solver': 'ma57',
             'ipopt.print_level': 0,
-            'ipopt.tol': 1e-6,
-            'ipopt.warm_start_init_point': 'yes',
-            'ipopt.warm_start_bound_push': 1e-6,
-            'ipopt.warm_start_mult_bound_push': 1e-6,
+            # 'ipopt.tol': 1e-4,
+            # 'ipopt.warm_start_init_point': 'yes',
+            # 'ipopt.warm_start_bound_push': 1e-6,
+            # 'ipopt.warm_start_mult_bound_push': 1e-6,
             # 'ipopt.mu_init': 1e-5,
-            'ipopt.hessian_approximation': 'limited-memory'}}})
+            # 'ipopt.hessian_approximation': 'limited-memory'
+            }}})
 
         problem.set_options({
             'hard_term_con': False, 'horizon_time': self.horizon_time,
@@ -136,6 +138,7 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
+        print 'update', cmd
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(

@@ -87,21 +87,21 @@ class ViveLocalization(object):
         self.tf_w_in_v.child_frame_id = "world"
 
         # # Newest calibrated values (origin in center) (Mathias)
-        # self.tf_w_in_v.transform.translation.x = -0.0653594065575
-        # self.tf_w_in_v.transform.translation.y = -2.93788157322
-        # self.tf_w_in_v.transform.translation.z = -3.58790665423
-        # self.tf_w_in_v.transform.rotation.x = 0.633938483633
-        # self.tf_w_in_v.transform.rotation.y = -0.312469733542
-        # self.tf_w_in_v.transform.rotation.z = -0.312720898172
-        # self.tf_w_in_v.transform.rotation.w = -0.634578840205
+        self.tf_w_in_v.transform.translation.x = -0.0653594065575
+        self.tf_w_in_v.transform.translation.y = -2.93788157322
+        self.tf_w_in_v.transform.translation.z = -3.58790665423
+        self.tf_w_in_v.transform.rotation.x = 0.633938483633
+        self.tf_w_in_v.transform.rotation.y = -0.312469733542
+        self.tf_w_in_v.transform.rotation.z = -0.312720898172
+        self.tf_w_in_v.transform.rotation.w = -0.634578840205
         # Newest calibrated values (origin in center) (Rian)
-        self.tf_w_in_v.transform.translation.x = 0.0127584116207
-        self.tf_w_in_v.transform.translation.y = -2.9642058687
-        self.tf_w_in_v.transform.translation.z = -3.24945095473
-        self.tf_w_in_v.transform.rotation.x = -0.339866444679
-        self.tf_w_in_v.transform.rotation.y = -0.633483680153
-        self.tf_w_in_v.transform.rotation.z = -0.617152604346
-        self.tf_w_in_v.transform.rotation.w = 0.319862298045
+        # self.tf_w_in_v.transform.translation.x = 0.0127584116207
+        # self.tf_w_in_v.transform.translation.y = -2.9642058687
+        # self.tf_w_in_v.transform.translation.z = -3.24945095473
+        # self.tf_w_in_v.transform.rotation.x = -0.339866444679
+        # self.tf_w_in_v.transform.rotation.y = -0.633483680153
+        # self.tf_w_in_v.transform.rotation.z = -0.617152604346
+        # self.tf_w_in_v.transform.rotation.w = 0.319862298045
         # # Old calibrated values (origin in corner)
         # self.tf_w_in_v.transform.translation.x = 0.129081706552
         # self.tf_w_in_v.transform.translation.y = -2.89506984729
@@ -210,7 +210,9 @@ class ViveLocalization(object):
             tf_d_in_w = TransformStamped()
             tf_d_in_w.header.stamp = self.tf_t_in_w_timestamp_old
             rate = rospy.Rate(20./self.sample_time)
-            while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old:
+            while tf_d_in_w.header.stamp == self.tf_t_in_w_timestamp_old and (
+                    not rospy.is_shutdown()):
+
                 tf_d_in_w = self.get_transform("drone", "world")
                 rate.sleep()
             self.tf_t_in_w_timestamp_old = tf_d_in_w.header.stamp
@@ -237,7 +239,9 @@ class ViveLocalization(object):
             tf_r_in_w = TransformStamped()
             tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
             rate = rospy.Rate(20./self.sample_time)
-            while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old:
+            while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old and (
+                    not rospy.is_shutdown()):
+
                 tf_r_in_w = self.get_transform("world_rot", "world")
                 rate.sleep()
             self.tf_r_in_w_timestamp_old = tf_r_in_w.header.stamp
