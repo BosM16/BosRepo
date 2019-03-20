@@ -47,8 +47,8 @@ class Controller(object):
         # Obstacle setup
         Sjaaakie = Obstacle(shape=[0.35, 2.5],
                             pose=[0., 0., 1.25])
-        # self.obstacles = [Sjaaakie]
-        self.obstacles = []
+        self.obstacles = [Sjaaakie]
+        # self.obstacles = []
 
         self._init_params()
         self._init_variables()
