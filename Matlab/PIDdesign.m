@@ -19,7 +19,7 @@ run identify_params
 
 %% Calculate PID controller parameters
 fprintf('\n= Start PI(D) controller parameter calculation =\n')
-options.figures = true;
+options.figures = false;
 options.prints = false;
 
 % Desired phase margin
@@ -32,11 +32,11 @@ PM_des = 35;
 % Function calls
 % --------------
 fprintf('\n----------------- x direction -----------------\n')
-[xsys_cl,xPIDparams] = PID_design(xmodel, PM_des, options);
+[xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options);
 fprintf('\n----------------- y direction -----------------\n')
-[ysys_cl,yPIDparams] = PID_design(ymodel, PM_des, options);
+[ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options);
 fprintf('\n----------------- z direction -----------------\n')
-[zsys_cl,zPIparams] = PI_design(zmodel, PM_des, options);
+[zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options);
 
 
 
@@ -47,7 +47,7 @@ fprintf('\n======== PID controller design finished ========\n')
 %                               Main functions
 %  ========================================================================
 
-function [sys_cl,PIDparams] = PID_design(model, PM, options)
+function [sys_cl,D,PIDparams] = PID_design(model, PM, options)
 
 G = model.tf_pos;
 
@@ -161,7 +161,7 @@ end
 
 end
 
-function [sys_cl,PIparams] = PI_design(model, PM, options)
+function [sys_cl,D,PIparams] = PI_design(model, PM, options)
 
 G = model.tf_pos;
 
@@ -183,7 +183,8 @@ phi = -180 + PM + 15 + c;
 % crossover frequency
 w_c = interp1(Gphase,w,phi);
 
-Ti = 3.73/w_c;
+% Ti = 3.73/w_c;
+Ti = 6/w_c;
 
 %% I part
 % D(s) = K * (1 + 1/(s Ti))
@@ -200,12 +201,12 @@ D = K*Di;
 PIparams.Ti = Ti;
 PIparams.K = K;
 
-% PIparams.Kp = K;
-% PIparams.Ki = K/Ti;
+PIparams.Kp = K;
+PIparams.Ki = K/Ti;
 % Try some self chosen params:
-PIparams.Kp = 4.0;
-PIparams.Ki = 2.0;
-D = PIparams.Kp + PIparams.Ki/s;
+% PIparams.Kp = 4.0;
+% PIparams.Ki = 2.0;
+% D = PIparams.Kp + PIparams.Ki/s;
 
 
 % Display calculated parameters in command window
