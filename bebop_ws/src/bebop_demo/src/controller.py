@@ -368,7 +368,7 @@ class Controller(object):
         # Trigger Motionplanner or raise 'overtime'
         if self._init:
             if not self._new_trajectories:
-                self.hover()
+                # self.hover()  # LET OP: HOVER SETPOINT IS EINDDOEL
                 return
             self.omg_index = int(self._update_time/self._sample_time)
             self._init = False
