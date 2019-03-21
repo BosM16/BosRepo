@@ -302,7 +302,7 @@ class Controller(object):
         (self._drone_est_pose, self.vhat,
          self.real_yaw, measurement_valid) = self.get_pose_est()
 
-        self._marker_setup()
+        self.reset_markers()
 
         self._goal = goal
         self.fire_motionplanner()
@@ -368,7 +368,7 @@ class Controller(object):
         # Trigger Motionplanner or raise 'overtime'
         if self._init:
             if not self._new_trajectories:
-                # self.hover()  # LET OP: HOVER SETPOINT IS EINDDOEL
+                self.hover()  # LET OP: HOVER SETPOINT IS EINDDOEL
                 return
             self.omg_index = int(self._update_time/self._sample_time)
             self._init = False
@@ -589,21 +589,18 @@ class Controller(object):
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
         '''
-        # Preparing omg standby hover setpoint for when omgtools finishes.
-        self.hover_setpoint = self._goal
         self.omg_index = 1
         self.set_ff_pid_gains()
 
-        while not (rospy.is_shutdown() or self.target_reached):
-            if self.state_killed:
-                break
+        while not (self.target_reached or (
+                rospy.is_shutdown() or self.state_killed)):
 
             if self.startup:  # Becomes True when goal is set.
                 self.omg_update()
                 # Determine whether goal has been reached.
                 self.check_goal_reached()
             self.rate.sleep()
-
+        self.hover_setpoint = self._drone_est_pose
         self.reset_pid_gains()
         self.startup = False
 

@@ -105,7 +105,8 @@ class Demo(object):
 
                     # Omg tools should return to its own standby status unless
                     # the controller trackpad has been pressed.
-                    if self.state == "omg standby":
+                    if ((self.state == "omg standby") or
+                       (self.state == "omg fly")):
                         self.omg_standby = True
                     else:
                         self.omg_standby = False
