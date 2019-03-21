@@ -371,7 +371,8 @@ class Controller(object):
         # Trigger Motionplanner or raise 'overtime'
         if self._init:
             if not self._new_trajectories:
-                self.hover()  # LET OP: HOVER SETPOINT IS EINDDOEL
+                print 'OMG update hover'
+                self.hover()
                 return
             self.omg_index = int(self._update_time/self._sample_time)
             self._init = False
@@ -416,7 +417,7 @@ class Controller(object):
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
-        self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
+        # self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
@@ -493,7 +494,7 @@ class Controller(object):
 
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
-            self.interrupt_mp.publish(Empty())
+            # self.interrupt_mp.publish(Empty())
             print yellow('---- Target Reached! ----')
 
 ####################
