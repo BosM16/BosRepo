@@ -100,7 +100,7 @@ class Demo(object):
                 # Run over sequence of states corresponding to current task.
                 for state in self.state_sequence:
                     self.state = state
-                    print cyan(' Bebop_core state changed to:', self.state)
+                    print cyan(' Bebop_core state changed to: ', self.state)
                     self.fsm_state.publish(state)
 
                     # Omg tools should return to its own standby status unless
@@ -142,7 +142,7 @@ class Demo(object):
                 if not self.new_task:
                     self.state = "standby"
                     self.fsm_state.publish("standby")
-                    print cyan(' Bebop_core state changed to:', "standby")
+                    print cyan(' Bebop_core state changed to: ', "standby")
 
             rospy.sleep(0.1)
 

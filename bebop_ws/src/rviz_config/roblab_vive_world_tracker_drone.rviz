@@ -106,7 +106,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/desired_path
       Name: Marker
       Namespaces:
-        trajectory_desired: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -114,7 +114,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/real_path
       Name: Marker
       Namespaces:
-        trajectory_real: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -122,7 +122,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/current_ff_vel
       Name: Marker
       Namespaces:
-        current_ff_vel: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -130,7 +130,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/drawn_path
       Name: Marker
       Namespaces:
-        drawn_path: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -138,7 +138,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/smoothed_path
       Name: Marker
       Namespaces:
-        smooth_path: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -146,7 +146,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/room_contours
       Name: Marker
       Namespaces:
-        room_contours: true
+        {}
       Queue Size: 100
       Value: true
     - Class: rviz/Marker
@@ -154,7 +154,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/vhat_vector
       Name: Marker
       Namespaces:
-        vhat_vector: true
+        {}
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -182,7 +182,7 @@ Visualization Manager:
       Marker Topic: /motionplanner/rviz_obst
       Name: MarkerArray
       Namespaces:
-        obstacles: true
+        {}
       Queue Size: 100
       Value: true
   Enabled: true
@@ -225,10 +225,10 @@ Visualization Manager:
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.959796429
+      Pitch: 0.249796063
       Target Frame: <Fixed Frame>
       Value: XYOrbit (rviz)
-      Yaw: 4.72809839
+      Yaw: 4.73810005
     Saved: ~
 Window Geometry:
   Displays:
@@ -246,5 +246,5 @@ Window Geometry:
   Views:
     collapsed: true
   Width: 1861
-  X: 1425
+  X: 59
   Y: 24

@@ -108,6 +108,8 @@ class Controller(object):
             'bebop/land', Empty, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
             'motionplanner/trigger', Trigger, queue_size=1)
+        self.interrupt_mp = rospy.Publisher(
+            'motionplanner/interrupt', Empty, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', MarkerArray, queue_size=1)
         self.vhat_vector_pub = rospy.Publisher(
@@ -146,8 +148,8 @@ class Controller(object):
         '''Initializes (reads and sets) externally configurable parameters
         (rosparams).
         '''
-        rospy.set_param(
-            "/bebop/bebop_driver/SpeedSettingsMaxRotationSpeedCurrent", 360.0)
+        # rospy.set_param(
+        #     "/bebop/bebop_driver/SpeedSettingsMaxRotationSpeedCurrent", 360.0)
 
         self.Kp_x = rospy.get_param('controller/Kp_x', 0.6864)
         self.Ki_x = rospy.get_param('controller/Ki_x', 0.6864)
@@ -207,9 +209,6 @@ class Controller(object):
         self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
-        self.x_error = 0.
-        self.y_error = 0.
-        self.z_error = 0.
         self.feedback_cmd_prev = Twist()
         self.pos_error_prev = PointStamped()
         self.vel_error_prev = PointStamped()
@@ -247,6 +246,7 @@ class Controller(object):
 
                 self.executing_state = True
                 # Execute state function.
+                print 'controller state executing ', self.state
                 self.state_dict[self.state]()
                 self.executing_state = False
 
@@ -291,6 +291,7 @@ class Controller(object):
         Args:
             goal: Pose
         '''
+        print '>>>>>>>>>>>>>>>>>> setting goal'
 
         self.target_reached = False
 
@@ -322,6 +323,7 @@ class Controller(object):
         trigger.vel_state = self.vhat
         trigger.current_time = self._time
         self._mp_trigger_topic.publish(trigger)
+        print '>>>>>>>>>>>>>>>>>< Fire Motionplanner'
 
     def get_mp_result(self, data):
         '''Store results of motionplanner calculations.
@@ -337,6 +339,7 @@ class Controller(object):
         y_traj = data.y_traj
         z_traj = data.z_traj
         self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
+        print '>>>>>>>>>>>>> CTRl stored traj'
 
     def omg_update(self):
         '''
@@ -490,6 +493,7 @@ class Controller(object):
 
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
+            self.interrupt_mp.publish(Empty())
             print yellow('---- Target Reached! ----')
 
 ####################
@@ -503,7 +507,7 @@ class Controller(object):
         if not (state.data == self.state):
             self.state = state.data
             self.state_changed = True
-            print yellow(' Controller state changed to:', self.state)
+            print yellow(' Controller state changed to: ', self.state)
         else:
             print yellow(' Controller already in the correct state!')
             self.ctrl_state_finish.publish(Empty())
@@ -532,7 +536,7 @@ class Controller(object):
                                       z=self.hover_setpoint.position.z)
             vel_desired = PointStamped()
             vel_desired.point = Point()
-            feedback_cmd = self.feedback(pos_desired, vel_desired)
+            feedback_cmd = self.feedbeck(pos_desired, vel_desired)
 
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
@@ -835,7 +839,7 @@ class Controller(object):
         '''
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
-        feedback_cmd = self.feedback(pos_desired, vel_desired)
+        feedback_cmd = self.feedbeck(pos_desired, vel_desired)
 
         self.cmd_twist_convert.twist.linear.x = max(min((
                         self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
@@ -850,7 +854,7 @@ class Controller(object):
                     self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
                     self.max_input), - self.max_input)
 
-    def feedback(self, pos_desired, vel_desired):
+    def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
         desired end position to remain in the correct spot and compensate for
         drift.

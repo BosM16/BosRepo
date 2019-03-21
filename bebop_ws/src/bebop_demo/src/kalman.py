@@ -41,7 +41,6 @@ class Kalman(object):
         self.Q = 1e-1*np.identity(8)  # process noise covariance
         # self.Q = 1e-6*np.identity(8)  # process noise covariance
 
-
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 

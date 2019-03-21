@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from geometry_msgs.msg import Pose
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Empty
 
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
 
@@ -39,6 +39,7 @@ class MotionPlanner(object):
             'motionplanner/result', Trajectories, queue_size=1)
 
         rospy.Subscriber('motionplanner/trigger', Trigger, self.update)
+        rospy.Subscriber('motionplanner/interrupt', Empty, self.interrupt)
 
         self.configure = rospy.Service(
             "motionplanner/config_motionplanner", ConfigMotionplanner,
@@ -138,7 +139,7 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
-        print 'update', cmd
+        print '>>>>>>>>>>>>> MP update', cmd.goal_pos, self._goal
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
@@ -151,6 +152,7 @@ class MotionPlanner(object):
                 [self._goal.position.x,
                  self._goal.position.y,
                  self._goal.position.z])
+            print '>>>>>>>< MP just voor deployer reset'
             self._deployer.reset()
             print magenta('---- Motionplanner received a new goal -'
                           ' deployer resetted ----')
@@ -182,7 +184,13 @@ class MotionPlanner(object):
                 z_traj=trajectories['state'][2, :])
 
         self._mp_result_topic.publish(self._result)
+        print '>>>>>>>>>>>>>><  MP published result'
 
+    def interrupt(self, empty):
+        '''Stop calculations when goal is reached.
+        '''
+        print '>>>>>>>>>< MP interrupt'
+        self._deployer.reset()
 
 if __name__ == '__main__':
     motionplanner = MotionPlanner()
