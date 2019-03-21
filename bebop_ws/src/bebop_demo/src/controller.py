@@ -47,8 +47,8 @@ class Controller(object):
         # Obstacle setup
         Sjaaakie = Obstacle(shape=[0.35, 2.5],
                             pose=[0., 0., 1.25])
-        self.obstacles = [Sjaaakie]
-        # self.obstacles = []
+        # self.obstacles = [Sjaaakie]
+        self.obstacles = []
 
         self._init_params()
         self._init_variables()
@@ -416,7 +416,7 @@ class Controller(object):
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
-        # self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
+        self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
@@ -471,7 +471,7 @@ class Controller(object):
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
-        # self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
+        self.desired_yaw = np.arctan2(vel.point.y, vel.point.x)
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)

@@ -42,7 +42,7 @@
   <param name='controller/Kp_z' value="4.0" />
   <param name='controller/Ki_z' value="0.0" /> -->
 
-  <param name='controller/K_theta' value="0.1" />
+  <param name='controller/K_theta' value="0.15" />
   <param name='controller/max_input' value="1.0" />
   <param name='controller/safety_treshold' value="0.2" />
 
