@@ -918,11 +918,12 @@ class Controller(object):
         '''Reads out the commands sent by the gamepad and sends these to the
         kalman filter to update the state estimation.
         '''
-        # CHECK TO MAKE SURE THIS LOOP RUNS AT DESIRED RATE!
         self.cmd_twist_convert.twist.linear = gp_input.linear
         (self._drone_est_pose, self.vhat,
          self.real_yaw, measurement_valid) = self.get_pose_est()
 
+        # Saves data to be able to compare the velocity estimation to the
+        # numerically differentiated velocity afterward.
         self.meas['pos_x'] += self._drone_est_pose.position.x
         self.meas['pos_y'] += self._drone_est_pose.position.y
         self.meas['pos_z'] += self._drone_est_pose.position.z
