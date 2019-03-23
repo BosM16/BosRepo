@@ -895,6 +895,29 @@ class Controller(object):
         self.Kp_z = rospy.get_param('controller/Kp_z', 0.5)
         self.Ki_z = rospy.get_param('controller/Ki_z', 1.5792)
 
+    def gamepad_flying(self):
+        '''Sets up a ros subscriber to read out the inputs given by the gamepad
+        and removes this subscriber when the controller switches states.
+        '''
+        self.gamepad_input = rospy.Subscriber('bebop/cmd_vel',
+                                              Twist, self.retreive_gp_input)
+        while not (rospy.is_shutdown() or self.state_killed):
+            if self.state_changed:
+                self.state_changed = False
+                break
+            rospy.sleep(0.1)
+
+        self.gamepad_input.unregister()
+
+    def retreive_gp_input(self, gp_input):
+        '''Reads out the commands sent by the gamepad and sends these to the
+        kalman filter to update the state estimation.
+        '''
+        # CHECK TO MAKE SURE THIS LOOP RUNS AT DESIRED RATE!
+        self.cmd_twist_convert.linear = gp_input.linear
+        self.get_pose_est()
+
+
 ####################
 # Helper functions #
 ####################
@@ -1170,7 +1193,9 @@ class Controller(object):
             elif (self.state == "drag drone" or
                   self.state == "viscous fluid" or
                   self.state == "undamped spring" or
-                  self.state == "place cyl obstacles"):
+                  self.state == "place hex obstacles" or
+                  self.state == "place cyl obstacles" or
+                  self.state == "gamepad flying"):
                 self.state_changed = True
             self.trackpad_held = True
 
