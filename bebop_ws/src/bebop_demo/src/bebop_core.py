@@ -59,7 +59,8 @@ class Demo(object):
                                  "fly to start", "follow path"],
             "drag drone": ["drag drone"],
             "undamped spring": ["undamped spring", "reset_PID"],
-            "viscous fluid": ["viscous fluid", "reset_PID"]}
+            "viscous fluid": ["viscous fluid", "reset_PID"],
+            "gamepad flying": ["gamepad flying"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)

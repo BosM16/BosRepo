@@ -34,6 +34,7 @@ class Controller(object):
                            "land": self.take_off_land,
                            "omg standby": self.hover,
                            "omg fly": self.omg_fly,
+                           "place hex obstacles": self.place_hex_obst,
                            "place cyl obstacles": self.place_cyl_obst,
                            "place slalom obstacles": self.place_slalom_obst,
                            "configure motionplanner": self.config_mp,
@@ -43,7 +44,8 @@ class Controller(object):
                            "undamped spring": self.hover_changed_gains,
                            "viscous fluid": self.hover_changed_gains,
                            "reset_PID": self.reset_pid_gains,
-                           "drag drone": self.drag_drone}
+                           "drag drone": self.drag_drone
+                           "gamepad flying": self.gamepad_flying}
 
         # Obstacle setup
         Sjaaakie = Obstacle(type="cylinder",
@@ -561,14 +563,13 @@ class Controller(object):
             rospy.sleep(8.)
             self.airborne = False
 
-    def place_cyl_obst(self):
-        '''The user places cylindrical obstacles with the left controller.
+    def place_hex_obst(self):
+        '''The user places hexagonal obstacles with the left controller.
         Dragging the Vive controller determines the radius of the obstacle.
         Obstacles are saved and drawn in rviz.
         '''
         self.obstacles = []
         self.publish_obst_room(Empty)
-        height = self.room_height
 
         print highlight_green(' Drag left controller to place obstacle ')
         while not (rospy.is_shutdown() or self.state_killed):
@@ -577,17 +578,47 @@ class Controller(object):
                 break
             if self.draw:
                 self.obstacles.append(None)
-                edge = Point(x=self.ctrl_l_pos.position.x,
-                             y=self.ctrl_l_pos.position.y,
-                             z=height/2.)
+                center = Point(x=self.ctrl_l_pos.position.x,
+                               y=self.ctrl_l_pos.position.y,
+                               z=self.ctrl_l_pos.position.z/2.)
                 while self.draw:
-                    parallel = Point(x=self.ctrl_l_pos.position.x,
-                                     y=self.ctrl_l_pos.position.y,
-                                     z=height/2.)
+                    edge = Point(x=self.ctrl_l_pos.position.x,
+                                 y=self.ctrl_l_pos.position.y,
+                                 z=height/2.)
                     radius = self.position_diff_norm(edge, center)
-                    Sjaaakie = Obstacle(type="cylinder"
+                    Sjaaakie = Obstacle(type="hexagon"
                                         shape=[radius, height],
                                         pose=[center.x, center.y, center.z])
+                    self.obstacles[-1] = Sjaaakie
+                    self.publish_obst_room(Empty)
+                    self.rate.sleep()
+                print highlight_blue(' Obstacle added ')
+            self.rate.sleep()
+
+    def place_cyl_obst(self):
+        '''The user places infinitely long cylindrical obstacles with the left
+        controller. Dragging the Vive controller determines the radius of the
+        obstacle. Obstacles are saved and drawn in rviz.
+        '''
+        self.obstacles = []
+        self.publish_obst_room(Empty)
+
+        print highlight_green(' Drag left controller to place obstacle ')
+        while not (rospy.is_shutdown() or self.state_killed):
+            if self.state_changed:
+                self.state_changed = False
+                break
+            if self.draw:
+                self.obstacles.append(None)
+                center = Point(x=self.ctrl_l_pos.position.x,
+                               y=self.ctrl_l_pos.position.y)
+                while self.draw:
+                    edge = Point(x=self.ctrl_l_pos.position.x,
+                                 y=self.ctrl_l_pos.position.y)
+                    radius = self.position_diff_norm(edge, center)
+                    Sjaaakie = Obstacle(type="inf_cylinder"
+                                        shape=[radius],
+                                        pose=[center.x, center.y])
                     self.obstacles[-1] = Sjaaakie
                     self.publish_obst_room(Empty)
                     self.rate.sleep()
