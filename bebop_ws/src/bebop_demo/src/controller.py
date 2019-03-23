@@ -11,6 +11,7 @@ from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 
 import rospy
 import numpy as np
+import scipy.io as io
 from scipy.signal import butter, filtfilt
 import tf
 import tf2_ros
@@ -901,13 +902,17 @@ class Controller(object):
         '''
         self.gamepad_input = rospy.Subscriber('bebop/cmd_vel',
                                               Twist, self.retreive_gp_input)
+        self.meas = {}
+        self.meas['pos_x'], self.meas['pos_y'], self.meas['pos_z'] = [], [], []
+        self.meas['vel_x'], self.meas['vel_y'], self.meas['vel_z'] = [], [], []
+
         while not (rospy.is_shutdown() or self.state_killed):
             if self.state_changed:
                 self.state_changed = False
                 break
             rospy.sleep(0.1)
-
         self.gamepad_input.unregister()
+        io.savemat('../vhat_data_check.mat', self.meas)
 
     def retreive_gp_input(self, gp_input):
         '''Reads out the commands sent by the gamepad and sends these to the
@@ -915,8 +920,15 @@ class Controller(object):
         '''
         # CHECK TO MAKE SURE THIS LOOP RUNS AT DESIRED RATE!
         self.cmd_twist_convert.twist.linear = gp_input.linear
-        self.get_pose_est()
+        (self._drone_est_pose, self.vhat,
+         self.real_yaw, measurement_valid) = self.get_pose_est()
 
+        self.meas['pos_x'] += self._drone_est_pose.position.x
+        self.meas['pos_y'] += self._drone_est_pose.position.y
+        self.meas['pos_z'] += self._drone_est_pose.position.z
+        self.meas['vel_x'] += self.vhat.x
+        self.meas['vel_y'] += self.vhat.y
+        self.meas['vel_z'] += self.vhat.z
 
 ####################
 # Helper functions #
