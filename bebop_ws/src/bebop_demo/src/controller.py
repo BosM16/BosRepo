@@ -914,7 +914,7 @@ class Controller(object):
         kalman filter to update the state estimation.
         '''
         # CHECK TO MAKE SURE THIS LOOP RUNS AT DESIRED RATE!
-        self.cmd_twist_convert.linear = gp_input.linear
+        self.cmd_twist_convert.twist.linear = gp_input.linear
         self.get_pose_est()
 
 
