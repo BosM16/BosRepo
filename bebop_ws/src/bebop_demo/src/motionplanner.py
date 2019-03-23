@@ -76,7 +76,10 @@ class MotionPlanner(object):
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
         for k, obst in enumerate(obstacles.obst_list):
-            if obst.type == "cylinder":
+            if obst.type == "inf_cylinder":
+                shape = omg.Circle(obst.shape[0])
+                position = [obst.pose[0], obst.pose[1]]
+            elif obst.type == "hexagon":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
             elif obst.type in {"plate", "slalom plate"}:
                 shape = Plate(shape2d=Rectangle(obst.shape[0], obst.shape[1]),
@@ -88,12 +91,13 @@ class MotionPlanner(object):
                     width=obst.shape[0],
                     depth=obst.shape[1],
                     height=obst.shape[2])
-                    # orientation=(obst.pose[2]))
             else:
                 print highlight_yellow(' Warning: invalid obstacle type ')
 
-            self._obstacles.append(omg.Obstacle({'position': [
-                    obst.pose[0], obst.pose[1], obst.pose[2]]}, shape=shape))
+            if not obst.type == "inf_cylinder":
+                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
+            self._obstacles.append(omg.Obstacle({'position': position}, shape=shape))
 
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
@@ -146,7 +150,7 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
-        print '\n>>>>>>>>>>>>> MP update\n', cmd
+        # print '\n>>>>>>>>>>>>> MP update\n', cmd
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
@@ -159,7 +163,7 @@ class MotionPlanner(object):
                 [self._goal.position.x,
                  self._goal.position.y,
                  self._goal.position.z])
-            print '>>>>>>>< MP just voor deployer reset'
+            # print '>>>>>>>< MP just voor deployer reset'
             self._deployer.reset()
             print magenta('---- Motionplanner received a new goal -'
                           ' deployer resetted ----')
@@ -192,13 +196,14 @@ class MotionPlanner(object):
                 z_traj=trajectories['state'][2, :])
 
         self._mp_result_topic.publish(self._result)
-        print '>>>>>>>>>>>>>><  MP published result'
+        # print '>>>>>>>>>>>>>><  MP published result'
 
     def interrupt(self, empty):
         '''Stop calculations when goal is reached.
         '''
-        print '>>>>>>>>>< MP interrupt'
+        # print '>>>>>>>>>< MP interrupt'
         self._deployer.reset()
+
 
 if __name__ == '__main__':
     motionplanner = MotionPlanner()
