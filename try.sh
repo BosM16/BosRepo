@@ -1,9 +1,12 @@
 #!/bin/sh
 
 killall roscore
-#roscore &
-#rviz &
-#rqt &
+
+cd bebop_ws/
+roscore &
+sleep 2
+rviz &
+rqt &
 echo tralala
 
 WID=$(xprop -root | grep "_NET_ACTIVE_WINDOW(WINDOW)"| awk '{print $5}')
@@ -12,9 +15,8 @@ xdotool key ctrl+shift+t
 xdotool key alt+1
 wmctrl -i -a $WID
 
-cd bebop_ws/
-source devel/setup.bash
-roslaunch bebop_demo bebop_autonomy.launch
+#source devel/setup.bash
+#roslaunch bebop_demo bebop_autonomy.launch
 
 WID=$(xprop -root | grep "_NET_ACTIVE_WINDOW(WINDOW)"| awk '{print $5}')
 xdotool windowfocus $WID
