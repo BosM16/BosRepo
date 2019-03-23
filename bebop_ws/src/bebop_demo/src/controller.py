@@ -584,8 +584,9 @@ class Controller(object):
                 while self.draw:
                     edge = Point(x=self.ctrl_l_pos.position.x,
                                  y=self.ctrl_l_pos.position.y,
-                                 z=height/2.)
+                                 z=self.ctrl_l_pos.position.z/2.)
                     radius = self.position_diff_norm(edge, center)
+                    height = self.ctrl_l_pos.position.z
                     Sjaaakie = Obstacle(type="hexagon"
                                         shape=[radius, height],
                                         pose=[center.x, center.y, center.z])
