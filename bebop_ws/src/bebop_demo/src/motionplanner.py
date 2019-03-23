@@ -160,9 +160,9 @@ class MotionPlanner(object):
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
-        input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
-        
-        trajectories = self._deployer.update(cmd.current_time, state0, input0)
+        # input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
+        # trajectories = self._deployer.update(cmd.current_time, state0, input0)
+        trajectories = self._deployer.update(cmd.current_time, state0)
 
         return_status = self._deployer.problem.problem.stats()['return_status']
         if (return_status != 'Solve_Succeeded'):
