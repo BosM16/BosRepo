@@ -89,10 +89,9 @@ class MotionPlanner(object):
 
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
-        print 'obstacles', self._obstacles
 
         # Create problem.
-        problem = omg.Point2point(self._vehicle, environment, freeT=True)
+        problem = omg.Point2point(self._vehicle, environment, freeT=False)
         problem.set_options({'solver_options': {'ipopt': {
             'ipopt.linear_solver': 'ma57',
             'ipopt.print_level': 0,
@@ -106,10 +105,10 @@ class MotionPlanner(object):
 
         problem.set_options({
             'hard_term_con': False, 'horizon_time': self.horizon_time,
-            'verbose': 1.})
+            'verbose': 2.})
 
         problem.init()
-        # problem.fullstop = True
+        problem.fullstop = True
 
         self._deployer = omg.Deployer(
             problem, self._sample_time, self._update_time)
@@ -139,7 +138,7 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
-        print '>>>>>>>>>>>>> MP update', cmd.goal_pos, self._goal
+        print '\n>>>>>>>>>>>>> MP update\n', cmd
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
@@ -160,9 +159,9 @@ class MotionPlanner(object):
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
-        # input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
-        # trajectories = self._deployer.update(cmd.current_time, state0, input0)
-        trajectories = self._deployer.update(cmd.current_time, state0)
+        input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
+
+        trajectories = self._deployer.update(cmd.current_time, state0) #, input0)
 
         return_status = self._deployer.problem.problem.stats()['return_status']
         if (return_status != 'Solve_Succeeded'):

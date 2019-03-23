@@ -161,7 +161,8 @@ class Demo(object):
         '''
         # Don't do prediction and transformation calculations if the
         # measurement is invalid.
-        if not self.measurement_valid:
+        if (not self.measurement_valid) and (
+             not self.state_sequence == ["emergency"]):
             req_vel.vel_cmd.twist = Twist()
             inv_meas_task = String(data="invalid measurement")
             self.switch_task(inv_meas_task)
@@ -225,7 +226,7 @@ class Demo(object):
 
         self.state_sequence = self.task_dict.get(task.data, [])
         self.new_task = True
-        print cyan(' Bebop_core received a new task:', task.data)
+        print cyan(' Bebop_core received a new task: ', task.data)
 
     def take_off_land(self, pressed):
         '''Check if menu button is pressed and switch to take-off or land

@@ -47,8 +47,8 @@ class Controller(object):
         # Obstacle setup
         Sjaaakie = Obstacle(shape=[0.35, 2.5],
                             pose=[0., 0., 1.25])
-        # self.obstacles = [Sjaaakie]
-        self.obstacles = []
+        self.obstacles = [Sjaaakie]
+        # self.obstacles = []
 
         self._init_params()
         self._init_variables()
@@ -303,7 +303,8 @@ class Controller(object):
         (self._drone_est_pose, self.vhat,
          self.real_yaw, measurement_valid) = self.get_pose_est()
 
-        self.reset_markers()
+        if not self.state == "fly to start":
+            self.reset_markers()
 
         self._goal = goal
         self.fire_motionplanner()
@@ -613,16 +614,14 @@ class Controller(object):
         '''Start building a trajectory according to the trajectory of the
         controller.
         '''
+        self.reset_markers()
         print highlight_green('---- Start drawing path with left Vive'
                               ' controller while holding trigger ----')
         self.stop_drawing = False
         while not (self.stop_drawing or rospy.is_shutdown()):
             if self.draw:
                 # Erase previous markers in Rviz.
-                self.drawn_path.points = []
-                self.trajectory_drawn.publish(self.drawn_path)
-                self.smooth_path.points = []
-                self.trajectory_smoothed.publish(self.smooth_path)
+                self.reset_markers()
 
                 while self.draw and not rospy.is_shutdown():
                     self.rate.sleep()
@@ -681,6 +680,16 @@ class Controller(object):
         # If no path drawn, do nothing.
         if not len(self.drawn_pos_x):
             return
+
+        # Reset omg path markers in Rviz.
+        self._desired_path.points = []
+        self.trajectory_desired.publish(self._desired_path)
+        self._real_path.points = []
+        self.trajectory_real.publish(self._real_path)
+        self.current_ff_vel.points = [Point(), Point()]
+        self.current_ff_vel_pub.publish(self.current_ff_vel)
+        self.vhat_vector.points = [Point(), Point()]
+        self.vhat_vector_pub.publish(self.vhat_vector)
 
         self.set_ff_pid_gains()
 
@@ -1333,12 +1342,12 @@ class Controller(object):
         self.trajectory_drawn.publish(self.drawn_path)
         self._real_path.points = []
         self.trajectory_real.publish(self._real_path)
+        self.smooth_path.points = []
+        self.trajectory_smoothed.publish(self.smooth_path)
         self.current_ff_vel.points = [Point(), Point()]
         self.current_ff_vel_pub.publish(self.current_ff_vel)
         self.vhat_vector.points = [Point(), Point()]
         self.vhat_vector_pub.publish(self.vhat_vector)
-        self.smooth_path.points = []
-        self.trajectory_smoothed.publish(self.smooth_path)
 
     def publish_desired(self, x_traj, y_traj, z_traj):
         '''Publish planned x and y trajectory to topic for visualisation in

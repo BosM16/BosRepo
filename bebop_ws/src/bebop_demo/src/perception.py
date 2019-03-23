@@ -64,7 +64,7 @@ class Perception(object):
             (meas_distance > 0.25))
         if not measurement_valid:
             if not self.init:
-                print highlight_red('Warning: invalid measurement!')
+                print highlight_red(' Warning: invalid measurement!')
             else:
                 self.init = False
 
