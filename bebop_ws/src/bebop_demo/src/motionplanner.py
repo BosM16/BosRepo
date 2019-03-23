@@ -76,14 +76,22 @@ class MotionPlanner(object):
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
         for k, obst in enumerate(obstacles.obst_list):
-            if len(obst.shape) == 2:
+            if obst.type == "cylinder":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
-            elif len(obst.shape) == 3:
+            elif obst.type in {"plate", "slalom plate"}:
+                shape = Plate(shape2d=Rectangle(obst.shape[0], obst.shape[1]),
+                              height=obst.shape[2],
+                              orientation=[0., np.pi/2, 0.])
+
+            elif obst.type == "cuboid":
                 shape = omg.Cuboid(
                     width=obst.shape[0],
                     depth=obst.shape[1],
                     height=obst.shape[2])
                     # orientation=(obst.pose[2]))
+            else:
+                print highlight_yellow(' Warning: invalid obstacle type ')
+
             self._obstacles.append(omg.Obstacle({'position': [
                     obst.pose[0], obst.pose[1], obst.pose[2]]}, shape=shape))
 
