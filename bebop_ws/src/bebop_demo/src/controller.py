@@ -997,10 +997,8 @@ class Controller(object):
             vel_error.point.x = vel_desired.point.x - self.vhat.x
             vel_error.point.y = vel_desired.point.y - self.vhat.y
 
-            # print yellow('error before transform\n', pos_error)
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
-            # print yellow('error after transform\n', pos_error)
 
             feedback_cmd.linear.x = max(- self.max_input, min(self.max_input, (
                     self.feedback_cmd_prev.linear.x +
