@@ -1,4 +1,4 @@
-% PID controller interpretation
+% PID controller design
 
 % COLORS FOR FIGURES:
 % Blue
@@ -26,8 +26,10 @@ options.prints = false;
 % --------------------
 % % Combined with feedforward:
 % PM_des = 45;
-% Purely feedback (positioning):
+% % Purely feedback (positioning):
 PM_des = 35;
+% MPC at low rate
+% PM_des = 60;
 
 % Function calls
 % --------------
