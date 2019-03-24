@@ -29,8 +29,10 @@
   <param name='controller/Kp_ff_y' value="0.9445" />
   <param name='controller/Ki_ff_y' value="0.2062" />
   <param name='controller/Kd_ff_y' value="0.8560" />
-  <param name='controller/Kp_ff_z' value="1.1593" />
-  <param name='controller/Ki_ff_z' value="0.0299" />
+  <param name='controller/Kp_ff_z' value="1.7674" />
+  <param name='controller/Ki_ff_z' value="0.4941" />
+<!--   <param name='controller/Kp_ff_z' value="1.1593" />
+  <param name='controller/Ki_ff_z' value="0.0299" /> -->
 
   <!-- PD: -->
   <!-- <param name='controller/Kp_x' value="0.9790" />
