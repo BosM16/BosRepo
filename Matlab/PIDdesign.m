@@ -27,9 +27,9 @@ options.prints = false;
 % % Combined with feedforward:
 % PM_des = 45;
 % % Purely feedback (positioning):
-PM_des = 35;
+% PM_des = 35;
 % MPC at low rate
-% PM_des = 60;
+PM_des = 60;
 
 % Function calls
 % --------------
