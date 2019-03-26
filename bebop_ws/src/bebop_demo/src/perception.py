@@ -2,6 +2,7 @@
 
 from geometry_msgs.msg import Twist, TwistStamped, TransformStamped
 from nav_msgs.msg import Odometry
+from std_msgs.msg import Empty
 
 import numpy as np
 import tf2_ros
@@ -25,6 +26,7 @@ class Perception(object):
         self.twist_bebop = Twist()
         self.tf_t_in_w_prev = TransformStamped()
         self.init = True
+        self.vive_calibrating = False
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
@@ -32,6 +34,8 @@ class Perception(object):
         # Name of topic can change depending on name used in the code for
         # reading out the vive.
         rospy.Subscriber('/bebop/odom', Odometry, self.get_bebop_data)
+        rospy.Subscriber(
+            'vive_localization/calibrate', Empty, self.vive_calibrate)
 
     def get_bebop_data(self, data):
         """
@@ -63,12 +67,19 @@ class Perception(object):
             (tf_v_in_w.transform == tf_t_in_w.transform) or
             (meas_distance > 0.25))
         if not measurement_valid:
-            if not self.init:
+            if not (self.init or self.vive_calibrating):
                 print highlight_red(' Warning: invalid measurement!')
             else:
                 self.init = False
+                self.vive_calibrating = False
 
         return measurement_valid
+
+    def vive_calibrate(self, *_):
+        '''When Vive is calibrating, an invalid measurement is perceived once,
+        but then we don't want to trigger emergency.
+        '''
+        self.vive_calibrating = True
 
     def get_transform(self, _from, _to):
         '''

@@ -76,7 +76,7 @@ Messages in this terminal follow this color code:
 |<span style="background-color:yellow;color:black"> Marked Yellow </span>|  Warning
 
 
-
+Bebop Autonomy en Triad OpenVR en HTC Keypress credits  
 rviz & rqt configs  
 vive calibration!
 klikken controllers, taak geven etc...

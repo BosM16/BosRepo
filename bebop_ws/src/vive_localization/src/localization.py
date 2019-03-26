@@ -28,8 +28,6 @@ class ViveLocalization(object):
 
         self.tracked_objects = ["tracker_1", "controller_1", "controller_2"]
 
-        self.calib = rospy.get_param('vive_localization/calibrate', True)
-
         self.pose_t_in_w = PoseStamped()
         self.pose_t_in_w.header.frame_id = "world"
 
@@ -67,8 +65,6 @@ class ViveLocalization(object):
             'vive_localization/ready', Empty, queue_size=1)
 
         rospy.Subscriber('vive_localization/calibrate', Empty, self.calibrate)
-        rospy.Subscriber(
-            'vive_localization/publish_poses', Empty, self.publish_pose_est)
 
     def init_transforms(self):
         '''
@@ -164,9 +160,7 @@ class ViveLocalization(object):
 
         self.init_transforms()
 
-        if not self.calib:
-            # Start periodic publishing of measurements.
-            self.publish_pose_est(Empty)
+        self.publish_pose_est()
 
         rospy.spin()
 
@@ -186,11 +180,11 @@ class ViveLocalization(object):
         self.tf_w_in_v.child_frame_id = "world"
 
         self.stbroadc.sendTransform(self.tf_w_in_v)
-        print blue('tf_w_in_v \n'), self.tf_w_in_v
+        print blue('tf_w_in_v \n', self.tf_w_in_v)
 
         print blue('---- Calibrated ---- \n')
 
-    def publish_pose_est(self, *_):
+    def publish_pose_est(self):
         '''Publishes message that calibration is completed. Starts publishing
         pose measurements.
         '''
