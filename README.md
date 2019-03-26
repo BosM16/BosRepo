@@ -51,7 +51,7 @@ Example default.vrsettings are found [here](https://github.com/BosMathias/BosRep
 
     $ ./run_demo.sh
 
-A new terminal window with four tabs will pop up. The tabs are running separately in order to separate useful outputs.  
+A new terminal window with five tabs will pop up. The tabs are running separately in order to separate useful outputs.  
 The first tab is where the *roscore* is running. Usually no interesting output is found here. In the second tab there's *rviz* for visualization and in the third *rqt* for user input. Both *rviz* and *rqt* open their respective windows.  
 The fourth tab contains the most interesting information for the demo user. Here all instructions, actions, state information and errors are displayed. It is advised to keep this tab open while running the demo.
 
@@ -73,6 +73,7 @@ Messages in this terminal follow this color code:
 
 rviz & rqt configs  
 vive calibration!
+klikken controllers, taak geven etc...
 
 ## Common errors
 js0
