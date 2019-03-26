@@ -53,6 +53,11 @@ Example default.vrsettings are found [here](https://github.com/BosMathias/BosRep
 
 A new terminal window with five tabs will pop up. The tabs are running separately in order to separate useful outputs.  
 The first tab is where the *roscore* is running. Usually no interesting output is found here. In the second tab there's *rviz* for visualization and in the third *rqt* for user input. Both *rviz* and *rqt* open their respective windows.  
+
+To see the correct visualization in *rviz*, open the correct conifuration file by clicking 'file', 'open config' and browse to `<path to BosRepo>/BosRepo/bebop_ws/src/rviz/` and select roblab_vive_world_tracker_drone.rviz.
+
+To send commands with rqt
+
 The fourth tab contains the most interesting information for the demo user. Here all instructions, actions, state information and errors are displayed. It is advised to keep this tab open while running the demo.
 
 Messages in this terminal follow this color code:  
@@ -69,6 +74,7 @@ Messages in this terminal follow this color code:
 |<span style="background-color:blue;color:black"> Marked Blue  </span> |  Action from the user
 |<span style="background-color:red;color:black"> Marked Red   </span> |  Error
 |<span style="background-color:yellow;color:black"> Marked Yellow </span>|  Warning
+
 
 
 rviz & rqt configs  
