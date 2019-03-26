@@ -678,15 +678,17 @@ class Controller(object):
                     delta_x = upper_corner.x - lower_corner.x
                     delta_y = upper_corner.y - lower_corner.y
 
-                    orientation = np.arctan2((delta_y) /
+                    # Trick to acoid error when delta_x == 0.
+                    if delta_x == 0:
+                        delta_x = 1.
+                    orientation = np.arctan2((delta_y),
                                              (delta_x))
-                    width = sqrt(delta_x**2 + delta_y**2)
+                    width = np.sqrt(delta_x**2 + delta_y**2)
                     height = upper_corner.z - lower_corner.z
                     Sjaaakie = Obstacle(obst_type=String(data="plate"),
                                         shape=[height, width, thickness],
                                         pose=[center.x, center.y, center.z],
-                                        direction=orientation,
-                                        edge=[edge.x, edge.y, edge.z])
+                                        direction=orientation)
 
                     self.obstacles[-1] = Sjaaakie
                     self.publish_obst_room(Empty)
@@ -1381,8 +1383,6 @@ class Controller(object):
         self._desired_path.type = 4  # Line List.
         self._desired_path.action = 0
         self._desired_path.scale.x = 0.03
-        # self._desired_path.scale.y = 0.03
-        # self._desired_path.scale.z = 0.0
         self._desired_path.color.r = 1.0
         self._desired_path.color.g = 0.0
         self._desired_path.color.b = 0.0
@@ -1400,8 +1400,6 @@ class Controller(object):
         self._real_path.type = 4  # Line List.
         self._real_path.action = 0
         self._real_path.scale.x = 0.03
-        # self._real_path.scale.y = 0.03
-        # self._real_path.scale.z = 0.0
         self._real_path.color.r = 0.0
         self._real_path.color.g = 1.0
         self._real_path.color.b = 0.0
@@ -1432,8 +1430,6 @@ class Controller(object):
         self.drawn_path.type = 4  # Line List.
         self.drawn_path.action = 0
         self.drawn_path.scale.x = 0.03
-        # self.drawn_path.scale.y = 0.05
-        # self.drawn_path.scale.z = 0.0
         self.drawn_path.color.r = 1.0
         self.drawn_path.color.g = 0.86
         self.drawn_path.color.b = 0.0
@@ -1448,8 +1444,6 @@ class Controller(object):
         self.smooth_path.type = 4  # Line List.
         self.smooth_path.action = 0
         self.smooth_path.scale.x = 0.03
-        # self.smooth_path.scale.y = 0.05
-        # self.smooth_path.scale.z = 0.0
         self.smooth_path.color.r = 1.0
         self.smooth_path.color.g = 0.38
         self.smooth_path.color.b = 0.0
@@ -1464,8 +1458,6 @@ class Controller(object):
         self.room_contours.type = 4  # Line List.
         self.room_contours.action = 0
         self.room_contours.scale.x = 0.03
-        # self.room_contours.scale.y = 0.03
-        # self.room_contours.scale.z = 0.0
         self.room_contours.color.r = 0.8
         self.room_contours.color.g = 0.8
         self.room_contours.color.b = 0.8
@@ -1610,9 +1602,6 @@ class Controller(object):
                 red_marker.scale.y = obstacle.shape[2]  # y-diameter
                 red_marker.scale.z = self.room_height  # height
 
-                green_marker.pose.orientation.w = 1.0
-                red_marker.pose.orientation.w = 1.0
-
                 green_marker.color.r = 0.0
                 green_marker.color.g = 1.0
                 green_marker.color.b = 0.0
@@ -1643,7 +1632,6 @@ class Controller(object):
                 obstacle_marker.ns = "obstacles"
                 obstacle_marker.id = i+j+7
                 obstacle_marker.action = 0
-                obstacle_marker.pose.orientation.w = 1.0
                 obstacle_marker.color.r = 1.0
                 obstacle_marker.color.g = 1.0
                 obstacle_marker.color.b = 1.0
@@ -1666,9 +1654,15 @@ class Controller(object):
                     obstacle_marker.scale.z = obstacle.shape[1]  # height
                 elif obstacle.obst_type.data == 'plate':
                     obstacle_marker.type = 1  # Cuboid
-                    obstacle_marker.scale.x = obstacle.shape[0]  # width
-                    obstacle_marker.scale.y = obstacle.shape[1]  # depth
-                    obstacle_marker.scale.z = obstacle.shape[2]  # height
+                    obstacle_marker.scale.x = obstacle.shape[2]  # thickness
+                    obstacle_marker.scale.y = obstacle.shape[1]  # width
+                    obstacle_marker.scale.z = obstacle.shape[0]  # height
+                    quaternion = tf.transformations.quaternion_from_euler(
+                                                    0., 0., obstacle.direction)
+                    obstacle_marker.pose.orientation.x = quaternion[0]
+                    obstacle_marker.pose.orientation.y = quaternion[1]
+                    obstacle_marker.pose.orientation.z = quaternion[2]
+                    obstacle_marker.pose.orientation.w = quaternion[3]
 
                 obstacle_marker.pose.position = Point(x=obstacle.pose[0],
                                                       y=obstacle.pose[1],
