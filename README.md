@@ -60,10 +60,11 @@ Example default.vrsettings files are found [here](https://github.com/BosMathias/
 
 * Make sure SteamVR is running and the Vive Tracker as well as both Vive Controllers are visible for the Vive Lighthouses (fully green, not blinking in SteamVR window).  
 * Make sure the Bebop drone is turned on and your computer is connected to it via Wi-Fi.
-* Open a terminal, browse to the main folder of this repository `<path to BosRepo>/BosRepo/` and run the 'run_demo.sh' script:  
+* Open a terminal, browse to the main folder of this repository `<path to BosRepo>/BosRepo/` and run the 'run_demo.sh' script:    
+
 
 ```bash
-    $ ./run_demo.sh
+$ ./run_demo.sh
 ```
 A new terminal window with five tabs will pop up. The tabs are running separately in order to separate useful outputs.  
 The first tab is where the *roscore* is running. Usually no interesting output is found here. In the second tab there's *rviz* for visualization and in the third *rqt* for user input. Both *rviz* and *rqt* open their respective windows.  
@@ -143,7 +144,7 @@ Consider recompiling the code, using the commands mentioned under the Section 'D
 ## Acknowledgements
 This project was built using a number of software packages for which we cannot claim credit. The sources can be found at following links:  
 * [OMG-tools](https://github.com/meco-group/omg-tools)  
-A Python software toolbox for spline-based optimal motion planning .
+A Python software toolbox for spline-based optimal motion planning.
 
 * [Bebop Autonomy](https://bebop-autonomy.readthedocs.io/en/latest/)  
 A ROS interface for the Parrot Bebop 2 drone. This package provides an interface for decoupled x-, y- (roll and pitch angle) and z- (vertical velocity) input commands to the drone.  
