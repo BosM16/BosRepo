@@ -51,11 +51,24 @@ class Demo(object):
                                     "place cyl obstacles",
                                     "configure motionplanner",
                                     "take-off"],
+            "place slalom obstacles": ["land",
+                                       "place slalom obstacles",
+                                       "configure motionplanner",
+                                       "take-off"],
+            "place plate obstacles": ["land",
+                                      "place plate obstacles",
+                                      "configure motionplanner",
+                                      "take-off"],
+            "place hex obstacles": ["land",
+                                    "place hex obstacles",
+                                    "configure motionplanner",
+                                    "take-off"],
             "draw follow traj": ["land", "draw path", "take-off",
                                  "fly to start", "follow path"],
             "drag drone": ["drag drone"],
             "undamped spring": ["undamped spring", "reset_PID"],
-            "viscous fluid": ["viscous fluid", "reset_PID"]}
+            "viscous fluid": ["viscous fluid", "reset_PID"],
+            "gamepad flying": ["gamepad flying"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
@@ -105,8 +118,7 @@ class Demo(object):
 
                     # Omg tools should return to its own standby status unless
                     # the controller trackpad has been pressed.
-                    if ((self.state == "omg standby") or
-                       (self.state == "omg fly")):
+                    if self.state in {"omg standby", "omg fly"}:
                         self.omg_standby = True
                     else:
                         self.omg_standby = False
@@ -232,7 +244,7 @@ class Demo(object):
         '''Check if menu button is pressed and switch to take-off or land
         sequence depending on last task that was executed.
         '''
-        if not ((self.state == "take-off") and (self.state == "land")):
+        if self.state not in {"take-off", "land"}:
             if pressed.data and not self.menu_button_held:
                 if self.airborne:
                     self.state_sequence = self.task_dict.get("land", [])
@@ -254,8 +266,8 @@ class Demo(object):
         '''When controller trackpad is pressed changes change_state variable
         to true to allow fsm to switch states in state sequence.
         '''
-        if (trackpad_pressed.data and not self.trackpad_held) and not (
-                self.state == "standby" or self.state == "initialization"):
+        if (trackpad_pressed.data and not self.trackpad_held) and (
+                self.state not in {"standby", "initialization"}):
             self.trackpad_held = True
             if self.state == "omg standby":
                 self.omg_standby = False

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from geometry_msgs.msg import Pose
-from std_msgs.msg import Bool, Empty
+from std_msgs.msg import Bool, Empty, String
 
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
 
@@ -12,7 +12,7 @@ import numpy as np
 import omgtools as omg
 import rospy
 
-from fabulous.color import highlight_red, magenta, green
+from fabulous.color import highlight_red, highlight_yellow, magenta, green
 
 
 class MotionPlanner(object):
@@ -76,16 +76,29 @@ class MotionPlanner(object):
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
         for k, obst in enumerate(obstacles.obst_list):
-            if len(obst.shape) == 2:
+            if obst.obst_type.data == "inf_cylinder":
+                shape = omg.Circle(obst.shape[0])
+                position = [obst.pose[0], obst.pose[1]]
+            elif obst.obst_type.data == "hexagon":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
-            elif len(obst.shape) == 3:
+            elif obst.obst_type.data in {"plate", "slalom plate"}:
+                shape = Plate(shape2d=Rectangle(obst.shape[0], obst.shape[1]),
+                              height=obst.shape[2],
+                              orientation=[0., np.pi/2, 0.])
+
+            elif obst.obst_type.data == "cuboid":
                 shape = omg.Cuboid(
                     width=obst.shape[0],
                     depth=obst.shape[1],
                     height=obst.shape[2])
-                    # orientation=(obst.pose[2]))
-            self._obstacles.append(omg.Obstacle({'position': [
-                    obst.pose[0], obst.pose[1], obst.pose[2]]}, shape=shape))
+            else:
+                print highlight_yellow(' Warning: invalid obstacle type ')
+
+            if not obst.obst_type.data == "inf_cylinder":
+                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
+            self._obstacles.append(omg.Obstacle(
+                                        {'position': position}, shape=shape))
 
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
@@ -105,7 +118,7 @@ class MotionPlanner(object):
 
         problem.set_options({
             'hard_term_con': False, 'horizon_time': self.horizon_time,
-            'verbose': 2.})
+            'verbose': 1.})
 
         problem.init()
         problem.fullstop = True
@@ -138,20 +151,18 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
-        print '\n>>>>>>>>>>>>> MP update\n', cmd
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
                 [cmd.pos_state.position.x,
                  cmd.pos_state.position.y,
                  cmd.pos_state.position.z],
-                # [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
+                [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
                 )
             self._vehicle.set_terminal_conditions(
                 [self._goal.position.x,
                  self._goal.position.y,
                  self._goal.position.z])
-            print '>>>>>>>< MP just voor deployer reset'
             self._deployer.reset()
             print magenta('---- Motionplanner received a new goal -'
                           ' deployer resetted ----')
@@ -161,7 +172,7 @@ class MotionPlanner(object):
                   cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
 
-        trajectories = self._deployer.update(cmd.current_time, state0) #, input0)
+        trajectories = self._deployer.update(cmd.current_time, state0, input0)
 
         return_status = self._deployer.problem.problem.stats()['return_status']
         if (return_status != 'Solve_Succeeded'):
@@ -184,13 +195,12 @@ class MotionPlanner(object):
                 z_traj=trajectories['state'][2, :])
 
         self._mp_result_topic.publish(self._result)
-        print '>>>>>>>>>>>>>><  MP published result'
 
     def interrupt(self, empty):
         '''Stop calculations when goal is reached.
         '''
-        print '>>>>>>>>>< MP interrupt'
         self._deployer.reset()
+
 
 if __name__ == '__main__':
     motionplanner = MotionPlanner()
