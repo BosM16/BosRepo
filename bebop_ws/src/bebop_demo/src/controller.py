@@ -680,7 +680,7 @@ class Controller(object):
 
                     orientation = np.arctan2((delta_y) /
                                              (delta_x))
-                    width =
+                    width = sqrt(delta_x**2 + delta_y**2)
                     height = upper_corner.z - lower_corner.z
                     Sjaaakie = Obstacle(obst_type=String(data="plate"),
                                         shape=[height, width, thickness],
@@ -1642,6 +1642,14 @@ class Controller(object):
                 obstacle_marker.header.frame_id = 'world'
                 obstacle_marker.ns = "obstacles"
                 obstacle_marker.id = i+j+7
+                obstacle_marker.action = 0
+                obstacle_marker.pose.orientation.w = 1.0
+                obstacle_marker.color.r = 1.0
+                obstacle_marker.color.g = 1.0
+                obstacle_marker.color.b = 1.0
+                obstacle_marker.color.a = 0.5
+                obstacle_marker.lifetime = rospy.Duration(0)
+
                 if obstacle.obst_type.data == 'inf_cylinder':
                     obstacle_marker.type = 3  # Cylinder
                     obstacle.shape = [obstacle.shape[0], self.room_height]
@@ -1661,13 +1669,6 @@ class Controller(object):
                     obstacle_marker.scale.x = obstacle.shape[0]  # width
                     obstacle_marker.scale.y = obstacle.shape[1]  # depth
                     obstacle_marker.scale.z = obstacle.shape[2]  # height
-                obstacle_marker.action = 0
-                obstacle_marker.pose.orientation.w = 1.0
-                obstacle_marker.color.r = 1.0
-                obstacle_marker.color.g = 1.0
-                obstacle_marker.color.b = 1.0
-                obstacle_marker.color.a = 0.5
-                obstacle_marker.lifetime = rospy.Duration(0)
 
                 obstacle_marker.pose.position = Point(x=obstacle.pose[0],
                                                       y=obstacle.pose[1],
