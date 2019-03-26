@@ -590,7 +590,7 @@ class Controller(object):
                     else:
                         Sjaaakie = Obstacle(obst_type=String(
                                             data="hexagon"),
-                                            shape=[radius, 2.*center.x],
+                                            shape=[radius, 2.*center.z],
                                             pose=[center.x, center.y, center.z])
                     self.obstacles[-1] = Sjaaakie
                     self.publish_obst_room(Empty)
@@ -1598,14 +1598,20 @@ class Controller(object):
                     obstacle.pose = [obstacle.pose[0],
                                      obstacle.pose[1],
                                      self.room_height/2]
+                    obstacle_marker.scale.x = obstacle.shape[0] * 2  # x-diam
+                    obstacle_marker.scale.y = obstacle.shape[0] * 2  # y-diam
+                    obstacle_marker.scale.z = obstacle.shape[1]  # height
                 elif obstacle.obst_type.data == 'hexagon':
                     obstacle_marker.type = 3  # Cylinder
+                    obstacle_marker.scale.x = obstacle.shape[0] * 2  # x-diam
+                    obstacle_marker.scale.y = obstacle.shape[0] * 2  # y-diam
+                    obstacle_marker.scale.z = obstacle.shape[1]  # height
                 elif obstacle.obst_type.data == 'plate':
                     obstacle_marker.type = 1  # Cuboid
+                    obstacle_marker.scale.x = obstacle.shape[1]  # x-diam
+                    obstacle_marker.scale.y = obstacle.shape[2]  # y-diam
+                    obstacle_marker.scale.z = obstacle.shape[0]  # height
                 obstacle_marker.action = 0
-                obstacle_marker.scale.x = obstacle.shape[0] * 2  # x-diameter
-                obstacle_marker.scale.y = obstacle.shape[0] * 2  # y-diameter
-                obstacle_marker.scale.z = obstacle.shape[1]  # height
                 obstacle_marker.pose.orientation.w = 1.0
                 obstacle_marker.color.r = 1.0
                 obstacle_marker.color.g = 1.0
