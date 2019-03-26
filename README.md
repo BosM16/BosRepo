@@ -6,14 +6,16 @@ at KULeuven, Faculty of Engineering Science, Department of Mechanical Engineerin
 
 ## Hardware requirements
 * Parrot Bebop 2 drone  
-* HTC Vive (HMD, 2 Lighthouses, 2 Controllers, Tracker + dongle)
+* HTC Vive (HMD, 2 Base Stations, 2 Controllers, Tracker + Dongle)
 * Vive Tracker Mount for Parrot Bebop 2 (CAD files available [here](https://github.com/BosMathias/BosRepo))
 * Gamepad (eg Logitech 710 or xbox 360 controller) - not strictly necessary but advised for safety reasons
 
-## Software requirements & installation
+## Software requirements & setup
 * Project developed in Ubuntu 16.04
-* ROS (developed with Kinetic)
-* Steam, SteamVR
+* ROS (developed with [ROS Kinetic](http://wiki.ros.org/kinetic/Installation/Ubuntu))
+* [OMG-tools](https://github.com/meco-group/omg-tools)
+* [Steam](https://www.linuxbabe.com/desktop-linux/install-steam-ubuntu-16-04-lts-xenial-xerus), SteamVR 
+* Python (developed with 2.7) + packages: numpy, scipy, fabulous
 
 ### Steam setup
 To run the demo on a computer with a non-compatible graphics card for the HTC
@@ -53,14 +55,14 @@ Example default.vrsettings are found [here](https://github.com/BosMathias/BosRep
 
 A new terminal window with five tabs will pop up. The tabs are running separately in order to separate useful outputs.  
 The first tab is where the *roscore* is running. Usually no interesting output is found here. In the second tab there's *rviz* for visualization and in the third *rqt* for user input. Both *rviz* and *rqt* open their respective windows.  
+To see the correct visualization in *rviz*, load the correct configuration file by clicking 'file', 'open config' and browse to `<path to BosRepo>/BosRepo/bebop_ws/src/configs/` and select 'demo.rviz'.
+To send commands (tasks) in rqt, load the correct configuration file by clicking 'perspectives', 'import...' and browse to `<path to BosRepo>/BosRepo/bebop_ws/src/configs/` and select 'demo.perspective'.
 
-To see the correct visualization in *rviz*, open the correct conifuration file by clicking 'file', 'open config' and browse to `<path to BosRepo>/BosRepo/bebop_ws/src/rviz/` and select roblab_vive_world_tracker_drone.rviz.
+The fourth tab displays messages coming from the drone interface (Bebop Autonomy, see below).  
 
-To send commands with rqt
+The fifth tab in the terminal contains the most interesting information for the demo user. Here all instructions, actions, state information and errors are displayed. It is advised to keep this tab open while running the demo.
 
-The fourth tab contains the most interesting information for the demo user. Here all instructions, actions, state information and errors are displayed. It is advised to keep this tab open while running the demo.
-
-Messages in this terminal follow this color code:  
+Messages in this terminal follow the color code below:  
 
 |  Color | Meaning  |
 |--------|----------|
@@ -75,13 +77,21 @@ Messages in this terminal follow this color code:
 |<span style="background-color:red;color:black"> Marked Red   </span> |  Error
 |<span style="background-color:yellow;color:black"> Marked Yellow </span>|  Warning
 
+If everything is working fine, the output below all ROS-node information and parameters should look like this:
+
+```bash
+
+```
+
 
 Bebop Autonomy en Triad OpenVR en HTC Keypress credits  
 rviz & rqt configs  
 vive calibration!
 klikken controllers, taak geven etc...
 
-## Common errors
+### Common errors
 js0
 steam default.vrsettings files
 ...
+
+## Acknowledgements
