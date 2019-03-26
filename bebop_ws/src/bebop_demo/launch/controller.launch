@@ -60,7 +60,7 @@
   <param name='controller/safety_treshold' value="0.2" />
 
   <param name='motionplanner/knot_intervals' value="10" />
-  <param name='motionplanner/horizon_time' value="10.0" />
+  <param name='motionplanner/horizon_time' value="30.0" />
   <param name='motionplanner/vmax' value="0.6" />
   <param name='motionplanner/amax' value="0.4" />
   <param name='motionplanner/drone_radius' value="0.20" />
