@@ -39,7 +39,7 @@ Browse to following directory and open the default.vrsettings file with a text e
     $ cd <Steam Directory>/steamapps/common/SteamVR/drivers/null/resources/settings/
     $ gedit default.vrsettings
 
-Set 'enable' to 'true'.  `<Steam Directory>` is probably ~/.local/share/Steam/ . Save this file and then browse to
+Set 'enable' to 'true'.  `<Steam Directory>` is probably `~/.local/share/Steam/` . Save this file and then browse to
 
     $ cd <Steam Directory>/steamapps/common/SteamVR/resources/settings/
     $ gedit default.vrsettings
