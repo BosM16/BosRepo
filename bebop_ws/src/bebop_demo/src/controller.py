@@ -4,8 +4,8 @@ from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
                                Pose, PoseStamped)
 from std_msgs.msg import Bool, Empty, String
 from visualization_msgs.msg import Marker, MarkerArray
-
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
+from bebop_msgs.msg import Ardrone3PilotingStateFlyingStateChanged
 
 from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 
@@ -148,6 +148,9 @@ class Controller(object):
         rospy.Subscriber(
             'vive_localization/c2_pose', PoseStamped, self.get_ctrl_l_pos)
         rospy.Subscriber('fsm/state', String, self.switch_state)
+        rospy.Subscriber(
+            '/bebop/states/ardrone3/PilotingState/FlyingStateChanged',
+            Ardrone3PilotingStateFlyingStateChanged, self.flying_state)
 
     def _init_params(self):
         '''Initializes (reads and sets) externally configurable parameters
@@ -248,7 +251,7 @@ class Controller(object):
         while not rospy.is_shutdown():
             if self.state_changed:
                 self.state_changed = False
-
+                print yellow(' Controller state changed to: ', self.state)
                 self.executing_state = True
                 # Execute state function.
                 self.state_dict[self.state]()
@@ -295,6 +298,9 @@ class Controller(object):
         Args:
             goal: Pose
         '''
+        if self.state == "omg_fly":
+            self.safety_brake()
+
         self.target_reached = False
 
         self._time = 0.
@@ -508,7 +514,6 @@ class Controller(object):
         if not (state.data == self.state):
             self.state = state.data
             self.state_changed = True
-            print yellow(' Controller state changed to: ', self.state)
         else:
             print yellow(' Controller already in the correct state!')
             self.ctrl_state_finish.publish(Empty())
@@ -551,13 +556,13 @@ class Controller(object):
 
         if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
-            rospy.sleep(2.8)
-            self.airborne = True
+            while not self.airborne:
+                rospy.sleep(0.1)
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
             self.land.publish(Empty())
-            rospy.sleep(8.)
-            self.airborne = False
+            while self.airborne:
+                rospy.sleep(0.1)
 
     def place_cyl_hex_obst(self):
         '''The user places either infinitely long cylindrical obstacles or
@@ -709,8 +714,8 @@ class Controller(object):
                 self.omg_update()
                 # Determine whether goal has been reached.
                 self.check_goal_reached()
+            self.hover_setpoint = self._drone_est_pose
             self.rate.sleep()
-        self.hover_setpoint = self._drone_est_pose
         self.reset_pid_gains()
         self.startup = False
 
@@ -1120,7 +1125,7 @@ class Controller(object):
         '''Brake as emergency measure: Bebop brakes automatically when
             /bebop/cmd_vel topic receives all zeros.
         '''
-        print highlight_red(' Safety brake activated')
+        print highlight_red(' Safety brake activated ')
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
@@ -1304,6 +1309,16 @@ class Controller(object):
                 self.draw = True
             if (not button_pushed.data and self.draw):
                 self.draw = False
+
+    def flying_state(self, flying_state):
+        '''Checks whether the drone is standing on the ground or flying and
+        changes the self.airborne variable accordingly.
+        '''
+        print 'flying state', flying_state
+        if flying_state.state == 0:
+            self.airborne = False
+        elif flying_state.state == 2:
+            self.airborne = True
 
     def diff_interp_traj(self):
         '''Differentiate and interpolate obtained trajectory to obtain
@@ -1566,7 +1581,7 @@ class Controller(object):
         self.vhat_vector_pub.publish(self.vhat_vector)
 
     def publish_obst_room(self, empty):
-        '''Publish static obstacles.
+        '''Publish static obstacles as well as the boundary of the room.
         '''
         # Delete markers
         marker = Marker()

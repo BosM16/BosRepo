@@ -4,6 +4,8 @@ from geometry_msgs.msg import (
     Twist, PoseStamped, Point, PointStamped, TwistStamped)
 from vive_localization.msg import PoseMeas
 from std_msgs.msg import String, Empty, Bool
+from bebop_msgs.msg import Ardrone3PilotingStateFlyingStateChanged
+
 from bebop_demo.srv import GetPoseEst, GetPoseEstResponse, GetPoseEstRequest
 
 import numpy as np
@@ -93,6 +95,9 @@ class Demo(object):
             'ctrl_keypress/rtrackpad', Bool, self.switch_state)
         rospy.Subscriber(
             'ctrl_keypress/rtrigger', Bool, self.r_trigger)
+        rospy.Subscriber(
+            '/bebop/states/ardrone3/PilotingState/FlyingStateChanged',
+            Ardrone3PilotingStateFlyingStateChanged, self.flying_state)
 
         self._get_pose_service = None
 
@@ -250,7 +255,6 @@ class Demo(object):
                     self.state_sequence = self.task_dict.get("land", [])
                 else:
                     self.state_sequence = self.task_dict.get("take-off", [])
-                self.airborne = not self.airborne
                 self.new_task = True
                 print cyan(
                     ' Bebop_core received a new task:', self.state_sequence[0])
@@ -277,6 +281,15 @@ class Demo(object):
 
         elif not trackpad_pressed.data and self.trackpad_held:
             self.trackpad_held = False
+
+    def flying_state(self, flying_state):
+        '''Checks whether the drone is standing on the ground or flying and
+        changes the self.airborne variable accordingly.
+        '''
+        if flying_state.state == 1:
+            self.airborne = True
+        elif flying_state.state == 4:
+            self.airborne = False
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
