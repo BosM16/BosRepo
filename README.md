@@ -1,5 +1,5 @@
 # Billy da Bebop - Autonomous Drone Demo
-<img width=700 src="https://github.com/BosMathias/BosRepo/blob/fsm_operational/doc/Banner.png" alt="billy da bebop"/>
+<img width=600 src="https://github.com/BosMathias/BosRepo/blob/fsm_operational/doc/Banner.png" alt="billy da bebop"/>
 
 
 Work in progress:
