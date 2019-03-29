@@ -722,48 +722,45 @@ class Controller(object):
                     thickness = 0.1
 
                     center = Point(x=corner1.x,
-                                   y=(corner1.y+corner2.y)/2,
-                                   z=(corner1.z+corner2.z)/2)
+                                   y=(corner1.y+corner2.y)/2.,
+                                   z=(corner1.z+corner2.z)/2.)
 
-                    delta_y = abs(corner1.y - corner2.y)
-                    delta_z = abs(corner1.z - corner2.z)
-
-                    window_width = 2*delta_y
-                    window_height = 2*delta_z
+                    window_width = abs(corner1.y - corner2.y)
+                    window_height = abs(corner1.z - corner2.z)
 
                     # left
-                    w_p1 = self.room_depth/2 - (center.y - window_width/2)
+                    w_p1 = self.room_depth/2. + center.y - window_width/2.
                     h_p1 = self.room_height
                     x_p1 = center.x
-                    y_p1 = -(self.room_depth/2-w_p1/2)
-                    z_p1 = self.room_height/2
+                    y_p1 = -(self.room_depth - w_p1)/2.
+                    z_p1 = self.room_height/2.
                     plate1 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p1, w_p1, thickness],
                                       pose=[x_p1, y_p1, z_p1])
                     # right
-                    w_p2 = self.room_depth/2 - (center.y + window_width/2)
+                    w_p2 = self.room_depth/2. - (center.y + window_width/2.)
                     h_p2 = self.room_height
                     x_p2 = center.x
-                    y_p2 = self.room_depth/2-w_p2/2
-                    z_p2 = self.room_height/2
+                    y_p2 = (self.room_depth - w_p2)/2.
+                    z_p2 = self.room_height/2.
                     plate2 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p2, w_p2, thickness],
                                       pose=[x_p2, y_p2, z_p2])
                     # up
                     w_p3 = self.room_depth
-                    h_p3 = self.room_height - (center.z + window_height/2)
+                    h_p3 = self.room_height - (center.z + window_height/2.)
                     x_p3 = center.x
-                    y_p3 = 0.
-                    z_p3 = self.room_height - h_p3/2
+                    y_p3 = center.y
+                    z_p3 = self.room_height - h_p3/2.
                     plate3 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p3, w_p3, thickness],
                                       pose=[x_p3, y_p3, z_p3])
                     # down
                     w_p4 = self.room_depth
-                    h_p4 = center.z - window_height/2
+                    h_p4 = center.z - window_height/2.
                     x_p4 = center.x
-                    y_p4 = 0.
-                    z_p4 = h_p4/2
+                    y_p4 = center.y
+                    z_p4 = h_p4/2.
                     plate4 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p4, w_p4, thickness],
                                       pose=[x_p4, y_p4, z_p4])
@@ -1745,21 +1742,21 @@ class Controller(object):
                 if window_plate == 0:
                     print 'plate 1'
                     left = obstacle
-                    # right = self.obstacles[i+1]
                     up = self.obstacles[i+2]
                     down = self.obstacles[i+3]
                     print left, up, down
                     pose = [left.pose[0],
-                            -(self.room_width/2 - left.shape[1]),
+                            -(self.room_width/2. - left.shape[1]
+                              + left.shape[2]/2.),
                             ((self.room_height - up.shape[0]) +
-                             down.shape[0])/2]
+                             down.shape[0])/2.]
                     obstacle_marker.pose.position = Point(x=pose[0],
                                                           y=pose[1],
                                                           z=pose[2])
 
-                    obstacle_marker.scale.y = obstacle.shape[2]
+                    obstacle_marker.scale.y = left.shape[2]
                     obstacle_marker.scale.z = (
-                        (self.room_height - up.shape[0]) - down.shape[0])/2
+                        self.room_height - (up.shape[0] + down.shape[0]))
                 elif window_plate == 1:
                     print 'plate 2'
                     right = obstacle
@@ -1767,15 +1764,16 @@ class Controller(object):
                     down = self.obstacles[i+2]
                     print right, up, down
                     pose = [right.pose[0],
-                            (self.room_width/2 - right.shape[1]),
+                            (self.room_width/2. - right.shape[1]
+                             + right.shape[2]/2.),
                             ((self.room_height - up.shape[0]) +
-                             down.shape[0])/2]
+                             down.shape[0])/2.]
                     obstacle_marker.pose.position = Point(x=pose[0],
                                                           y=pose[1],
                                                           z=pose[2])
-                    obstacle_marker.scale.y = obstacle.shape[2]
+                    obstacle_marker.scale.y = right.shape[2]
                     obstacle_marker.scale.z = (
-                        (self.room_height - up.shape[0]) - down.shape[0])/2
+                        self.room_height - (up.shape[0] + down.shape[0]))
                 elif window_plate == 2:
                     print 'plate 3'
                     left = self.obstacles[i-2]
@@ -1783,14 +1781,14 @@ class Controller(object):
                     up = obstacle
                     print left, right, up
                     pose = [up.pose[0],
-                            ((self.room_depth/2 - right.shape[0]) +
-                             - (self.room_depth/2 - left.shape[0]))/2,
-                            (self.room_height - up.shape[0])]
+                            (left.shape[1] - right.shape[1])/2.,
+                            (self.room_height - up.shape[0] + up.shape[2]/2.)]
                     obstacle_marker.pose.position = Point(x=pose[0],
                                                           y=pose[1],
                                                           z=pose[2])
                     obstacle_marker.scale.y = (
-                        self.room_depth - left.shape[1] - right.shape[1])
+                        self.room_depth - (left.shape[1] + right.shape[1])
+                        + 2*up.shape[2])
                     obstacle_marker.scale.z = up.shape[2]
                 elif window_plate == 3:
                     print 'plate 4'
@@ -1799,15 +1797,15 @@ class Controller(object):
                     down = obstacle
                     print left, right, down
                     pose = [down.pose[0],
-                            ((self.room_depth/2 - right.shape[0]) +
-                             - (self.room_depth/2 - left.shape[0]))/2,
-                            down.shape[0]]
+                            (left.shape[1] - right.shape[1])/2.,
+                            down.shape[0] - down.shape[2]/2.]
                     obstacle_marker.pose.position = Point(x=pose[0],
                                                           y=pose[1],
                                                           z=pose[2])
                     obstacle_marker.scale.y = (
-                        self.room_depth - left.shape[1] - right.shape[1])
-                    obstacle_marker.scale.z = up.shape[2]
+                        self.room_depth - (left.shape[1] + right.shape[1])
+                        + 2*down.shape[2])
+                    obstacle_marker.scale.z = down.shape[2]
 
                 obstacle_marker.header.stamp = rospy.get_rostime()
                 # Append marker to marker array:
