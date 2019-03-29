@@ -81,12 +81,11 @@ class MotionPlanner(object):
                 position = [obst.pose[0], obst.pose[1]]
             elif obst.obst_type.data == "hexagon":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
-            elif obst.obst_type.data == "slalom plate":
-                shape = omg.Plate(shape2d=omg.Rectangle(
-                                                obst.shape[0], obst.shape[1]),
-                                  height=obst.shape[2],
-                                  orientation=[0., np.pi/2, 0.])
-            elif obst.obst_type.data == "plate":
+            elif obst.obst_type.data in {"slalom plate",
+                                         "plate",
+                                         "window plate"}:
+                if obst.obst_type.data != "plate":
+                    obst.direction = 0.
                 shape = omg.Plate(shape2d=omg.Rectangle(
                                                 obst.shape[0], obst.shape[1]),
                                   height=obst.shape[2],

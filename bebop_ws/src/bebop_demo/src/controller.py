@@ -50,13 +50,6 @@ class Controller(object):
                            "drag drone": self.drag_drone,
                            "gamepad flying": self.gamepad_flying}
 
-        # Obstacle setup
-        Sjaaakie = Obstacle(obst_type=String(data="inf_cylinder"),
-                            shape=[0.35, 2.5],
-                            pose=[0., 0., 1.25])
-        # self.obstacles = [Sjaaakie]
-        self.obstacles = []
-
         self._init_params()
         self._init_variables()
         self._marker_setup()
@@ -222,6 +215,7 @@ class Controller(object):
         self.pos_error_prev = PointStamped()
         self.vel_error_prev = PointStamped()
         self.measurement_valid = False
+        self.obstacles = []
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
@@ -237,9 +231,7 @@ class Controller(object):
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.feedforward_cmd = Twist()
         self.vhat = Point()
-
         self._drone_est_pose = Pose()
-        self.vive_frame_pose = PoseStamped()
 
     def start(self):
         '''Configures,
@@ -501,8 +493,7 @@ class Controller(object):
 
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
-            # self.interrupt_mp.publish(Empty())
-            print yellow('---- Target Reached! ----')
+            print yellow('==== Target Reached! ====')
 
 ####################
 # State functions #
@@ -719,7 +710,8 @@ class Controller(object):
                 break
 
             if self.draw:
-                self.obstacles.append(None)
+                for _ in range(0, 4):
+                    self.obstacles.append(None)
                 corner1 = Point(x=self.ctrl_l_pos.position.x,
                                 y=self.ctrl_l_pos.position.y,
                                 z=self.ctrl_l_pos.position.z)
@@ -729,51 +721,61 @@ class Controller(object):
                                     z=self.ctrl_l_pos.position.z)
                     thickness = 0.1
 
-                    center = Point(x=corner1.x
-                                   y=(corner1.y+corner2.y)/2
+                    center = Point(x=corner1.x,
+                                   y=(corner1.y+corner2.y)/2,
                                    z=(corner1.z+corner2.z)/2)
 
                     delta_y = abs(corner1.y - corner2.y)
-                    delta_z = abs(corner1.z - center2.z)
+                    delta_z = abs(corner1.z - corner2.z)
 
                     window_width = 2*delta_y
                     window_height = 2*delta_z
 
-                    w_p1 = self.room_depth/2 + (center.y - window_width/2)
+                    # left
+                    w_p1 = self.room_depth/2 - (center.y - window_width/2)
                     h_p1 = self.room_height
                     x_p1 = center.x
-                    y_p1 = -(room_depth/2-w_p1/2)
+                    y_p1 = -(self.room_depth/2-w_p1/2)
                     z_p1 = self.room_height/2
-                    plate1 = Obstacle(obst_type=String(data="hole plate"),
+                    plate1 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p1, w_p1, thickness],
-                                      pose=[center.x, center.y, center.z])
+                                      pose=[x_p1, y_p1, z_p1])
+                    # right
                     w_p2 = self.room_depth/2 - (center.y + window_width/2)
                     h_p2 = self.room_height
                     x_p2 = center.x
-                    y_p2 = room_depth/2-w_p2/2
-                    z_p2 = room_height/2
-                    plate2 = Obstacle(obst_type=String(data="hole plate"),
+                    y_p2 = self.room_depth/2-w_p2/2
+                    z_p2 = self.room_height/2
+                    plate2 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p2, w_p2, thickness],
-                                      pose=[center.x, center.y, center.z])
-
+                                      pose=[x_p2, y_p2, z_p2])
+                    # up
                     w_p3 = self.room_depth
                     h_p3 = self.room_height - (center.z + window_height/2)
                     x_p3 = center.x
                     y_p3 = 0.
                     z_p3 = self.room_height - h_p3/2
-                    plate3 = Obstacle(obst_type=String(data="hole plate"),
+                    plate3 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p3, w_p3, thickness],
-                                      pose=[center.x, center.y, center.z])
-                    plate4 = Obstacle(obst_type=String(data="hole plate"),
+                                      pose=[x_p3, y_p3, z_p3])
+                    # down
+                    w_p4 = self.room_depth
+                    h_p4 = center.z - window_height/2
+                    x_p4 = center.x
+                    y_p4 = 0.
+                    z_p4 = h_p4/2
+                    plate4 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p4, w_p4, thickness],
-                                      pose=[center.x, center.y, center.z])
+                                      pose=[x_p4, y_p4, z_p4])
 
-                    self.obstacles[-1] = Sjaaakie
+                    self.obstacles[-4] = plate1
+                    self.obstacles[-3] = plate2
+                    self.obstacles[-2] = plate3
+                    self.obstacles[-1] = plate4
                     self.publish_obst_room(Empty)
                     self.rate.sleep()
                 print highlight_blue(' Obstacle added ')
             self.rate.sleep()
-
 
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
@@ -1324,6 +1326,7 @@ class Controller(object):
                                  "place cyl obstacles",
                                  "place slalom obstacles",
                                  "place plate obstacles",
+                                 "place window obstacles"
                                  "gamepad flying"}):
                 self.state_changed = True
             self.trackpad_held = True
@@ -1377,7 +1380,8 @@ class Controller(object):
         if (self.state in {"place cyl obstacles",
                            "place slalom obstacles",
                            "place hex obstacles",
-                           "place plate obstacles"}):
+                           "place plate obstacles",
+                           "place window obstacles"}):
 
             if (button_pushed.data and not self.draw):
                 self.draw = True
@@ -1667,6 +1671,7 @@ class Controller(object):
         # self.rviz_obst = MarkerArray()
         # self.obst_pub.publish(self.rviz_obst)
         j = 0
+        window_plate = 0
         for i, obstacle in enumerate(self.obstacles):
             # Marker setup
             if obstacle.obst_type.data == 'slalom plate':
@@ -1702,18 +1707,112 @@ class Controller(object):
                 green_marker.lifetime = rospy.Duration(0)
                 red_marker.lifetime = rospy.Duration(0)
 
-                green_marker.pose.position = Point(x=obstacle.edge[0],
-                                                   y=obstacle.edge[1] + d*0.5*obstacle.shape[2],
-                                                   z=obstacle.edge[2])
-                red_marker.pose.position = Point(x=obstacle.edge[0],
-                                                 y=obstacle.edge[1] + d*1.5*obstacle.shape[2],
-                                                 z=obstacle.edge[2])
+                green_marker.pose.position = Point(
+                                  x=obstacle.edge[0],
+                                  y=obstacle.edge[1] + d*0.5*obstacle.shape[2],
+                                  z=obstacle.edge[2])
+                red_marker.pose.position = Point(
+                                  x=obstacle.edge[0],
+                                  y=obstacle.edge[1] + d*1.5*obstacle.shape[2],
+                                  z=obstacle.edge[2])
                 green_marker.header.stamp = rospy.get_rostime()
                 red_marker.header.stamp = rospy.get_rostime()
 
                 # Append marker to marker array:
                 self.rviz_obst.markers.append(green_marker)
                 self.rviz_obst.markers.append(red_marker)
+
+            elif obstacle.obst_type.data == 'window plate':
+                print 'in de elif marker stuff'
+                obstacle_marker = Marker()
+                obstacle_marker.header.frame_id = 'world'
+                obstacle_marker.ns = "obstacles"
+                obstacle_marker.id = i+j+7
+                obstacle_marker.action = 0
+                obstacle_marker.color.r = 0.0
+                obstacle_marker.color.g = 1.0
+                obstacle_marker.color.b = 0.0
+                obstacle_marker.color.a = 0.5
+                obstacle_marker.lifetime = rospy.Duration(0)
+
+                obstacle_marker.type = 1  # Cuboid
+                obstacle_marker.scale.x = obstacle.shape[2]  # thickness
+                # shape = [height, width, thickness]
+                # Window plates come by 4. You need the dimensions of two
+                # overlapping plates to know the edge of the window hole
+                # corresponding to the current plate.
+                window_plate = i % 4
+                if window_plate == 0:
+                    print 'plate 1'
+                    left = obstacle
+                    # right = self.obstacles[i+1]
+                    up = self.obstacles[i+2]
+                    down = self.obstacles[i+3]
+                    print left, up, down
+                    pose = [left.pose[0],
+                            -(self.room_width/2 - left.shape[1]),
+                            ((self.room_height - up.shape[0]) +
+                             down.shape[0])/2]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+
+                    obstacle_marker.scale.y = obstacle.shape[2]
+                    obstacle_marker.scale.z = (
+                        (self.room_height - up.shape[0]) - down.shape[0])/2
+                elif window_plate == 1:
+                    print 'plate 2'
+                    right = obstacle
+                    up = self.obstacles[i+1]
+                    down = self.obstacles[i+2]
+                    print right, up, down
+                    pose = [right.pose[0],
+                            (self.room_width/2 - right.shape[1]),
+                            ((self.room_height - up.shape[0]) +
+                             down.shape[0])/2]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+                    obstacle_marker.scale.y = obstacle.shape[2]
+                    obstacle_marker.scale.z = (
+                        (self.room_height - up.shape[0]) - down.shape[0])/2
+                elif window_plate == 2:
+                    print 'plate 3'
+                    left = self.obstacles[i-2]
+                    right = self.obstacles[i-1]
+                    up = obstacle
+                    print left, right, up
+                    pose = [up.pose[0],
+                            ((self.room_depth/2 - right.shape[0]) +
+                             - (self.room_depth/2 - left.shape[0]))/2,
+                            (self.room_height - up.shape[0])]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+                    obstacle_marker.scale.y = (
+                        self.room_depth - left.shape[1] - right.shape[1])
+                    obstacle_marker.scale.z = up.shape[2]
+                elif window_plate == 3:
+                    print 'plate 4'
+                    left = self.obstacles[i-3]
+                    right = self.obstacles[i-2]
+                    down = obstacle
+                    print left, right, down
+                    pose = [down.pose[0],
+                            ((self.room_depth/2 - right.shape[0]) +
+                             - (self.room_depth/2 - left.shape[0]))/2,
+                            down.shape[0]]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+                    obstacle_marker.scale.y = (
+                        self.room_depth - left.shape[1] - right.shape[1])
+                    obstacle_marker.scale.z = up.shape[2]
+
+                obstacle_marker.header.stamp = rospy.get_rostime()
+                # Append marker to marker array:
+                print 'append de marker'
+                self.rviz_obst.markers.append(obstacle_marker)
 
             else:
                 obstacle_marker = Marker()
@@ -1761,6 +1860,7 @@ class Controller(object):
                 self.rviz_obst.markers.append(obstacle_marker)
 
         self.reset_markers()
+        print 'publish de marker'
         self.obst_pub.publish(self.rviz_obst)
         self.draw_room_contours()
 
