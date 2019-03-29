@@ -95,8 +95,19 @@ Messages in this terminal follow the color code below:
 
 If everything is working fine, the output below all ROS-node information and parameters should look like this:
 
-```bash
-
+```
+process[bebop_demo-1]: started with pid [8153]
+process[controller-2]: started with pid [8154]
+process[motionplanner-3]: started with pid [8155]
+process[vive_localization-4]: started with pid [8156]
+process[ctrl_keypress-5]: started with pid [8157]
+ Waiting for Vive controllers ...
+----    Bebop core running     ----
+Building nlp ...  in 0.027586 s
+----   Motionplanner running   ----
+----    Controller running     ----
+---- Vive Localization running ----
+ Pull each trigger
 ```
 If this is not the case, make sure to check for the common errors listed below.
 
@@ -104,8 +115,11 @@ The last message marked in blue instructs the user to identify the left and righ
 The right controller is reserved for the demo operator. It is used for state transitions and actions that require a person standing in the flight area while the drone is flying. The left controller can be handed to a spectator because it is used only for operations during which the drone is at rest on the floor or that can be executed standing outside the flight area.
 
 ### Calibration
-As default, the world reference frame with respect to the Vive Base Stations is calibrated for the setup in the Robot lab at the Department of Mechanical Engineering, KULeuven. To recalibrate, it suffices to edit the room dimensions and position in the 'controller.launch' file and publish once on the '/vive_localization/calibrate' topic via *rqt* or via the command line. Note however that the vive localization calibration will be overwritten at the next launch.
+As default, the world reference frame with respect to the Vive Base Stations is calibrated for the setup in the Robot lab at the Department of Mechanical Engineering, KULeuven. To recalibrate, it suffices to edit the room dimensions in the 'controller.launch' file and publish once on the '/vive_localization/calibrate' topic via *rqt* or via the command line. The new world reference frame origin is the current location of the drone with the x-, y- and z-axs aligned with the drone's roll, pitch and yaw axis respectively. The origin is always defined as the center of the room on the ground.  
+Keep in mind that the vive localization calibration will be overwritten at the next launch.
 
+### Controller Tuning
+All control parameters are set in `bebop_ws/src/bebop_demo/launch/controller.launch`.
 
 ### Executing Tasks
 Now it's time for the actual demo. The demo is divided in a number of tasks: fixed sequences of states to illustrate specific control principles. The available tasks are:

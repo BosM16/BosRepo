@@ -65,12 +65,12 @@ class MotionPlanner(object):
         self._vehicle.set_terminal_conditions([0., 0., 0.])
 
         # Environment.
-        room_origin_x = rospy.get_param('motionplanner/room_origin_x', 0.)
-        room_origin_y = rospy.get_param('motionplanner/room_origin_y', 0.)
-        room_origin_z = rospy.get_param('motionplanner/room_origin_z', 0.)
-        room_width = rospy.get_param('motionplanner/room_width', 1.)
-        room_depth = rospy.get_param('motionplanner/room_depth', 1.)
-        room_height = rospy.get_param('motionplanner/room_height', 1.)
+        room_width = rospy.get_param('motionplanner/room_width', 5.)
+        room_depth = rospy.get_param('motionplanner/room_depth', 5.)
+        room_height = rospy.get_param('motionplanner/room_height', 3.)
+        room_origin_x = 0.
+        room_origin_y = 0.
+        room_origin_z = room_height/2
 
         room = {'shape': omg.Cuboid(room_width, room_depth, room_height),
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
