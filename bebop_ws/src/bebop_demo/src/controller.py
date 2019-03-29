@@ -742,7 +742,7 @@ class Controller(object):
                     w_p1 = self.room_depth/2. + center.y - window_width/2.
                     h_p1 = self.room_height
                     x_p1 = center.x
-                    y_p1 = -(self.room_depth - w_p1)/2.
+                    y_p1 = -(self.room_depth/2. - w_p1)
                     z_p1 = self.room_height/2.
                     plate1 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p1, w_p1, thickness],
@@ -751,7 +751,7 @@ class Controller(object):
                     w_p2 = self.room_depth/2. - (center.y + window_width/2.)
                     h_p2 = self.room_height
                     x_p2 = center.x
-                    y_p2 = (self.room_depth - w_p2)/2.
+                    y_p2 = (self.room_depth/2. - w_p2)
                     z_p2 = self.room_height/2.
                     plate2 = Obstacle(obst_type=String(data="window plate"),
                                       shape=[h_p2, w_p2, thickness],
@@ -1754,7 +1754,7 @@ class Controller(object):
                     down = self.obstacles[i+3]
                     print left, up, down
                     pose = [left.pose[0],
-                            -(self.room_width/2. - left.shape[1]
+                            -(self.room_depth/2. - left.shape[1]
                               + left.shape[2]/2.),
                             ((self.room_height - up.shape[0]) +
                              down.shape[0])/2.]
@@ -1772,7 +1772,7 @@ class Controller(object):
                     down = self.obstacles[i+2]
                     print right, up, down
                     pose = [right.pose[0],
-                            (self.room_width/2. - right.shape[1]
+                            (self.room_depth/2. - right.shape[1]
                              + right.shape[2]/2.),
                             ((self.room_height - up.shape[0]) +
                              down.shape[0])/2.]
