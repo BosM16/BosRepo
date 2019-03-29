@@ -644,9 +644,9 @@ class Controller(object):
                     d = -1  # down
 
                 width = self.room_width/2 - d*edge.y
-                thickness = 0.1
+                thickness = 0.15
                 center = Point(x=edge.x,
-                               y=edge.y+d*width/2,
+                               y=edge.y+d*(width - thickness)/2.,
                                z=height/2)
                 Sjaaakie = Obstacle(obst_type=String(data="slalom plate"),
                                     shape=[height, width, thickness],
@@ -1134,7 +1134,6 @@ class Controller(object):
         '''Brake as emergency measure: Bebop brakes automatically when
             /bebop/cmd_vel topic receives all zeros.
         '''
-        print highlight_red(' Safety brake activated ')
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
 
