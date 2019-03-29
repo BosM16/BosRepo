@@ -1904,8 +1904,7 @@ class Controller(object):
         self.trajectory_smoothed.publish(self.smooth_path)
 
     def draw_room_contours(self):
-        '''Publish the smoothed x and y trajectory to topic for visualisation
-        in rviz.
+        '''Publish the edges of the room for visualization in rviz.
         '''
         self.room_contours.header.stamp = rospy.get_rostime()
 
