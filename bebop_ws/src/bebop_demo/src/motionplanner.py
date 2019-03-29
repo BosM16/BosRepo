@@ -91,7 +91,7 @@ class MotionPlanner(object):
                                                 obst.shape[0], obst.shape[1]),
                                   height=obst.shape[2],
                                   orientation=[0., np.pi/2, obst.direction])
-
+                print 'obst\n', obst
             elif obst.obst_type.data == "cuboid":
                 shape = omg.Cuboid(
                     width=obst.shape[0],
@@ -123,7 +123,7 @@ class MotionPlanner(object):
             }}})
 
         problem.set_options({
-            'hard_term_con': False, 'horizon_time': self.horizon_time,
+            'hard_term_con': True, 'horizon_time': self.horizon_time,
             'verbose': 1.})
 
         problem.init()
@@ -163,7 +163,7 @@ class MotionPlanner(object):
                 [cmd.pos_state.position.x,
                  cmd.pos_state.position.y,
                  cmd.pos_state.position.z],
-                [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
+                # [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
                 )
             self._vehicle.set_terminal_conditions(
                 [self._goal.position.x,

@@ -315,6 +315,9 @@ class Controller(object):
             self.reset_markers()
 
         self._goal = goal
+        # Used to store calculation time of motionplanner.
+        self.calc_time = {}
+        self.calc_time['time'] = []
         self.fire_motionplanner()
 
         self._init = True
@@ -331,6 +334,9 @@ class Controller(object):
         trigger.pos_state = self._drone_est_pose
         trigger.vel_state = self.vhat
         trigger.current_time = self._time
+
+        self.fire_time = rospy.get_rostime()
+
         self._mp_trigger_topic.publish(trigger)
 
     def get_mp_result(self, data):
@@ -347,6 +353,8 @@ class Controller(object):
         y_traj = data.y_traj
         z_traj = data.z_traj
         self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
+        self.receive_time = rospy.get_rostime()
+        self.calc_time['time'].append(self.receive_time - self.fire_time)
 
     def omg_update(self):
         '''
@@ -501,6 +509,7 @@ class Controller(object):
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
             # self.interrupt_mp.publish(Empty())
+            io.savemat('../mpc_calc_time.mat', self.calc_time)
             print yellow('---- Target Reached! ----')
 
 ####################
@@ -683,11 +692,11 @@ class Controller(object):
                     delta_x = upper_corner.x - lower_corner.x
                     delta_y = upper_corner.y - lower_corner.y
 
-                    # Trick to acoid error when delta_x == 0.
+                    # Trick to avoid error when delta_x == 0.
                     if delta_x == 0:
-                        delta_x = 1.
+                        delta_x = 0.01
                     orientation = np.arctan2((delta_y),
-                                             (delta_x))
+                                             (delta_x)) + np.pi/2.
                     width = np.sqrt(delta_x**2 + delta_y**2)
                     height = upper_corner.z - lower_corner.z
                     Sjaaakie = Obstacle(obst_type=String(data="plate"),
@@ -697,7 +706,7 @@ class Controller(object):
 
                     self.obstacles[-1] = Sjaaakie
                     self.publish_obst_room(Empty)
-                    self.rate.sleep()
+                    rospy.sleep(0.05)
                 print highlight_blue(' Obstacle added ')
             self.rate.sleep()
 
@@ -1314,7 +1323,6 @@ class Controller(object):
         '''Checks whether the drone is standing on the ground or flying and
         changes the self.airborne variable accordingly.
         '''
-        print 'flying state', flying_state
         if flying_state.state == 0:
             self.airborne = False
         elif flying_state.state == 2:
@@ -1683,6 +1691,7 @@ class Controller(object):
                                                       y=obstacle.pose[1],
                                                       z=obstacle.pose[2])
                 obstacle_marker.header.stamp = rospy.get_rostime()
+
                 # Append marker to marker array:
                 self.rviz_obst.markers.append(obstacle_marker)
 
