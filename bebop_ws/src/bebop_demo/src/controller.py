@@ -39,6 +39,7 @@ class Controller(object):
                            "place cyl obstacles": self.place_cyl_hex_obst,
                            "place slalom obstacles": self.place_slalom_obst,
                            "place plate obstacles": self.place_plate_obst,
+                           "place window obstacles": self.place_window_obst,
                            "configure motionplanner": self.config_mp,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
@@ -595,9 +596,9 @@ class Controller(object):
                                             pose=[center.x, center.y])
                     else:
                         Sjaaakie = Obstacle(obst_type=String(
-                                            data="hexagon"),
-                                            shape=[radius, 2.*center.z],
-                                            pose=[center.x, center.y, center.z])
+                                        data="hexagon"),
+                                        shape=[radius, 2.*center.z],
+                                        pose=[center.x, center.y, center.z])
                     self.obstacles[-1] = Sjaaakie
                     self.publish_obst_room(Empty)
                     self.rate.sleep()
@@ -700,6 +701,79 @@ class Controller(object):
                     self.rate.sleep()
                 print highlight_blue(' Obstacle added ')
             self.rate.sleep()
+
+    def place_window_obst(self):
+        '''Place a rectangular window obstacle by defining the center and the
+        upper right corner. Windows can only be placed perpendicular to the
+        x-direction.
+        '''
+        self.obstacles = []
+        self.publish_obst_room(Empty)
+
+        print highlight_green(
+            ' Drag left controller to place obstacle ')
+
+        while not (rospy.is_shutdown() or self.state_killed):
+            if self.state_changed:
+                self.state_changed = False
+                break
+
+            if self.draw:
+                self.obstacles.append(None)
+                corner1 = Point(x=self.ctrl_l_pos.position.x,
+                                y=self.ctrl_l_pos.position.y,
+                                z=self.ctrl_l_pos.position.z)
+                while self.draw:
+                    corner2 = Point(x=corner1.x,
+                                    y=self.ctrl_l_pos.position.y,
+                                    z=self.ctrl_l_pos.position.z)
+                    thickness = 0.1
+
+                    center = Point(x=corner1.x
+                                   y=(corner1.y+corner2.y)/2
+                                   z=(corner1.z+corner2.z)/2)
+
+                    delta_y = abs(corner1.y - corner2.y)
+                    delta_z = abs(corner1.z - center2.z)
+
+                    window_width = 2*delta_y
+                    window_height = 2*delta_z
+
+                    w_p1 = self.room_depth/2 + (center.y - window_width/2)
+                    h_p1 = self.room_height
+                    x_p1 = center.x
+                    y_p1 = -(room_depth/2-w_p1/2)
+                    z_p1 = self.room_height/2
+                    plate1 = Obstacle(obst_type=String(data="hole plate"),
+                                      shape=[h_p1, w_p1, thickness],
+                                      pose=[center.x, center.y, center.z])
+                    w_p2 = self.room_depth/2 - (center.y + window_width/2)
+                    h_p2 = self.room_height
+                    x_p2 = center.x
+                    y_p2 = room_depth/2-w_p2/2
+                    z_p2 = room_height/2
+                    plate2 = Obstacle(obst_type=String(data="hole plate"),
+                                      shape=[h_p2, w_p2, thickness],
+                                      pose=[center.x, center.y, center.z])
+
+                    w_p3 = self.room_depth
+                    h_p3 = self.room_height - (center.z + window_height/2)
+                    x_p3 = center.x
+                    y_p3 = 0.
+                    z_p3 = self.room_height - h_p3/2
+                    plate3 = Obstacle(obst_type=String(data="hole plate"),
+                                      shape=[h_p3, w_p3, thickness],
+                                      pose=[center.x, center.y, center.z])
+                    plate4 = Obstacle(obst_type=String(data="hole plate"),
+                                      shape=[h_p4, w_p4, thickness],
+                                      pose=[center.x, center.y, center.z])
+
+                    self.obstacles[-1] = Sjaaakie
+                    self.publish_obst_room(Empty)
+                    self.rate.sleep()
+                print highlight_blue(' Obstacle added ')
+            self.rate.sleep()
+
 
     def omg_fly(self):
         '''Fly from start to end point using omg-tools as a motionplanner.
