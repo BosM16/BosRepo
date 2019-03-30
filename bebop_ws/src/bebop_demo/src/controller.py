@@ -23,6 +23,9 @@ from fabulous.color import (highlight_red, highlight_green, highlight_blue,
 
 class Controller(object):
 
+    ############################
+    # Initialization functions #
+    ############################
     def __init__(self):
         """Initialization of Controller object.
         """
@@ -144,7 +147,7 @@ class Controller(object):
         rospy.Subscriber('fsm/state', String, self.switch_state)
         rospy.Subscriber(
             '/bebop/states/ardrone3/PilotingState/FlyingStateChanged',
-            Ardrone3PilotingStateFlyingStateChanged, self.flying_state)
+            Ardrone3PilotingStateFlyingStateChanged, self.bebop_flying_state)
 
     def _init_params(self):
         '''Initializes (reads and sets) externally configurable parameters
@@ -176,7 +179,8 @@ class Controller(object):
         #                            'controller/goal_reached_angle_tol', 0.05)
 
         self._sample_time = rospy.get_param('controller/sample_time', 0.01)
-        self.omg_update_time = rospy.get_param('controller/omg_update_time', 0.5)
+        self.omg_update_time = rospy.get_param(
+            'controller/omg_update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
 
         # Setup low pass filter for trajectory drawing task.
@@ -231,8 +235,12 @@ class Controller(object):
         self.cmd_twist_convert.header.frame_id = "world_rot"
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.feedforward_cmd = Twist()
-        self.vhat = Point()
-        self._drone_est_pose = Pose()
+        self.drone_vel_est = Point()
+        self.drone_pose_est = Pose()
+
+    ##################
+    # Main functions #
+    ##################
 
     def start(self):
         '''Configures,
@@ -260,9 +268,9 @@ class Controller(object):
                 # Adjust goal to make sure hover uses PID actions to stay in
                 # current place.
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
-                (self._drone_est_pose, self.vhat,
+                (self.drone_pose_est, self.drone_vel_est,
                  self.real_yaw, measurement_valid) = self.get_pose_est()
-                self.hover_setpoint.position = self._drone_est_pose.position
+                self.hover_setpoint.position = self.drone_pose_est.position
 
             if not self.state == "initialization":
                 self.hover()
@@ -307,7 +315,7 @@ class Controller(object):
         self.overtime_counter = 0
 
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        (self._drone_est_pose, self.vhat,
+        (self.drone_pose_est, self.drone_vel_est,
          self.real_yaw, measurement_valid) = self.get_pose_est()
 
         if not self.state == "fly to start":
@@ -330,8 +338,8 @@ class Controller(object):
         trigger = Trigger()
         trigger.goal_pos = self._goal
         trigger.goal_vel = Point()
-        trigger.pos_state = self._drone_est_pose
-        trigger.vel_state = self.vhat
+        trigger.pos_state = self.drone_pose_est
+        trigger.vel_state = self.drone_vel_est
         trigger.current_time = self._time
 
         self.fire_time = rospy.get_rostime()
@@ -369,14 +377,15 @@ class Controller(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
-        (self._drone_est_pose,
-         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        self.publish_vhat_vector(self._drone_est_pose.position, self.vhat)
+        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+            measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self.drone_pose_est.position,
+                                 self.drone_vel_est)
 
         # Publish pose to plot in rviz.
-        self.publish_real(self._drone_est_pose.position.x,
-                          self._drone_est_pose.position.y,
-                          self._drone_est_pose.position.z)
+        self.publish_real(self.drone_pose_est.position.x,
+                          self.drone_pose_est.position.y,
+                          self.drone_pose_est.position.z)
 
         if not measurement_valid:
             self.safety_brake()
@@ -457,14 +466,15 @@ class Controller(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
-        (self._drone_est_pose,
-         self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
-        self.publish_vhat_vector(self._drone_est_pose.position, self.vhat)
+        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+            measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self.drone_pose_est.position,
+                                 self.drone_vel_est)
 
         # Publish pose to plot in rviz.
-        self.publish_real(self._drone_est_pose.position.x,
-                          self._drone_est_pose.position.y,
-                          self._drone_est_pose.position.z)
+        self.publish_real(self.drone_pose_est.position.x,
+                          self.drone_pose_est.position.y,
+                          self.drone_pose_est.position.z)
 
         if not measurement_valid:
             self.safety_brake()
@@ -496,24 +506,9 @@ class Controller(object):
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
 
-    def check_goal_reached(self):
-        '''Determines whether goal is reached.
-        Returns:
-            not stop: boolean whether goal is reached. If not, controller
-                      proceeds to goal.
-        '''
-        pos_nrm = self.position_diff_norm(self._drone_est_pose.position,
-                                          self._goal.position)
-
-        self.target_reached = (pos_nrm < self.pos_nrm_tol)
-        if self.target_reached:
-            # self.interrupt_mp.publish(Empty())
-            io.savemat('../mpc_calc_time.mat', self.calc_time)
-            print yellow('==== Target Reached! ====')
-
-####################
-# State functions #
-####################
+    ###################
+    # State functions #
+    ###################
 
     def switch_state(self, state):
         '''Switches state according to the general fsm state as received by
@@ -538,8 +533,8 @@ class Controller(object):
         '''Drone keeps itself in same location through a PID controller.
         '''
         if self.airborne:
-            (self._drone_est_pose,
-             self.vhat, self.real_yaw, measurement_valid) = self.get_pose_est()
+            (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+                measurement_valid) = self.get_pose_est()
 
             if not measurement_valid:
                 self.safety_brake()
@@ -804,7 +799,7 @@ class Controller(object):
                 self.omg_update()
                 # Determine whether goal has been reached.
                 self.check_goal_reached()
-            self.hover_setpoint = self._drone_est_pose
+            self.hover_setpoint = self.drone_pose_est
             self.rate.sleep()
         self.reset_pid_gains()
         self.startup = False
@@ -928,9 +923,9 @@ class Controller(object):
         '''
         while not (rospy.is_shutdown() or self.state_killed):
             drag_offset = Point(
-                x=(self._drone_est_pose.position.x-self.ctrl_l_pos.position.x),
-                y=(self._drone_est_pose.position.y-self.ctrl_l_pos.position.y),
-                z=(self._drone_est_pose.position.z-self.ctrl_l_pos.position.z))
+                x=(self.drone_pose_est.position.x-self.ctrl_l_pos.position.x),
+                y=(self.drone_pose_est.position.y-self.ctrl_l_pos.position.y),
+                z=(self.drone_pose_est.position.z-self.ctrl_l_pos.position.z))
 
             while (self.drag and not (
                                     self.state_killed or rospy.is_shutdown())):
@@ -1052,7 +1047,7 @@ class Controller(object):
         and removes this subscriber when the controller switches states.
         '''
         self.gamepad_input = rospy.Subscriber('bebop/cmd_vel',
-                                              Twist, self.retreive_gp_input)
+                                              Twist, self.retrieve_gp_input)
         self.meas = {}
         self.meas['pos_x'], self.meas['pos_y'], self.meas['pos_z'] = [], [], []
         self.meas['vel_x'], self.meas['vel_y'], self.meas['vel_z'] = [], [], []
@@ -1065,28 +1060,44 @@ class Controller(object):
         self.gamepad_input.unregister()
         io.savemat('../vhat_data_check.mat', self.meas)
 
-    def retreive_gp_input(self, gp_input):
+    def retrieve_gp_input(self, gp_input):
         '''Reads out the commands sent by the gamepad and sends these to the
         kalman filter to update the state estimation.
         '''
         self.cmd_twist_convert.twist.linear = gp_input.linear
         self.cmd_twist_convert.header.stamp = rospy.get_rostime()
-        (self._drone_est_pose, self.vhat,
-         self.real_yaw, measurement_valid) = self.get_pose_est()
-        self.publish_vhat_vector(self._drone_est_pose.position, self.vhat)
+        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+            measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self.drone_pose_est.position,
+                                 self.drone_vel_est)
 
         # Saves data to be able to compare the velocity estimation to the
         # numerically differentiated velocity afterward.
-        self.meas['pos_x'].append(self._drone_est_pose.position.x)
-        self.meas['pos_y'].append(self._drone_est_pose.position.y)
-        self.meas['pos_z'].append(self._drone_est_pose.position.z)
-        self.meas['vel_x'].append(self.vhat.x)
-        self.meas['vel_y'].append(self.vhat.y)
-        self.meas['vel_z'].append(self.vhat.z)
+        self.meas['pos_x'].append(self.drone_pose_est.position.x)
+        self.meas['pos_y'].append(self.drone_pose_est.position.y)
+        self.meas['pos_z'].append(self.drone_pose_est.position.z)
+        self.meas['vel_x'].append(self.drone_vel_est.x)
+        self.meas['vel_y'].append(self.drone_vel_est.y)
+        self.meas['vel_z'].append(self.drone_vel_est.z)
 
-####################
-# Helper functions #
-####################
+    ####################
+    # Helper functions #
+    ####################
+
+    def check_goal_reached(self):
+        '''Determines whether goal is reached.
+        Returns:
+            not stop: boolean whether goal is reached. If not, controller
+                      proceeds to goal.
+        '''
+        pos_nrm = self.position_diff_norm(self.drone_pose_est.position,
+                                          self._goal.position)
+
+        self.target_reached = (pos_nrm < self.pos_nrm_tol)
+        if self.target_reached:
+            # self.interrupt_mp.publish(Empty())
+            io.savemat('../mpc_calc_time.mat', self.calc_time)
+            print yellow('==== Target Reached! ====')
 
     def rotate_vel_cmd(self, vel):
         '''Transforms the velocity commands from the global world frame to the
@@ -1146,16 +1157,16 @@ class Controller(object):
             pos_error = PointStamped()
             pos_error.header.frame_id = "world"
             pos_error.point.x = (pos_desired.point.x -
-                                 self._drone_est_pose.position.x)
+                                 self.drone_pose_est.position.x)
             pos_error.point.y = (pos_desired.point.y -
-                                 self._drone_est_pose.position.y)
+                                 self.drone_pose_est.position.y)
             pos_error.point.z = (pos_desired.point.z -
-                                 self._drone_est_pose.position.z)
+                                 self.drone_pose_est.position.z)
 
             vel_error = PointStamped()
             vel_error.header.frame_id = "world"
-            vel_error.point.x = vel_desired.point.x - self.vhat.x
-            vel_error.point.y = vel_desired.point.y - self.vhat.y
+            vel_error.point.x = vel_desired.point.x - self.drone_vel_est.x
+            vel_error.point.y = vel_desired.point.y - self.drone_vel_est.y
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
@@ -1174,17 +1185,17 @@ class Controller(object):
             pos_error = PointStamped()
             pos_error.header.frame_id = "world"
             pos_error.point.x = (pos_desired.point.x
-                                 - self._drone_est_pose.position.x)
+                                 - self.drone_pose_est.position.x)
             pos_error.point.y = (pos_desired.point.y
-                                 - self._drone_est_pose.position.y)
+                                 - self.drone_pose_est.position.y)
             pos_error.point.z = (pos_desired.point.z
-                                 - self._drone_est_pose.position.z)
+                                 - self.drone_pose_est.position.z)
 
             vel_error_prev = self.vel_error_prev
             vel_error = PointStamped()
             vel_error.header.frame_id = "world"
-            vel_error.point.x = vel_desired.point.x - self.vhat.x
-            vel_error.point.y = vel_desired.point.y - self.vhat.y
+            vel_error.point.x = vel_desired.point.x - self.drone_vel_est.x
+            vel_error.point.y = vel_desired.point.y - self.drone_vel_est.y
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
@@ -1422,7 +1433,7 @@ class Controller(object):
             if (not button_pushed.data and self.draw):
                 self.draw = False
 
-    def flying_state(self, flying_state):
+    def bebop_flying_state(self, flying_state):
         '''Checks whether the drone is standing on the ground or flying and
         changes the self.airborne variable accordingly.
         '''
@@ -1435,7 +1446,6 @@ class Controller(object):
         '''Differentiate and interpolate obtained trajectory to obtain
         feedforward velocity commands.
         '''
-        # self.interpolate_list(self._sample_time/self._localization_rate)
         self.differentiate_traj()
 
         # Search for the highest velocity in the trajectory to determine the
@@ -1443,7 +1453,7 @@ class Controller(object):
         highest_vel = max(max(self.drawn_vel_x),
                           max(self.drawn_vel_y),
                           max(self.drawn_vel_z))
-        self.interpolate_list(self.max_vel/highest_vel)
+        self.interpolate_drawn_traj(self.max_vel/highest_vel)
 
     def differentiate_traj(self):
         '''Numerically differentiates position traject to recover a list of
@@ -1453,7 +1463,7 @@ class Controller(object):
         self.drawn_vel_y = np.diff(self.drawn_pos_y)/self._sample_time
         self.drawn_vel_z = np.diff(self.drawn_pos_z)/self._sample_time
 
-    def interpolate_list(self, step):
+    def interpolate_drawn_traj(self, step):
         '''Linearly interpolates a list so that it contains the desired amount
         of elements where the element distance is equal to step.
         '''
@@ -1489,9 +1499,9 @@ class Controller(object):
                               - np.array([point2.x, point2.y, point2.z]))
         return norm
 
-#######################################
-# Functions for plotting Rviz markers #
-#######################################
+    #######################################
+    # Functions for plotting Rviz markers #
+    #######################################
 
     def _marker_setup(self):
         '''Setup markers to display the desired and real path of the drone in
