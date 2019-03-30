@@ -75,17 +75,34 @@ class MotionPlanner(object):
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
         for k, obst in enumerate(obstacles.obst_list):
-            if len(obst.shape) == 2:
+            if obst.obst_type.data == "inf_cylinder":
+                shape = omg.Circle(obst.shape[0])
+                position = [obst.pose[0], obst.pose[1]]
+            elif obst.obst_type.data == "hexagon":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
-            elif len(obst.shape) == 3:
+            elif obst.obst_type.data in {"slalom plate",
+                                         "plate",
+                                         "window plate"}:
+                if obst.obst_type.data != "plate":
+                    obst.direction = 0.
+                shape = omg.Plate(shape2d=omg.Rectangle(
+                                                obst.shape[0], obst.shape[1]),
+                                  height=obst.shape[2],
+                                  orientation=[0., np.pi/2, obst.direction])
+                print 'obst\n', obst
+            elif obst.obst_type.data == "cuboid":
                 shape = omg.Cuboid(
                     width=obst.shape[0],
                     depth=obst.shape[1],
                     height=obst.shape[2])
-                    # orientation=(obst.pose[2]))
-            self._obstacles.append(omg.Obstacle({'position': [
-                    obst.pose[0], obst.pose[1], obst.pose[2]]}, shape=shape))
+            else:
+                print highlight_yellow(' Warning: invalid obstacle type ')
 
+            if not obst.obst_type.data == "inf_cylinder":
+                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
+            self._obstacles.append(omg.Obstacle(
+                                        {'position': position}, shape=shape))
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
 

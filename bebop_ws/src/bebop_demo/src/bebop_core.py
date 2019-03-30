@@ -43,7 +43,10 @@ class Demo(object):
                           "land": ["land"],
                           "point to point": ["omg standby", "omg fly"],
                           "draw follow traj": ["land", "draw path", "take-off",
-                                               "fly to start", "follow path"]}
+                                               "fly to start", "follow path"],
+                          "place window obstacles": ["place window obstacles",
+                                                     "configure motionplanner",
+                                                     "take-off"]}
 
         self.meas_rot = rospy.Publisher(
             'world_mode/meas_rot', PoseStamped, queue_size=1)
@@ -251,10 +254,7 @@ class Demo(object):
             - _from, _to = string, name of frame
         '''
         transform = self.kalman.get_transform(_from, _to)
-        if self.transfoldstamp == transform.header.stamp:
-            print '------------------------equal'
         self.transfoldstamp = transform.header.stamp
-        print transform.header.stamp
 
         point_transformed = tf2_geom.do_transform_point(point, transform)
 

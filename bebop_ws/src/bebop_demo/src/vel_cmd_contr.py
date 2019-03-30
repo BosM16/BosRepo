@@ -3,7 +3,7 @@
 from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
                                Pose, PoseStamped)
 from std_msgs.msg import Bool, Empty, String
-from visualization_msgs.msg import Marker
+from visualization_msgs.msg import Marker, MarkerArray
 
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
 
@@ -40,6 +40,7 @@ class VelCommander(object):
                            "omg fly": self.omg_fly,
                            "draw path": self.draw_traj,
                            "fly to start": self.fly_to_start,
+                           "place window obstacles": self.place_window_obst,
                            "follow path": self.follow_traj}
         self.state_changed = False
         self.executing_state = False
@@ -59,6 +60,9 @@ class VelCommander(object):
         self.safety_treshold = rospy.get_param('vel_cmd/safety_treshold', 0.5)
         self.pos_nrm_tol = rospy.get_param(
                                         'vel_cmd/goal_reached_pos_tol', 0.05)
+        self.room_width = rospy.get_param('motionplanner/room_width', 1.)
+        self.room_depth = rospy.get_param('motionplanner/room_depth', 1.)
+        self.room_height = rospy.get_param('motionplanner/room_height', 1.)
         # self.angle_nrm_tol = rospy.get_param(
         #                                 'vel_cmd/goal_reached_angle_tol', 0.05)
 
@@ -116,7 +120,7 @@ class VelCommander(object):
         self.current_ff_vel_pub = rospy.Publisher(
             'motionplanner/current_ff_vel', Marker, queue_size=1)
         self.obst_pub = rospy.Publisher(
-            'motionplanner/rviz_obst', Marker, queue_size=1)
+            'motionplanner/rviz_obst', MarkerArray, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
             'controller/state_finish', Empty, queue_size=1)
         self.take_off = rospy.Publisher('bebop/takeoff', Empty, queue_size=1)
@@ -479,6 +483,78 @@ class VelCommander(object):
             self.progress = self.proceed()
             self.rate.sleep()
 
+    def place_window_obst(self):
+        '''Place a rectangular window obstacle by defining the center and the
+        upper right corner. Windows can only be placed perpendicular to the
+        x-direction.
+        '''
+        self.obstacles = []
+        self.publish_obst_room(Empty)
+
+        print (
+            ' Drag left controller to place obstacle ')
+
+        for _ in range(0, 4):
+            self.obstacles.append(None)
+        corner1 = Point(x=0,
+                        y=-0.5,
+                        z=1.8)
+        corner2 = Point(x=0,
+                        y=0.3,
+                        z=1.4)
+        thickness = 0.1
+
+        center = Point(x=corner1.x,
+                       y=(corner1.y+corner2.y)/2.,
+                       z=(corner1.z+corner2.z)/2.)
+
+        window_width = abs(corner1.y - corner2.y)
+        window_height = abs(corner1.z - corner2.z)
+
+        # left
+        w_p1 = self.room_depth/2. + center.y - window_width/2.
+        h_p1 = self.room_height
+        x_p1 = center.x
+        y_p1 = -(self.room_depth/2. - w_p1)
+        z_p1 = self.room_height/2.
+        plate1 = Obstacle(obst_type=String(data="window plate"),
+                          shape=[h_p1, w_p1, thickness],
+                          pose=[x_p1, y_p1, z_p1])
+        # right
+        w_p2 = self.room_depth/2. - (center.y + window_width/2.)
+        h_p2 = self.room_height
+        x_p2 = center.x
+        y_p2 = (self.room_depth/2. - w_p2)
+        z_p2 = self.room_height/2.
+        plate2 = Obstacle(obst_type=String(data="window plate"),
+                          shape=[h_p2, w_p2, thickness],
+                          pose=[x_p2, y_p2, z_p2])
+        # up
+        w_p3 = self.room_depth
+        h_p3 = self.room_height - (center.z + window_height/2.)
+        x_p3 = center.x
+        y_p3 = center.y
+        z_p3 = self.room_height - h_p3/2.
+        plate3 = Obstacle(obst_type=String(data="window plate"),
+                          shape=[h_p3, w_p3, thickness],
+                          pose=[x_p3, y_p3, z_p3])
+        # down
+        w_p4 = self.room_depth
+        h_p4 = center.z - window_height/2.
+        x_p4 = center.x
+        y_p4 = center.y
+        z_p4 = h_p4/2.
+        plate4 = Obstacle(obst_type=String(data="window plate"),
+                          shape=[h_p4, w_p4, thickness],
+                          pose=[x_p4, y_p4, z_p4])
+
+        self.obstacles[-4] = plate1
+        self.obstacles[-3] = plate2
+        self.obstacles[-2] = plate3
+        self.obstacles[-1] = plate4
+        self.publish_obst_room(Empty)
+        print (' Obstacle added ')
+
 
 ####################
 # Helper functions #
@@ -669,7 +745,6 @@ class VelCommander(object):
             goal.position.x = self.ctrl_r_pos.position.x
             goal.position.y = self.ctrl_r_pos.position.y
             goal.position.z = self.ctrl_r_pos.position.z
-            print 'Goal\n', goal
             self.set_goal(goal)
 
         elif self.state == "draw path":
@@ -790,21 +865,7 @@ class VelCommander(object):
         self.current_ff_vel.lifetime = rospy.Duration(0)
 
         # Obstacle
-        self.rviz_obst = Marker()
-        self.rviz_obst.header.frame_id = 'world'
-        self.rviz_obst.ns = "obstacle"
-        self.rviz_obst.id = 3
-        self.rviz_obst.type = 3  # Cylinder
-        self.rviz_obst.action = 0
-        self.rviz_obst.scale.x = self.Sjaaakie[0] * 2  # x-diameter
-        self.rviz_obst.scale.y = self.Sjaaakie[0] * 2  # y-diameter
-        self.rviz_obst.scale.z = self.Sjaaakie[1]  # height
-        self.rviz_obst.pose.orientation.w = 1.0
-        self.rviz_obst.color.r = 1.0
-        self.rviz_obst.color.g = 1.0
-        self.rviz_obst.color.b = 1.0
-        self.rviz_obst.color.a = 0.5
-        self.rviz_obst.lifetime = rospy.Duration(0)
+        self.rviz_obst = MarkerArray()
 
         # Controller drawn path
         self.drawn_path = Marker()
@@ -887,13 +948,13 @@ class VelCommander(object):
     def publish_obst(self, empty):
         '''Publish static obstacles.
         '''
-        self.rviz_obst.header.stamp = rospy.get_rostime()
-
-        point = Point(
-                    x=self.Sjaaakie[2], y=self.Sjaaakie[3], z=self.Sjaaakie[4])
-        self.rviz_obst.pose.position = point
-
-        self.obst_pub.publish(self.rviz_obst)
+        # self.rviz_obst.header.stamp = rospy.get_rostime()
+        #
+        # point = Point(
+        #             x=self.Sjaaakie[2], y=self.Sjaaakie[3], z=self.Sjaaakie[4])
+        # self.rviz_obst.pose.position = point
+        #
+        # self.obst_pub.publish(self.rviz_obst)
 
     def draw_ctrl_path(self):
         '''Publish real x and y trajectory to topic for visualisation in
@@ -914,6 +975,212 @@ class VelCommander(object):
         self.drawn_pos_z += [point.z]
 
         self.trajectory_real.publish(self.drawn_path)
+
+    def publish_obst_room(self, empty):
+        '''Publish static obstacles as well as the boundary of the room.
+        '''
+        # Delete markers
+        marker = Marker()
+        marker.ns = "obstacles"
+        marker.action = 3  # 3 deletes markers
+        self.rviz_obst.markers = [marker]
+        self.obst_pub.publish(self.rviz_obst)
+
+        # self.rviz_obst = MarkerArray()
+        # self.obst_pub.publish(self.rviz_obst)
+        j = 0
+        window_plate = 0
+        for i, obstacle in enumerate(self.obstacles):
+            # Marker setup
+            if obstacle.obst_type.data == 'slalom plate':
+                j += 1
+                d = obstacle.direction
+                green_marker = Marker()
+                red_marker = Marker()
+                green_marker.header.frame_id = 'world'
+                red_marker.header.frame_id = 'world'
+                green_marker.ns = "obstacles"
+                red_marker.ns = "obstacles"
+                green_marker.id = i+j+7
+                red_marker.id = i+(j-1)+7
+                green_marker.type = 3  # Cylinder
+                red_marker.type = 3  # Cylinder
+                green_marker.action = 0
+                red_marker.action = 0
+                green_marker.scale.x = obstacle.shape[2]  # x-diameter
+                green_marker.scale.y = obstacle.shape[2]  # y-diameter
+                green_marker.scale.z = self.room_height  # height
+                red_marker.scale.x = obstacle.shape[2]  # x-diameter
+                red_marker.scale.y = obstacle.shape[2]  # y-diameter
+                red_marker.scale.z = self.room_height  # height
+
+                green_marker.color.r = 0.0
+                green_marker.color.g = 1.0
+                green_marker.color.b = 0.0
+                green_marker.color.a = 0.5
+                red_marker.color.r = 1.0
+                red_marker.color.g = 0.0
+                red_marker.color.b = 0.0
+                red_marker.color.a = 0.5
+                green_marker.lifetime = rospy.Duration(0)
+                red_marker.lifetime = rospy.Duration(0)
+
+                green_marker.pose.position = Point(
+                                  x=obstacle.edge[0],
+                                  y=obstacle.edge[1] + d*0.5*obstacle.shape[2],
+                                  z=obstacle.edge[2])
+                red_marker.pose.position = Point(
+                                  x=obstacle.edge[0],
+                                  y=obstacle.edge[1] + d*1.5*obstacle.shape[2],
+                                  z=obstacle.edge[2])
+                green_marker.header.stamp = rospy.get_rostime()
+                red_marker.header.stamp = rospy.get_rostime()
+
+                # Append marker to marker array:
+                self.rviz_obst.markers.append(green_marker)
+                self.rviz_obst.markers.append(red_marker)
+
+            elif obstacle.obst_type.data == 'window plate':
+                print 'in de elif marker stuff'
+                obstacle_marker = Marker()
+                obstacle_marker.header.frame_id = 'world'
+                obstacle_marker.ns = "obstacles"
+                obstacle_marker.id = i+j+7
+                obstacle_marker.action = 0
+                obstacle_marker.color.r = 0.0
+                obstacle_marker.color.g = 1.0
+                obstacle_marker.color.b = 0.0
+                obstacle_marker.color.a = 0.5
+                obstacle_marker.lifetime = rospy.Duration(0)
+
+                obstacle_marker.type = 1  # Cuboid
+                obstacle_marker.scale.x = obstacle.shape[2]  # thickness
+                # shape = [height, width, thickness]
+                # Window plates come by 4. You need the dimensions of two
+                # overlapping plates to know the edge of the window hole
+                # corresponding to the current plate.
+                window_plate = i % 4
+                if window_plate == 0:
+                    print 'plate 1'
+                    left = obstacle
+                    up = self.obstacles[i+2]
+                    down = self.obstacles[i+3]
+                    print left, up, down
+                    pose = [left.pose[0],
+                            -(self.room_depth/2. - left.shape[1]
+                              + left.shape[2]/2.),
+                            ((self.room_height - up.shape[0]) +
+                             down.shape[0])/2.]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+
+                    obstacle_marker.scale.y = left.shape[2]
+                    obstacle_marker.scale.z = (
+                        self.room_height - (up.shape[0] + down.shape[0]))
+                elif window_plate == 1:
+                    print 'plate 2'
+                    right = obstacle
+                    up = self.obstacles[i+1]
+                    down = self.obstacles[i+2]
+                    print right, up, down
+                    pose = [right.pose[0],
+                            (self.room_depth/2. - right.shape[1]
+                             + right.shape[2]/2.),
+                            ((self.room_height - up.shape[0]) +
+                             down.shape[0])/2.]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+                    obstacle_marker.scale.y = right.shape[2]
+                    obstacle_marker.scale.z = (
+                        self.room_height - (up.shape[0] + down.shape[0]))
+                elif window_plate == 2:
+                    print 'plate 3'
+                    left = self.obstacles[i-2]
+                    right = self.obstacles[i-1]
+                    up = obstacle
+                    print left, right, up
+                    pose = [up.pose[0],
+                            (left.shape[1] - right.shape[1])/2.,
+                            (self.room_height - up.shape[0] + up.shape[2]/2.)]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+                    obstacle_marker.scale.y = (
+                        self.room_depth - (left.shape[1] + right.shape[1])
+                        + 2*up.shape[2])
+                    obstacle_marker.scale.z = up.shape[2]
+                elif window_plate == 3:
+                    print 'plate 4'
+                    left = self.obstacles[i-3]
+                    right = self.obstacles[i-2]
+                    down = obstacle
+                    print left, right, down
+                    pose = [down.pose[0],
+                            (left.shape[1] - right.shape[1])/2.,
+                            down.shape[0] - down.shape[2]/2.]
+                    obstacle_marker.pose.position = Point(x=pose[0],
+                                                          y=pose[1],
+                                                          z=pose[2])
+                    obstacle_marker.scale.y = (
+                        self.room_depth - (left.shape[1] + right.shape[1])
+                        + 2*down.shape[2])
+                    obstacle_marker.scale.z = down.shape[2]
+
+                obstacle_marker.header.stamp = rospy.get_rostime()
+                # Append marker to marker array:
+                print 'append de marker'
+                self.rviz_obst.markers.append(obstacle_marker)
+
+            else:
+                obstacle_marker = Marker()
+                obstacle_marker.header.frame_id = 'world'
+                obstacle_marker.ns = "obstacles"
+                obstacle_marker.id = i+j+7
+                obstacle_marker.action = 0
+                obstacle_marker.color.r = 1.0
+                obstacle_marker.color.g = 1.0
+                obstacle_marker.color.b = 1.0
+                obstacle_marker.color.a = 0.5
+                obstacle_marker.lifetime = rospy.Duration(0)
+
+                if obstacle.obst_type.data == 'inf_cylinder':
+                    obstacle_marker.type = 3  # Cylinder
+                    obstacle.shape = [obstacle.shape[0], self.room_height]
+                    obstacle.pose = [obstacle.pose[0],
+                                     obstacle.pose[1],
+                                     self.room_height/2]
+                    obstacle_marker.scale.x = obstacle.shape[0] * 2  # x-diam
+                    obstacle_marker.scale.y = obstacle.shape[0] * 2  # y-diam
+                    obstacle_marker.scale.z = obstacle.shape[1]  # height
+                elif obstacle.obst_type.data == 'hexagon':
+                    obstacle_marker.type = 3  # Cylinder
+                    obstacle_marker.scale.x = obstacle.shape[0] * 2  # x-diam
+                    obstacle_marker.scale.y = obstacle.shape[0] * 2  # y-diam
+                    obstacle_marker.scale.z = obstacle.shape[1]  # height
+                elif obstacle.obst_type.data == 'plate':
+                    obstacle_marker.type = 1  # Cuboid
+                    obstacle_marker.scale.x = obstacle.shape[2]  # thickness
+                    obstacle_marker.scale.y = obstacle.shape[1]  # width
+                    obstacle_marker.scale.z = obstacle.shape[0]  # height
+                    quaternion = tf.transformations.quaternion_from_euler(
+                                                    0., 0., obstacle.direction)
+                    obstacle_marker.pose.orientation.x = quaternion[0]
+                    obstacle_marker.pose.orientation.y = quaternion[1]
+                    obstacle_marker.pose.orientation.z = quaternion[2]
+                    obstacle_marker.pose.orientation.w = quaternion[3]
+
+                obstacle_marker.pose.position = Point(x=obstacle.pose[0],
+                                                      y=obstacle.pose[1],
+                                                      z=obstacle.pose[2])
+                obstacle_marker.header.stamp = rospy.get_rostime()
+
+                # Append marker to marker array:
+                self.rviz_obst.markers.append(obstacle_marker)
+
+        print 'publish de marker'
+        self.obst_pub.publish(self.rviz_obst)
 
 
 if __name__ == '__main__':
