@@ -145,6 +145,8 @@ Place obstacles to slalom between using the left Vive Controller. Drag to define
 Place plates that are evaded in the 'point to point' task using the left Vive Controller.
 * *'place hex obstacles'*  
 Place hexagonal obstacles (variable height) that are evaded in the 'point to point' task using the left Vive Controller.
+* *'place window obstacles'*  
+Place window obstacles (variable height and width) through which the drone flies in the 'point to point' task using the left Vive Controller.
 
 ### Common Errors
 * *No response from gamepad actions*.  
@@ -153,7 +155,7 @@ In the file `bebop_ws/src/bebop_autonomy/bebop_tools/launch/joy_teleop.launch` c
 Restart SteamVR, or Steam itself.  
 Check your Steam 'default.vrsettings' files as discussed above in the Section 'Steam Setup'
 * *Bebop drone takes off and immediately flies away into the surroundings*.  
-Check the 'flat trim' of your drone. The config files from bebop_tools contain the button combination to set the flat trim (define level for your drone). This can alternatively be set via the 'Parrot FreeFlight Pro' application on a smartphone.
+Check the 'flat trim' of your drone. The config files from bebop_tools contain the button combination to set the flat trim (define level for your drone). This can alternatively be set via the [Parrot FreeFlight Pro](https://www.parrot.com/global/freeflight-pro#freeflight-pro-the-indispensable-application-to-pilot-your-drone) application on a smartphone.
 * *Behavior that can not be explained by what is in the code*.  
 Consider recompiling the code, using the commands mentioned under the Section 'Demo Setup' above. This is especially important when switching git branches.
 
