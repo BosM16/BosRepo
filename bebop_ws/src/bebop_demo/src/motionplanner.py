@@ -22,15 +22,21 @@ class MotionPlanner(object):
         controller. Sets self as publisher of topics to which controller
         subscribes.
         """
-        self._sample_time = rospy.get_param('controller/sample_time', 0.01)
-        self._update_time = rospy.get_param('controller/update_time', 0.5)
-        self.knots = rospy.get_param('motionplanner/knot_intervals', 10)
-        self.horizon_time = rospy.get_param('motionplanner/horizon_time', 10.)
-        self.vmax = rospy.get_param('motionplanner/vmax', 0.2)
-        self.amax = rospy.get_param('motionplanner/amax', 0.3)
-        self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
+        self._sample_time = rospy.get_param(
+            'controller/sample_time', 0.01)
+
+        self.knots = rospy.get_param(
+            'motionplanner/knot_intervals', 10)
+        self.horizon_time = rospy.get_param(
+            'motionplanner/horizon_time', 10.)
+        self.vmax = rospy.get_param(
+            'motionplanner/vmax', 0.2)
+        self.amax = rospy.get_param(
+            'motionplanner/amax', 0.3)
+        self.drone_radius = rospy.get_param(
+            'motionplanner/drone_radius', 0.20)
         self.safety_margin = rospy.get_param(
-                    'motionplanner/safety_margin', 0.2)
+            'motionplanner/safety_margin', 0.2)
 
         self._result = Trajectories()
         self._obstacles = []
@@ -45,14 +51,23 @@ class MotionPlanner(object):
             "motionplanner/config_motionplanner", ConfigMotionplanner,
             self.configure)
 
-    def configure(self, obstacles):
+    def configure(self, data):
         """Configures the motionplanner. Creates omgtools Point2point problem
         with room, static and dynamic obstacles.
 
         Args:
-            obstacles : contains the obstacles sent over the configure service.
+            data :
+                obst_list
+                low_update_rate
         """
         mp_configured = False
+
+        if data.low_update_rate:
+            self.omg_update_time = rospy.get_param(
+                'controller/omg_update_time_slow', 0.5)
+        else:
+            self.omg_update_time = rospy.get_param(
+                'controller/omg_update_time', 0.5)
 
         self._vehicle = omg.Holonomic3D(
             shapes=omg.Sphere(self.drone_radius),
@@ -75,7 +90,7 @@ class MotionPlanner(object):
         room = {'shape': omg.Cuboid(room_width, room_depth, room_height),
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
-        for k, obst in enumerate(obstacles.obst_list):
+        for k, obst in enumerate(data.obst_list):
             if obst.obst_type.data == "inf_cylinder":
                 shape = omg.Circle(obst.shape[0])
                 position = [obst.pose[0], obst.pose[1]]
@@ -129,7 +144,7 @@ class MotionPlanner(object):
         # problem.fullstop = True
 
         self._deployer = omg.Deployer(
-            problem, self._sample_time, self._update_time)
+            problem, self._sample_time, self.omg_update_time)
         self._deployer.reset()
 
         mp_configured = True

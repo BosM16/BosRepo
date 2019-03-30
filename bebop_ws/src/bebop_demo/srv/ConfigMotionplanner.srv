@@ -1,3 +1,4 @@
 bebop_demo/Obstacle[] obst_list
+bool low_update_rate
 ---
 bool config_success

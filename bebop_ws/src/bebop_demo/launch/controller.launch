@@ -3,7 +3,8 @@
   <node name="controller" pkg="bebop_demo" type="controller.py" output="screen"/>
   <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
 
-  <param name="controller/update_time" value="0.25" />
+  <param name="controller/omg_update_time" value="0.25" />
+  <param name="controller/omg_update_time_slow" value="1." />
   <param name="controller/sample_time" value="0.01" />
   <param name="controller/LPF_cutoff" value="0.5" />
   <param name="controller/LPF_order" value="4" />
@@ -12,7 +13,7 @@
   <param name='controller/standard_height' value="1.7" />
 
   <!-- PID: -->
-  <!-- hovering -->
+  <!-- hovering (aggressive) -->
   <param name='controller/Kp_x' value="3.48" />
   <param name='controller/Ki_x' value="1.3391" />
   <param name='controller/Kd_x' value="1.7900" />
@@ -23,14 +24,6 @@
   <param name='controller/Ki_z' value="4.0299" />
 
   <!-- ff flying omg-tools-->
-  <!-- <param name='controller/Kp_omg_x' value="0.03236" />
-  <param name='controller/Ki_omg_x' value="0.0428" />
-  <param name='controller/Kd_omg_x' value="0.4841" />
-  <param name='controller/Kp_omg_y' value="0.3578" />
-  <param name='controller/Ki_omg_y' value="0.0500" />
-  <param name='controller/Kd_omg_y' value="0.5067" />
-  <param name='controller/Kp_omg_z' value="1.7674" />
-  <param name='controller/Ki_omg_z' value="0.4941" /> -->
   <param name='controller/Kp_omg_x' value="1.0995" />
   <param name='controller/Ki_omg_x' value="0.2578" />
   <param name='controller/Kd_omg_x' value="0.9279" />
@@ -39,6 +32,15 @@
   <param name='controller/Kd_omg_y' value="0.8560" />
   <param name='controller/Kp_omg_z' value="4.1593" />
   <param name='controller/Ki_omg_z' value="4.0299" />
+
+  <param name='controller/Kp_omg_low_x' value="0.03236" />
+  <param name='controller/Ki_omg_low_x' value="0.0428" />
+  <param name='controller/Kd_omg_low_x' value="0.4841" />
+  <param name='controller/Kp_omg_low_y' value="0.3578" />
+  <param name='controller/Ki_omg_low_y' value="0.0500" />
+  <param name='controller/Kd_omg_low_y' value="0.5067" />
+  <param name='controller/Kp_omg_low_z' value="1.7674" />
+  <param name='controller/Ki_omg_low_z' value="0.4941" />
 
   <!-- ff flying draw traj flying-->
   <param name='controller/Kp_dt_x' value="1.0995" />

@@ -176,9 +176,8 @@ class Controller(object):
         #                            'controller/goal_reached_angle_tol', 0.05)
 
         self._sample_time = rospy.get_param('controller/sample_time', 0.01)
-        self._update_time = rospy.get_param('controller/update_time', 0.5)
+        self.omg_update_time = rospy.get_param('controller/omg_update_time', 0.5)
         self.rate = rospy.Rate(1./self._sample_time)
-        self.omg_index = 1
 
         # Setup low pass filter for trajectory drawing task.
         cutoff_freq_LPF = rospy.get_param('controller/LPF_cutoff', 0.5)
@@ -216,6 +215,8 @@ class Controller(object):
         self.vel_error_prev = PointStamped()
         self.measurement_valid = False
         self.obstacles = []
+        self.omg_index = 1
+        self.low_update_rate = False
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
@@ -272,12 +273,17 @@ class Controller(object):
         by loading in the room and static obstacles. Waits for Motionplanner to
         set mp_status to configured.
         '''
+        self.low_update_rate = (
+            self.obstacles and
+            self.obstacles[0].obst_type.data == "window plate")
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
             config_mp_resp = rospy.ServiceProxy(
                 "/motionplanner/config_motionplanner", ConfigMotionplanner)
-            config_success = config_mp_resp(self.obstacles)
+            config_success = config_mp_resp(
+                                          obst_list=self.obstacles,
+                                          low_update_rate=self.low_update_rate)
         except rospy.ServiceException, e:
             print highlight_red('Service call failed: %s') % e
             config_success = False
@@ -381,10 +387,10 @@ class Controller(object):
             if not self._new_trajectories:
                 self.hover()
                 return
-            self.omg_index = int(self._update_time/self._sample_time)
+            self.omg_index = int(self.omg_update_time/self._sample_time)
             self._init = False
 
-        if ((self.omg_index >= int(self._update_time/self._sample_time))
+        if ((self.omg_index >= int(self.omg_update_time/self._sample_time))
                 or (self.omg_index >= len(self._traj['u'])-2)):
             if self._new_trajectories:
                 # Load fresh trajectories.
@@ -788,6 +794,7 @@ class Controller(object):
         '''Fly from start to end point using omg-tools as a motionplanner.
         '''
         self.omg_index = 1
+        self.set_omg_update_time()
         self.set_ff_pid_gains()
 
         while not (self.target_reached or (
@@ -982,11 +989,32 @@ class Controller(object):
             self.hover()
             self.rate.sleep()
 
+    def set_omg_update_time(self):
+        '''Adapts the MPC update rate to the difficulty of the obstacles and
+        corresponding computation time.
+        '''
+        if self.low_update_rate:
+            self.omg_update_time = rospy.get_param(
+                                        'controller/omg_update_time_slow', 0.5)
+        else:
+            self.omg_update_time = rospy.get_param(
+                                             'controller/omg_update_time', 0.5)
+
     def set_ff_pid_gains(self):
         '''Sets pid gains to a lower setting for combination with feedforward
         flight to keep the controller stable.
         '''
-        if self.state in {"omg fly", "fly to start"}:
+        if self.state in {"omg fly", "fly to start"} and self.low_update_rate:
+            self.Kp_x = rospy.get_param('controller/Kp_omg_low_x', 0.6864)
+            self.Ki_x = rospy.get_param('controller/Ki_omg_low_x', 0.6864)
+            self.Kd_x = rospy.get_param('controller/Kd_omg_low_x', 0.6864)
+            self.Kp_y = rospy.get_param('controller/Kp_omg_low_y', 0.6864)
+            self.Ki_y = rospy.get_param('controller/Ki_omg_low_y', 0.6864)
+            self.Kd_y = rospy.get_param('controller/Kd_omg_low_y', 0.6864)
+            self.Kp_z = rospy.get_param('controller/Kp_omg_low_z', 0.5)
+            self.Ki_z = rospy.get_param('controller/Ki_omg_low_z', 1.5792)
+
+        elif self.state in {"omg fly", "fly to start"}:
             self.Kp_x = rospy.get_param('controller/Kp_omg_x', 0.6864)
             self.Ki_x = rospy.get_param('controller/Ki_omg_x', 0.6864)
             self.Kd_x = rospy.get_param('controller/Kd_omg_x', 0.6864)
@@ -1867,7 +1895,6 @@ class Controller(object):
                 self.rviz_obst.markers.append(obstacle_marker)
 
         self.reset_markers()
-        print 'publish de marker'
         self.obst_pub.publish(self.rviz_obst)
         self.draw_room_contours()
 
