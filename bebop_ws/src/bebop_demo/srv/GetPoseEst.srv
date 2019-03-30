@@ -1,4 +1,4 @@
-geometry_msgs/TwistStamped vel_cmd
+geometry_msgs/TwistStamped input_cmd
 ---
 geometry_msgs/PointStamped pose_est
 geometry_msgs/PointStamped vel_est

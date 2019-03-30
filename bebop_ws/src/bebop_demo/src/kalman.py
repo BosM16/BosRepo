@@ -31,7 +31,7 @@ class Kalman(object):
 
         self.X_r = np.zeros(shape=(8, 1))
         self.X_r_t0 = np.zeros(shape=(8, 1))
-        self.vel_cmd_Ts = rospy.get_param('vel_cmd/sample_time', 0.01)  # s
+        self.input_cmd_Ts = rospy.get_param('vel_cmd/sample_time', 0.01)  # s
 
         self.Phat_t0 = np.zeros(8)
         self.Phat = np.zeros(8)
@@ -44,16 +44,16 @@ class Kalman(object):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-    def kalman_pos_predict(self, vel_cmd, yhat_r):
+    def kalman_pos_predict(self, input_cmd, yhat_r):
         '''
         Based on the velocity commands send out by the velocity controller,
         calculate a prediction of the position in the future.
         Arguments:
-            vel_cmd: TwistStamped
+            input_cmd: TwistStamped
         '''
         # print '---------------self.X_r before', self.X_r
         (self.X_r, yhat_r, vhat_r, self.Phat) = self.predict_step_calc(
-            vel_cmd, self.vel_cmd_Ts, self.X_r, self.Phat)
+            input_cmd, self.input_cmd_Ts, self.X_r, self.Phat)
         # print '---------------self.X_r after', self.X_r
         return yhat_r, vhat_r
 
@@ -76,8 +76,8 @@ class Kalman(object):
             measurement_world: PoseStamped expressed in "world" frame.
         '''
 
-        self.vel_list_corr = self.vel_list_corr + self.vel_cmd_list
-        self.vel_cmd_list = []
+        self.vel_list_corr = self.vel_list_corr + self.input_cmd_list
+        self.input_cmd_list = []
 
         if (len(self.vel_list_corr) > 1) and self.get_time_diff(
                 yhat_r_t0, self.vel_list_corr[1]) > 0:
@@ -120,7 +120,7 @@ class Kalman(object):
 
         B = self.get_time_diff(measurement,
                                self.vel_list_corr[-1])
-        if (B > self.vel_cmd_Ts):
+        if (B > self.input_cmd_Ts):
             self.case5 = True
 
         # Now make prediction up to new t0 if not case 3.
@@ -130,7 +130,7 @@ class Kalman(object):
                 self.vel_list_corr[-1], B, X, Phat)
         else:
             self.case5 = False
-            B = B % self.vel_cmd_Ts
+            B = B % self.input_cmd_Ts
 
         # ---- CORRECTION ----
         # Correct the estimate at new t0 with the measurement.
@@ -142,10 +142,10 @@ class Kalman(object):
 
         # Now predict until next point t that coincides with next timepoint
         # for the controller.
-        # print '\n kalman fourth predict step Ts and yhat_r \n', (1 + self.case5)*self.vel_cmd_Ts - B, yhat_r_t0.point
+        # print '\n kalman fourth predict step Ts and yhat_r \n', (1 + self.case5)*self.input_cmd_Ts - B, yhat_r_t0.point
         (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
                                 self.vel_list_corr[-1],
-                                (1 + self.case5)*self.vel_cmd_Ts - B,
+                                (1 + self.case5)*self.input_cmd_Ts - B,
                                 X, Phat)
 
         # Save variable globally
@@ -157,19 +157,19 @@ class Kalman(object):
 
         return yhat_r, yhat_r_t0
 
-    def predict_step_calc(self, vel_cmd_stamped, Ts, X, Phat):
+    def predict_step_calc(self, input_cmd_stamped, Ts, X, Phat):
         """
         Prediction step of the kalman filter. Update the position of the drone
         using the reference velocity commands.
         Arguments:
-            - vel_cmd_stamped = TwistStamped
+            - input_cmd_stamped = TwistStamped
             - Ts = varying step size over which to integrate.
         """
-        vel_cmd = vel_cmd_stamped.twist
+        input_cmd = input_cmd_stamped.twist
 
-        u = np.array([[vel_cmd.linear.x],
-                      [vel_cmd.linear.y],
-                      [vel_cmd.linear.z]])
+        u = np.array([[input_cmd.linear.x],
+                      [input_cmd.linear.y],
+                      [input_cmd.linear.z]])
         X = (np.matmul(Ts*self.A + np.identity(8), X)
              + np.matmul(Ts*self.B, u))
 

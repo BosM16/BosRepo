@@ -180,15 +180,15 @@ class Demo(object):
         # measurement is invalid.
         if (not self.measurement_valid) and (
              not self.state_sequence == ["emergency"]):
-            req_vel.vel_cmd.twist = Twist()
+            req_vel.input_cmd.twist = Twist()
             inv_meas_task = String(data="invalid measurement")
             self.switch_task(inv_meas_task)
 
-        self.kalman.vel_cmd_list.append(req_vel.vel_cmd)
-        self.kalman.latest_vel_cmd = req_vel.vel_cmd
+        self.kalman.input_cmd_list.append(req_vel.input_cmd)
+        self.kalman.latest_input_cmd = req_vel.input_cmd
 
         self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                self.kalman.latest_vel_cmd, self.wm.yhat_r)
+                                self.kalman.latest_input_cmd, self.wm.yhat_r)
 
         # Transform the rotated yhat and vhat to world frame.
         self.wm.yhat = self.transform_point(
@@ -218,9 +218,9 @@ class Demo(object):
         if self.measurement_valid:
             if self.kalman.init:
                 self.wm.yhat_r_t0.header = measurement.header
-                zero_vel_cmd = TwistStamped()
-                zero_vel_cmd.header = measurement.header
-                self.kalman.vel_cmd_list = [zero_vel_cmd]
+                zero_input_cmd = TwistStamped()
+                zero_input_cmd.header = measurement.header
+                self.kalman.input_cmd_list = [zero_input_cmd]
                 self.kalman.init = False
 
             # Apply correction step.
