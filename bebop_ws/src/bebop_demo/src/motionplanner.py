@@ -92,34 +92,39 @@ class MotionPlanner(object):
 
         for k, obst in enumerate(data.obst_list):
             if obst.obst_type.data == "inf_cylinder":
+                # 2D shape is extended infinitely along z.
                 shape = omg.Circle(obst.shape[0])
+                position = [obst.pose[0], obst.pose[1]]
+
+            elif obst.obst_type.data == "slalom plate":
+                shape = omg.Beam(obst.shape[1]-0.1, 0.1, np.pi/2)
+                position = [obst.pose[0], obst.pose[1]]
+
             elif obst.obst_type.data == "hexagon":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
-            elif obst.obst_type.data in {"slalom plate",
-                                         "plate",
-                                         "window plate"}:
-                if obst.obst_type.data != "plate":
-                    obst.direction = 0.
+                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
+            elif obst.obst_type.data == "window plate":
                 if (k % 4) <= 1:  # Side plates 1 and 2.
-                    shape = omg.Beam(obst.shape[1], 0.1, np.pi/2)
+                    shape = omg.Beam(obst.shape[1]-0.1, 0.1, np.pi/2)
+                    position = [obst.pose[0], obst.pose[1]]
                 else:  # Upper and lower plates 3 and 4.
                     shape = omg.Plate(shape2d=omg.Rectangle(
-                                                    obst.shape[0], obst.shape[1]),
+                                                obst.shape[0], obst.shape[1]),
                                       height=obst.shape[2],
-                                      orientation=[0., np.pi/2, obst.direction])
-            elif obst.obst_type.data == "cuboid":
-                shape = omg.Cuboid(
-                    width=obst.shape[0],
-                    depth=obst.shape[1],
-                    height=obst.shape[2])
+                                      orientation=[0., np.pi/2, 0.])
+                    position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
+            elif obst.obst_type.data == "plate":
+                shape = omg.Plate(shape2d=omg.Rectangle(
+                                            obst.shape[0], obst.shape[1]),
+                                  height=obst.shape[2],
+                                  orientation=[0., np.pi/2,
+                                               obst.direction])
+                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
             else:
                 print highlight_yellow(' Warning: invalid obstacle type ')
-
-            if obst.obst_type.data == "inf_cylinder" or (
-                    obst.obst_type.data == "window plate" and (k % 4) <= 1):
-                position = [obst.pose[0], obst.pose[1]]
-            else:
-                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
 
             self._obstacles.append(omg.Obstacle(
                                         {'position': position}, shape=shape))
