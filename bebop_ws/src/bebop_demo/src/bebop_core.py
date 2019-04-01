@@ -48,7 +48,7 @@ class Demo(object):
             "invalid measurement": ["emergency"],
             "take-off": ["take-off"],
             "land": ["land"],
-            "point to point": ["set params", "omg standby", "omg fly"],
+            "point to point": ["omg standby", "omg fly"],
             "place cyl obstacles": ["land",
                                     "place cyl obstacles",
                                     "configure motionplanner",

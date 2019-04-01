@@ -211,7 +211,7 @@ class Controller(object):
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.desired_yaw = np.pi/2.
+        self.desired_yaw = np.pi
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.feedback_cmd_prev = Twist()
@@ -281,9 +281,12 @@ class Controller(object):
         by loading in the room and static obstacles. Waits for Motionplanner to
         set mp_status to configured.
         '''
-        self.low_update_rate = (
-            self.obstacles and
-            self.obstacles[0].obst_type.data == "window plate")
+        if (self.obstacles and
+                self.obstacles[0].obst_type.data == "window plate"):
+            self.low_update_rate = True
+        else:
+            self.low_update_rate = False
+
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
         try:
@@ -361,7 +364,8 @@ class Controller(object):
         z_traj = data.z_traj
         self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
         self.receive_time = rospy.get_rostime()
-        self.calc_time['time'].append(self.receive_time - self.fire_time)
+        self.calc_time['time'].append(
+                                (self.receive_time - self.fire_time).to_sec())
 
     def omg_update(self):
         '''
@@ -394,8 +398,11 @@ class Controller(object):
         # Trigger Motionplanner or raise 'overtime'
         if self._init:
             if not self._new_trajectories:
+                print 'in init and still not received new traj'
                 self.hover()
                 return
+            # Trick to make sure that new trajectories are loaded in next
+            # lines of code.
             self.omg_index = int(self.omg_update_time/self._sample_time)
             self._init = False
 
@@ -410,14 +417,13 @@ class Controller(object):
                 self.omg_index = 1
 
                 if not self.calc_succeeded:
+                    self._init = True
                     self.overtime_counter += 1
-                self.calc_succeeded = True
 
                 # Trigger motion planner.
                 self.fire_motionplanner()
 
             else:
-                self.calc_succeeded = False
                 if self.overtime_counter > 3:
                     self.safety_brake()
                     print highlight_yellow('---- WARNING - OVERTIME  ----')
@@ -449,7 +455,7 @@ class Controller(object):
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
-
+        print 'omg index', self.omg_index
         self.omg_index += 1
 
     def draw_update(self, index):
@@ -556,6 +562,7 @@ class Controller(object):
         control inputs are sent out.
         '''
         self.cmd_vel.publish(Twist())
+        self.cmd_twist_convert.twist = Twist()
 
         if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
@@ -781,7 +788,7 @@ class Controller(object):
                     self.obstacles[-2] = plate3
                     self.obstacles[-1] = plate4
                     self.publish_obst_room(Empty)
-                    self.rate.sleep()
+                    rospy.sleep(0.05)
                 print highlight_blue(' Obstacle added ')
             self.rate.sleep()
 
@@ -799,8 +806,8 @@ class Controller(object):
                 self.omg_update()
                 # Determine whether goal has been reached.
                 self.check_goal_reached()
-            self.hover_setpoint = self.drone_pose_est
             self.rate.sleep()
+        self.hover_setpoint = self.drone_pose_est
         self.reset_pid_gains()
         self.startup = False
 
@@ -991,9 +998,13 @@ class Controller(object):
         if self.low_update_rate:
             self.omg_update_time = rospy.get_param(
                                         'controller/omg_update_time_slow', 0.5)
+            self.pos_nrm_tol = rospy.get_param(
+                                   'controller/goal_reached_pos_tol_slow', 0.2)
         else:
             self.omg_update_time = rospy.get_param(
                                              'controller/omg_update_time', 0.5)
+            self.pos_nrm_tol = rospy.get_param(
+                                       'controller/goal_reached_pos_tol', 0.05)
 
     def set_ff_pid_gains(self):
         '''Sets pid gains to a lower setting for combination with feedforward
@@ -1096,8 +1107,10 @@ class Controller(object):
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
             # self.interrupt_mp.publish(Empty())
-            io.savemat('../mpc_calc_time.mat', self.calc_time)
+            # io.savemat('../mpc_calc_time.mat', self.calc_time)
+            print yellow('=========================')
             print yellow('==== Target Reached! ====')
+            print yellow('=========================')
 
     def rotate_vel_cmd(self, vel):
         '''Transforms the velocity commands from the global world frame to the
@@ -1142,6 +1155,8 @@ class Controller(object):
         self.cmd_twist_convert.twist.angular.z = max(min((
                     self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
                     self.max_input), - self.max_input)
+
+        print "whaaaaaaaaaa input to droneeeeeeeee\n", self.cmd_twist_convert.twist.linear
 
     def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
@@ -1293,7 +1308,7 @@ class Controller(object):
         self._traj['z'] = self._traj_strg['z'][:]
 
     def store_trajectories(self, u_traj, v_traj, w_traj,
-                           x_traj, y_traj, z_traj):
+                           x_traj, y_traj, z_traj, success):
         '''Stores the trajectories and indicate that new trajectories have
         been calculated.
 
@@ -1309,6 +1324,7 @@ class Controller(object):
         self._traj_strg = {'u': u_traj, 'v': v_traj, 'w': w_traj,
                            'x': x_traj, 'y': y_traj, 'z': z_traj}
         self._new_trajectories = True
+        self.calc_succeeded = success
 
         x_traj = self._traj_strg['x'][:]
         y_traj = self._traj_strg['y'][:]
@@ -1371,7 +1387,7 @@ class Controller(object):
                                  "place cyl obstacles",
                                  "place slalom obstacles",
                                  "place plate obstacles",
-                                 "place window obstacles"
+                                 "place window obstacles",
                                  "gamepad flying"}):
                 self.state_changed = True
             self.trackpad_held = True
@@ -1766,15 +1782,14 @@ class Controller(object):
                 self.rviz_obst.markers.append(red_marker)
 
             elif obstacle.obst_type.data == 'window plate':
-                print 'in de elif marker stuff'
                 obstacle_marker = Marker()
                 obstacle_marker.header.frame_id = 'world'
                 obstacle_marker.ns = "obstacles"
                 obstacle_marker.id = i+j+7
                 obstacle_marker.action = 0
-                obstacle_marker.color.r = 0.0
-                obstacle_marker.color.g = 1.0
-                obstacle_marker.color.b = 0.0
+                obstacle_marker.color.r = 0.188
+                obstacle_marker.color.g = 0.525
+                obstacle_marker.color.b = 0.82
                 obstacle_marker.color.a = 0.5
                 obstacle_marker.lifetime = rospy.Duration(0)
 
@@ -1786,11 +1801,9 @@ class Controller(object):
                 # corresponding to the current plate.
                 window_plate = i % 4
                 if window_plate == 0:
-                    print 'plate 1'
                     left = obstacle
                     up = self.obstacles[i+2]
                     down = self.obstacles[i+3]
-                    print left, up, down
                     pose = [left.pose[0],
                             -(self.room_depth/2. - left.shape[1]
                               + left.shape[2]/2.),
@@ -1804,11 +1817,9 @@ class Controller(object):
                     obstacle_marker.scale.z = (
                         self.room_height - (up.shape[0] + down.shape[0]))
                 elif window_plate == 1:
-                    print 'plate 2'
                     right = obstacle
                     up = self.obstacles[i+1]
                     down = self.obstacles[i+2]
-                    print right, up, down
                     pose = [right.pose[0],
                             (self.room_depth/2. - right.shape[1]
                              + right.shape[2]/2.),
@@ -1821,11 +1832,9 @@ class Controller(object):
                     obstacle_marker.scale.z = (
                         self.room_height - (up.shape[0] + down.shape[0]))
                 elif window_plate == 2:
-                    print 'plate 3'
                     left = self.obstacles[i-2]
                     right = self.obstacles[i-1]
                     up = obstacle
-                    print left, right, up
                     pose = [up.pose[0],
                             (left.shape[1] - right.shape[1])/2.,
                             (self.room_height - up.shape[0] + up.shape[2]/2.)]
@@ -1837,11 +1846,9 @@ class Controller(object):
                         + 2*up.shape[2])
                     obstacle_marker.scale.z = up.shape[2]
                 elif window_plate == 3:
-                    print 'plate 4'
                     left = self.obstacles[i-3]
                     right = self.obstacles[i-2]
                     down = obstacle
-                    print left, right, down
                     pose = [down.pose[0],
                             (left.shape[1] - right.shape[1])/2.,
                             down.shape[0] - down.shape[2]/2.]
@@ -1855,7 +1862,6 @@ class Controller(object):
 
                 obstacle_marker.header.stamp = rospy.get_rostime()
                 # Append marker to marker array:
-                print 'append de marker'
                 self.rviz_obst.markers.append(obstacle_marker)
 
             else:

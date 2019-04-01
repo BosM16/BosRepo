@@ -105,7 +105,6 @@ class MotionPlanner(object):
                                                 obst.shape[0], obst.shape[1]),
                                   height=obst.shape[2],
                                   orientation=[0., np.pi/2, obst.direction])
-                print 'obst\n', obst
             elif obst.obst_type.data == "cuboid":
                 shape = omg.Cuboid(
                     width=obst.shape[0],
@@ -192,27 +191,22 @@ class MotionPlanner(object):
                   cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
 
-        trajectories = self._deployer.update(cmd.current_time, state0, input0)
+        trajectories = self._deployer.update(cmd.current_time, state0)  # input0)
 
+        calc_succeeded = True
         return_status = self._deployer.problem.problem.stats()['return_status']
         if (return_status != 'Solve_Succeeded'):
             print highlight_red(return_status, ' -- brake! ')
-            self._result = Trajectories(
-                u_traj=100*[0],
-                v_traj=100*[0],
-                w_traj=100*[0],
-                x_traj=[cmd.pos_state.position.x for i in range(0, 100)],
-                y_traj=[cmd.pos_state.position.y for i in range(0, 100)],
-                z_traj=[cmd.pos_state.position.z for i in range(0, 100)])
+            calc_succeeded = False
 
-        else:
-            self._result = Trajectories(
-                u_traj=trajectories['input'][0, :],
-                v_traj=trajectories['input'][1, :],
-                w_traj=trajectories['input'][2, :],
-                x_traj=trajectories['state'][0, :],
-                y_traj=trajectories['state'][1, :],
-                z_traj=trajectories['state'][2, :])
+        self._result = Trajectories(
+            u_traj=trajectories['input'][0, :],
+            v_traj=trajectories['input'][1, :],
+            w_traj=trajectories['input'][2, :],
+            x_traj=trajectories['state'][0, :],
+            y_traj=trajectories['state'][1, :],
+            z_traj=trajectories['state'][2, :],
+            succes=calc_succeeded)
 
         self._mp_result_topic.publish(self._result)
 
