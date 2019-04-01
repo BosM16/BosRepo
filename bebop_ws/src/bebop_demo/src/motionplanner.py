@@ -93,7 +93,6 @@ class MotionPlanner(object):
         for k, obst in enumerate(data.obst_list):
             if obst.obst_type.data == "inf_cylinder":
                 shape = omg.Circle(obst.shape[0])
-                position = [obst.pose[0], obst.pose[1]]
             elif obst.obst_type.data == "hexagon":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
             elif obst.obst_type.data in {"slalom plate",
@@ -101,10 +100,13 @@ class MotionPlanner(object):
                                          "window plate"}:
                 if obst.obst_type.data != "plate":
                     obst.direction = 0.
-                shape = omg.Plate(shape2d=omg.Rectangle(
-                                                obst.shape[0], obst.shape[1]),
-                                  height=obst.shape[2],
-                                  orientation=[0., np.pi/2, obst.direction])
+                if (k % 4) <= 1:  # Side plates 1 and 2.
+                    shape = omg.Beam(obst.shape[1], 0.1, np.pi/2)
+                else:  # Upper and lower plates 3 and 4.
+                    shape = omg.Plate(shape2d=omg.Rectangle(
+                                                    obst.shape[0], obst.shape[1]),
+                                      height=obst.shape[2],
+                                      orientation=[0., np.pi/2, obst.direction])
             elif obst.obst_type.data == "cuboid":
                 shape = omg.Cuboid(
                     width=obst.shape[0],
@@ -113,7 +115,10 @@ class MotionPlanner(object):
             else:
                 print highlight_yellow(' Warning: invalid obstacle type ')
 
-            if not obst.obst_type.data == "inf_cylinder":
+            if obst.obst_type.data == "inf_cylinder" or (
+                    obst.obst_type.data == "window plate" and (k % 4) <= 1):
+                position = [obst.pose[0], obst.pose[1]]
+            else:
                 position = [obst.pose[0], obst.pose[1], obst.pose[2]]
 
             self._obstacles.append(omg.Obstacle(
