@@ -21,16 +21,17 @@ run identify_params
 fprintf('\n= Start PI(D) controller parameter calculation =\n')
 options.figures = false;
 options.prints = false;
-options.range = false;
+options.range = true;
+options.low_i = true;
 
 % Desired phase margin
 % --------------------
 % % Combined with feedforward:
 % PM_des = 45;
 % % Purely feedback (positioning):
-% PM_des = 35;
+PM_des = 35;
 % MPC at low rate
-PM_des = 65;
+% PM_des = 60;
 
 % Function calls
 % --------------
@@ -89,7 +90,12 @@ phi = -180 + PM - 90 + 15 + c;
 w_c = interp1(Gphase,w,phi);
 
 Td = 10/w_c;
-Ti = 3.73/w_c;
+
+if options.low_i
+    Ti = 6/w_c;
+else
+    Ti = 3.73/w_c;
+end
 
 %% D and I part separately
 % D(s) = K * (1 + Td*s) * (1 + 1/(s Ti))
@@ -202,8 +208,11 @@ phi = -180 + PM + 15 + c;
 % crossover frequency
 w_c = interp1(Gphase,w,phi);
 
-% Ti = 3.73/w_c;
-Ti = 6/w_c;
+if options.low_i
+    Ti = 6/w_c;
+else
+    Ti = 3.73/w_c;
+end
 
 %% I part
 % D(s) = K * (1 + 1/(s Ti))

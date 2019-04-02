@@ -3,7 +3,11 @@ PIDS for varying desired phase margin.
 --------------------------------------
 
 
-----------------
+********************
+* HIGH INTEGRATION *
+********************
+
+---------------
    PM =  10 : 
 ----------------
 
@@ -35,10 +39,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 0.4470
-     K: 32.3311
-    Kp: 32.3311
-    Ki: 72.3338
+    Ti: 0.2779
+     K: 31.6590
+    Kp: 31.6590
+    Ki: 113.9360
 
 ----------------
    PM =  15 : 
@@ -72,10 +76,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 0.5534
-     K: 22.0713
-    Kp: 22.0713
-    Ki: 39.8824
+    Ti: 0.3440
+     K: 21.6126
+    Kp: 21.6126
+    Ki: 62.8205
 
 ----------------
    PM =  20 : 
@@ -109,10 +113,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 0.6712
-     K: 15.8643
-    Kp: 15.8643
-    Ki: 23.6367
+    Ti: 0.4172
+     K: 15.5345
+    Kp: 15.5345
+    Ki: 37.2312
 
 ----------------
    PM =  25 : 
@@ -146,10 +150,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 0.8043
-     K: 11.8129
-    Kp: 11.8129
-    Ki: 14.6871
+    Ti: 0.5000
+     K: 11.5674
+    Kp: 11.5674
+    Ki: 23.1343
 
 ----------------
    PM =  30 : 
@@ -183,10 +187,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 0.9585
-     K: 9.0106
-    Kp: 9.0106
-    Ki: 9.4004
+    Ti: 0.5959
+     K: 8.8233
+    Kp: 8.8233
+    Ki: 14.8069
 
 ----------------
    PM =  35 : 
@@ -220,10 +224,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 1.1423
-     K: 6.9791
-    Kp: 6.9791
-    Ki: 6.1095
+    Ti: 0.7102
+     K: 6.8340
+    Kp: 6.8340
+    Ki: 9.6233
 
 ----------------
    PM =  40 : 
@@ -257,10 +261,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 1.3689
-     K: 5.4463
-    Kp: 5.4463
-    Ki: 3.9785
+    Ti: 0.8510
+     K: 5.3331
+    Kp: 5.3331
+    Ki: 6.2667
 
 ----------------
    PM =  45 : 
@@ -294,10 +298,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 1.6602
-     K: 4.2476
-    Kp: 4.2476
-    Ki: 2.5585
+    Ti: 1.0321
+     K: 4.1593
+    Kp: 4.1593
+    Ki: 4.0299
 
 ----------------
    PM =  50 : 
@@ -331,10 +335,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 2.0556
-     K: 3.2782
-    Kp: 3.2782
-    Ki: 1.5948
+    Ti: 1.2779
+     K: 3.2101
+    Kp: 3.2101
+    Ki: 2.5120
 
 ----------------
    PM =  55 : 
@@ -368,10 +372,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 2.6336
-     K: 2.4678
-    Kp: 2.4678
-    Ki: 0.9371
+    Ti: 1.6372
+     K: 2.4165
+    Kp: 2.4165
+    Ki: 1.4760
 
 ----------------
    PM =  60 : 
@@ -405,10 +409,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 3.5773
-     K: 1.7674
-    Kp: 1.7674
-    Ki: 0.4941
+    Ti: 2.2239
+     K: 1.7307
+    Kp: 1.7307
+    Ki: 0.7782
 
 ----------------
    PM =  65 : 
@@ -442,10 +446,10 @@ zPIparams =
 
   struct with fields:
 
-    Ti: 5.4361
-     K: 1.1408
-    Kp: 1.1408
-    Ki: 0.2099
+    Ti: 3.3795
+     K: 1.1171
+    Kp: 1.1171
+    Ki: 0.3305
 
 ----------------
    PM =  70 : 
@@ -483,3 +487,488 @@ zPIparams =
      K: NaN
     Kp: NaN
     Ki: NaN
+
+********************
+* LOW INTEGRATION *
+********************
+----------------
+   PM =  10 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 0.9606
+    Ti: 0.5763
+     K: 5.6589
+    Kp: 15.0903
+    Ki: 9.8185
+    Kd: 5.4358
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 1.1355
+    Ti: 0.6813
+     K: 4.0120
+    Kp: 10.6985
+    Ki: 5.8885
+    Kd: 4.5557
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 0.4470
+     K: 32.3311
+    Kp: 32.3311
+    Ki: 72.3338
+
+----------------
+   PM =  15 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 1.1542
+    Ti: 0.6925
+     K: 3.4347
+    Kp: 9.1592
+    Ki: 4.9599
+    Kd: 3.9642
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 1.3566
+    Ti: 0.8140
+     K: 2.4631
+    Kp: 6.5682
+    Ki: 3.0260
+    Kd: 3.3414
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 0.5534
+     K: 22.0713
+    Kp: 22.0713
+    Ki: 39.8824
+
+----------------
+   PM =  20 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 1.3693
+    Ti: 0.8216
+     K: 2.1864
+    Kp: 5.8303
+    Ki: 2.6612
+    Kd: 2.9937
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 1.5977
+    Ti: 0.9586
+     K: 1.5910
+    Kp: 4.2427
+    Ki: 1.6597
+    Kd: 2.5419
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 0.6712
+     K: 15.8643
+    Kp: 15.8643
+    Ki: 23.6367
+
+----------------
+   PM =  25 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 1.6126
+    Ti: 0.9675
+     K: 1.4377
+    Kp: 3.8338
+    Ki: 1.4859
+    Kd: 2.3184
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 1.8640
+    Ti: 1.1184
+     K: 1.0661
+    Kp: 2.8428
+    Ki: 0.9532
+    Kd: 1.9871
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 0.8043
+     K: 11.8129
+    Kp: 11.8129
+    Ki: 14.6871
+
+----------------
+   PM =  30 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 1.8930
+    Ti: 1.1358
+     K: 0.9656
+    Kp: 2.5750
+    Ki: 0.8502
+    Kd: 1.8280
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 2.1620
+    Ti: 1.2972
+     K: 0.7335
+    Kp: 1.9560
+    Ki: 0.5655
+    Kd: 1.5858
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 0.9585
+     K: 9.0106
+    Kp: 9.0106
+    Ki: 9.4004
+
+----------------
+   PM =  35 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 2.2230
+    Ti: 1.3338
+     K: 0.6564
+    Kp: 1.7505
+    Ki: 0.4922
+    Kd: 1.4592
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 2.4996
+    Ti: 1.4998
+     K: 0.5144
+    Kp: 1.3716
+    Ki: 0.3430
+    Kd: 1.2857
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 1.1423
+     K: 6.9791
+    Kp: 6.9791
+    Ki: 6.1095
+
+----------------
+   PM =  40 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 2.6194
+    Ti: 1.5717
+     K: 0.4481
+    Kp: 1.1950
+    Ki: 0.2851
+    Kd: 1.1738
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 2.8869
+    Ti: 1.7322
+     K: 0.3655
+    Kp: 0.9747
+    Ki: 0.2110
+    Kd: 1.0552
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 1.3689
+     K: 5.4463
+    Kp: 5.4463
+    Ki: 3.9785
+
+----------------
+   PM =  45 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 3.1065
+    Ti: 1.8639
+     K: 0.3050
+    Kp: 0.8135
+    Ki: 0.1637
+    Kd: 0.9476
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 3.3361
+    Ti: 2.0017
+     K: 0.2620
+    Kp: 0.6988
+    Ki: 0.1309
+    Kd: 0.8742
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 1.6602
+     K: 4.2476
+    Kp: 4.2476
+    Ki: 2.5585
+
+----------------
+   PM =  50 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 3.7176
+    Ti: 2.2306
+     K: 0.2058
+    Kp: 0.5488
+    Ki: 0.0923
+    Kd: 0.7651
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 3.8619
+    Ti: 2.3172
+     K: 0.1889
+    Kp: 0.5038
+    Ki: 0.0815
+    Kd: 0.7297
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 2.0556
+     K: 3.2782
+    Kp: 3.2782
+    Ki: 1.5948
+
+----------------
+   PM =  55 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 4.4985
+    Ti: 2.6991
+     K: 0.1370
+    Kp: 0.3652
+    Ki: 0.0507
+    Kd: 0.6161
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 4.4814
+    Ti: 2.6888
+     K: 0.1367
+    Kp: 0.3646
+    Ki: 0.0509
+    Kd: 0.6127
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 2.6336
+     K: 2.4678
+    Kp: 2.4678
+    Ki: 0.9371
+
+----------------
+   PM =  60 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 5.5073
+    Ti: 3.3044
+     K: 0.0898
+    Kp: 0.2394
+    Ki: 0.0272
+    Kd: 0.4944
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 5.2132
+    Ti: 3.1279
+     K: 0.0993
+    Kp: 0.2647
+    Ki: 0.0317
+    Kd: 0.5175
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 3.5773
+     K: 1.7674
+    Kp: 1.7674
+    Ki: 0.4941
+
+----------------
+   PM =  65 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 6.8094
+    Ti: 4.0856
+     K: 0.0581
+    Kp: 0.1550
+    Ki: 0.0142
+    Kd: 0.3959
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 6.0768
+    Ti: 3.6461
+     K: 0.0723
+    Kp: 0.1929
+    Ki: 0.0198
+    Kd: 0.4395
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: 5.4361
+     K: 1.1408
+    Kp: 1.1408
+    Ki: 0.2099
+
+----------------
+   PM =  70 : 
+----------------
+
+xPIDparams = 
+
+  struct with fields:
+
+    Td: 8.4632
+    Ti: 5.0779
+     K: 0.0376
+    Kp: 0.1001
+    Ki: 0.0074
+    Kd: 0.3178
+
+
+yPIDparams = 
+
+  struct with fields:
+
+    Td: 7.0905
+    Ti: 4.2543
+     K: 0.0530
+    Kp: 0.1413
+    Ki: 0.0125
+    Kd: 0.3758
+
+
+zPIparams = 
+
+  struct with fields:
+
+    Ti: NaN
+     K: NaN
+    Kp: NaN
+    Ki: NaN
+
