@@ -211,7 +211,7 @@ class Controller(object):
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.desired_yaw = np.pi
+        self.desired_yaw = 0
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.feedback_cmd_prev = Twist()
@@ -356,13 +356,9 @@ class Controller(object):
             data : calculated trajectories received from 'mp_result' topic,
                    published by motionplanner.
         '''
-        u_traj = data.u_traj
-        v_traj = data.v_traj
-        w_traj = data.w_traj
-        x_traj = data.x_traj
-        y_traj = data.y_traj
-        z_traj = data.z_traj
-        self.store_trajectories(u_traj, v_traj, w_traj, x_traj, y_traj, z_traj)
+        self.store_trajectories(data.u_traj, data.v_traj, data.w_traj,
+                                data.x_traj, data.y_traj, data.z_traj,
+                                data.success)
         self.receive_time = rospy.get_rostime()
         self.calc_time['time'].append(
                                 (self.receive_time - self.fire_time).to_sec())
@@ -398,7 +394,6 @@ class Controller(object):
         # Trigger Motionplanner or raise 'overtime'
         if self._init:
             if not self._new_trajectories:
-                print 'in init and still not received new traj'
                 self.hover()
                 return
             # Trick to make sure that new trajectories are loaded in next
@@ -455,7 +450,6 @@ class Controller(object):
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
-        print 'omg index', self.omg_index
         self.omg_index += 1
 
     def draw_update(self, index):
@@ -644,6 +638,7 @@ class Controller(object):
                 else:
                     d = -1  # down
 
+                edge.y -= d*0.15
                 width = self.room_width/2 - d*edge.y
                 thickness = 0.15
                 center = Point(x=edge.x,
@@ -1155,8 +1150,6 @@ class Controller(object):
         self.cmd_twist_convert.twist.angular.z = max(min((
                     self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
                     self.max_input), - self.max_input)
-
-        print "whaaaaaaaaaa input to droneeeeeeeee\n", self.cmd_twist_convert.twist.linear
 
     def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the

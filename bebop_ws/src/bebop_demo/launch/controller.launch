@@ -4,7 +4,7 @@
   <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
 
   <param name="controller/omg_update_time" value="0.25" />
-  <param name="controller/omg_update_time_slow" value="0.8" />
+  <param name="controller/omg_update_time_slow" value="0.5" />
   <param name="controller/sample_time" value="0.01" />
   <param name="controller/LPF_cutoff" value="0.5" />
   <param name="controller/LPF_order" value="4" />
@@ -62,9 +62,6 @@
   <param name='controller/Kp_dt_z' value="4.1593" />
   <param name='controller/Ki_dt_z' value="4.0299" />
 
-<!--   <param name='controller/Kp_ff_z' value="1.1593" />
-  <param name='controller/Ki_ff_z' value="0.0299" /> -->
-
   <!-- PD: -->
   <!-- <param name='controller/Kp_x' value="0.9790" />
   <param name='controller/Ki_x' value="0.0" />
@@ -81,8 +78,10 @@
 
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="30.0" />
-  <param name='motionplanner/vmax' value="0.6" />
-  <param name='motionplanner/amax' value="0.4" />
+  <!-- <param name='motionplanner/vmax' value="0.6" />
+  <param name='motionplanner/amax' value="0.4" /> -->
+  <param name='motionplanner/vmax' value="1.2" />
+  <param name='motionplanner/amax' value="0.8" />
   <param name='motionplanner/drone_radius' value="0.20" />
   <param name='motionplanner/safety_margin' value="0.20" />
   <param name='motionplanner/room_width' value="5.5" />

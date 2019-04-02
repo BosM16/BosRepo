@@ -216,7 +216,7 @@ class MotionPlanner(object):
             x_traj=trajectories['state'][0, :],
             y_traj=trajectories['state'][1, :],
             z_traj=trajectories['state'][2, :],
-            succes=calc_succeeded)
+            success=calc_succeeded)
 
         self._mp_result_topic.publish(self._result)
 
