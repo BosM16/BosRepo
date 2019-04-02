@@ -21,6 +21,7 @@ run identify_params
 fprintf('\n= Start PI(D) controller parameter calculation =\n')
 options.figures = false;
 options.prints = false;
+options.range = false;
 
 % Desired phase margin
 % --------------------
@@ -29,17 +30,33 @@ options.prints = false;
 % % Purely feedback (positioning):
 % PM_des = 35;
 % MPC at low rate
-PM_des = 60;
+PM_des = 65;
 
 % Function calls
 % --------------
-fprintf('\n----------------- x direction -----------------\n')
-[xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options);
-fprintf('\n----------------- y direction -----------------\n')
-[ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options);
-fprintf('\n----------------- z direction -----------------\n')
-[zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options);
 
+%  To calculate pids in a range of 10 to 70 degrees phase margin.
+if options.range
+    for PM_des=10:5:70
+
+        [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options);
+        [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options);
+        [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options);
+
+        fprintf('----------------\n   PM =  %i : \n----------------\n',PM_des)
+        display(xPIDparams)
+        display(yPIDparams)
+        display(zPIparams)
+    end
+%  To calculate pids for one desired phase margin.    
+else
+    fprintf('\n----------------- x direction -----------------\n')
+    [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options);
+    fprintf('\n----------------- y direction -----------------\n')
+    [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options);
+    fprintf('\n----------------- z direction -----------------\n')
+    [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options);
+end
 
 
 fprintf('\n======== PID controller design finished ========\n')
