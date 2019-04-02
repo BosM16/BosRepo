@@ -148,6 +148,8 @@ class Controller(object):
         rospy.Subscriber(
             '/bebop/states/ardrone3/PilotingState/FlyingStateChanged',
             Ardrone3PilotingStateFlyingStateChanged, self.bebop_flying_state)
+        rospy.Subscriber(
+            'vive_localization/pose', PoseMeas, self.new_measurement)
 
     def _init_params(self):
         '''Initializes (reads and sets) externally configurable parameters
@@ -1055,8 +1057,10 @@ class Controller(object):
         self.gamepad_input = rospy.Subscriber('bebop/cmd_vel',
                                               Twist, self.retrieve_gp_input)
         self.meas = {}
-        self.meas['pos_x'], self.meas['pos_y'], self.meas['pos_z'] = [], [], []
-        self.meas['vel_x'], self.meas['vel_y'], self.meas['vel_z'] = [], [], []
+        self.meas['meas_pos_x'], self.meas['meas_pos_y'], self.meas['meas_pos_z'] = [], [], []
+        self.meas['est_pos_x'], self.meas['est_pos_y'], self.meas['est_pos_z'] = [], [], []
+        self.meas['est_vel_x'], self.meas['est_vel_y'], self.meas['est_vel_z'] = [], [], []
+        self.meas['meas_time'], self.meas['est_time'] = [], []
 
         while not (rospy.is_shutdown() or self.state_killed):
             if self.state_changed:
@@ -1079,12 +1083,23 @@ class Controller(object):
 
         # Saves data to be able to compare the velocity estimation to the
         # numerically differentiated velocity afterward.
-        self.meas['pos_x'].append(self.drone_pose_est.position.x)
-        self.meas['pos_y'].append(self.drone_pose_est.position.y)
-        self.meas['pos_z'].append(self.drone_pose_est.position.z)
-        self.meas['vel_x'].append(self.drone_vel_est.x)
-        self.meas['vel_y'].append(self.drone_vel_est.y)
-        self.meas['vel_z'].append(self.drone_vel_est.z)
+        self.meas['est_pos_x'].append(self.drone_pose_est.position.x)
+        self.meas['est_pos_y'].append(self.drone_pose_est.position.y)
+        self.meas['est_pos_z'].append(self.drone_pose_est.position.z)
+        self.meas['est_vel_x'].append(self.drone_vel_est.x)
+        self.meas['est_vel_y'].append(self.drone_vel_est.y)
+        self.meas['est_vel_z'].append(self.drone_vel_est.z)
+        self.meas['est_time'].append(rospy.get_rostime())
+    
+    def new_measurement(self, data):
+      '''Reads out vive pose and saves this data when flying with the gamepad.
+      '''
+      if self.state == "gamepad flying":
+          self.meas['meas_pos_x'].append(data.meas_world.pose.position.x)
+          self.meas['meas_pos_y'].append(data.meas_world.pose.position.y)
+          self.meas['meas_pos_z'].append(data.meas_world.pose.position.z)
+          self.meas['meas_time'].append(rospy.get_rostime())
+      
 
     ####################
     # Helper functions #
