@@ -207,6 +207,7 @@ class Controller(object):
         self.state_killed = False
         self.trackpad_held = False
         self.r_trigger_held = False
+        self.overtime = False
         self.meas_pos_x = 0.
         self.meas_pos_y = 0.
         self.meas_pos_z = 0.
@@ -421,14 +422,19 @@ class Controller(object):
                 self.pos_index = self.omg_index
                 self.omg_index = 1
 
+                # Wait for new set of trajectories when calculation has failed.
                 if not self.calc_succeeded:
                     self._init = True
+                # Raise overtime counter when calculations were not ready in time.
+                if self.overtime:
                     self.overtime_counter += 1
+                    self.overtime = False
 
                 # Trigger motion planner.
                 self.fire_motionplanner()
 
             else:
+                self.overtime = True
                 if self.overtime_counter > 3:
                     self.hover()
                     print highlight_yellow('---- WARNING - OVERTIME  ----')
