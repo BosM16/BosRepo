@@ -143,8 +143,9 @@ class MotionPlanner(object):
         problem = omg.Point2point(self._vehicle, environment, freeT=False)
         problem.set_options({'solver_options': {'ipopt': {
             'ipopt.linear_solver': 'ma57',
+            'ipopt.max_iter': 800,
             'ipopt.print_level': 0,
-            'ipopt.tol': 1e-4,
+            'ipopt.tol': 1e-5,
             'ipopt.warm_start_init_point': 'yes',
             'ipopt.warm_start_bound_push': 1e-6,
             'ipopt.warm_start_mult_bound_push': 1e-6,

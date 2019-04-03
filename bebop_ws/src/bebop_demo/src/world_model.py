@@ -71,8 +71,8 @@ class Model(object):
         Ax = np.array([[0., 1., 0.],
                        [0., 0., 1.],
                        [-a0x, -a1x, -a2x]])
-        a2y = 4.948
-        a1y = 2.127
+        a2y = 5.147
+        a1y = 2.116
         a0y = 0.0
         Ay = np.array([[0., 1., 0.],
                        [0., 0., 1.],
@@ -98,7 +98,7 @@ class Model(object):
         Bx = np.array([b0x, b1x, b2x])
         b2y = 0.0
         b1y = 0.0
-        b0y = 18.4
+        b0y = 18.96
         By = np.array([b0y, b1y, b2y])
         b1z = 0.0
         b0z = 6.066

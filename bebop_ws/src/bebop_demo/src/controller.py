@@ -207,7 +207,10 @@ class Controller(object):
         self.state_killed = False
         self.trackpad_held = False
         self.r_trigger_held = False
-        self.save_meas_data = False
+        self.meas_pos_x = 0.
+        self.meas_pos_y = 0.
+        self.meas_pos_z = 0.
+        self.meas_time = 0.
 
         # Other
         self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
@@ -377,6 +380,7 @@ class Controller(object):
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
+        print '2 publish input cmd', self.cmd_twist_convert.twist.linear
 
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
@@ -424,7 +428,7 @@ class Controller(object):
 
             else:
                 if self.overtime_counter > 3:
-                    self.safety_brake()
+                    self.hover()
                     print highlight_yellow('---- WARNING - OVERTIME  ----')
                 return
 
@@ -454,7 +458,9 @@ class Controller(object):
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
+
         self.omg_index += 1
+        self.hover_setpoint = self.drone_pose_est
 
     def draw_update(self, index):
         '''
@@ -466,6 +472,7 @@ class Controller(object):
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
+        print '3 publish input cmd', self.cmd_twist_convert.twist.linear
 
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
@@ -553,6 +560,7 @@ class Controller(object):
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
             self.cmd_vel.publish(self.cmd_twist_convert.twist)
+            print '4 publish input cmd', self.cmd_twist_convert.twist.linear
 
     def take_off_land(self):
         '''Function needed to wait when taking of or landing to make sure no
@@ -1063,17 +1071,21 @@ class Controller(object):
         self.meas['est_vel_x'], self.meas['est_vel_y'], self.meas['est_vel_z'] = [], [], []
         self.meas['meas_time'], self.meas['est_time'] = [], []
 
+        self.meas['meas_pos_x'].append(self.meas_pos_x)
+        self.meas['meas_pos_y'].append(self.meas_pos_y)
+        self.meas['meas_pos_z'].append(self.meas_pos_z)
+        self.meas['meas_time'].append(self.meas_time)
+
         self.gamepad_input = rospy.Subscriber('bebop/cmd_vel',
                                               Twist, self.retrieve_gp_input)
-        self.save_meas_data = True
 
         while not (rospy.is_shutdown() or self.state_killed):
             if self.state_changed:
                 self.state_changed = False
                 break
             rospy.sleep(0.1)
-        self.save_meas_data = False
         self.gamepad_input.unregister()
+        print 'length of meas', len(self.meas['meas_pos_x'])
         io.savemat('../vhat_data_check.mat', self.meas)
 
     def retrieve_gp_input(self, gp_input):
@@ -1095,17 +1107,22 @@ class Controller(object):
         self.meas['est_vel_x'].append(self.drone_vel_est.x)
         self.meas['est_vel_y'].append(self.drone_vel_est.y)
         self.meas['est_vel_z'].append(self.drone_vel_est.z)
-        self.meas['est_time'].append(rospy.get_rostime())
+        self.meas['est_time'].append(rospy.get_time())
+
+        if self.meas['meas_time'][-1] != self.meas_time:
+            self.meas['meas_pos_x'].append(self.meas_pos_x)
+            self.meas['meas_pos_y'].append(self.meas_pos_y)
+            self.meas['meas_pos_z'].append(self.meas_pos_z)
+            self.meas['meas_time'].append(self.meas_time)
 
     def new_measurement(self, data):
         '''Reads out vive pose and saves this data when flying with the gamepad.
         '''
-        if (self.state == "gamepad flying") and self.save_meas_data:
-            self.meas['meas_pos_x'].append(data.meas_world.pose.position.x)
-            self.meas['meas_pos_y'].append(data.meas_world.pose.position.y)
-            self.meas['meas_pos_z'].append(data.meas_world.pose.position.z)
-            self.meas['meas_time'].append(rospy.get_rostime())
-
+        if (self.state == "gamepad flying"):
+            self.meas_pos_x = data.meas_world.pose.position.x
+            self.meas_pos_y = data.meas_world.pose.position.y
+            self.meas_pos_z = data.meas_world.pose.position.z
+            self.meas_time = rospy.get_time()
 
     ####################
     # Helper functions #
@@ -1122,8 +1139,7 @@ class Controller(object):
 
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
-            # self.interrupt_mp.publish(Empty())
-            # io.savemat('../mpc_calc_time.mat', self.calc_time)
+            io.savemat('../mpc_calc_time.mat', self.calc_time)
             print yellow('=========================')
             print yellow('==== Target Reached! ====')
             print yellow('=========================')
@@ -1278,6 +1294,7 @@ class Controller(object):
         '''
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
+        print '1 publish input cmd', self.cmd_twist_convert.twist.linear
 
     def repeat_safety_brake(self):
         '''More permanent emergency measure: keep safety braking until new task

@@ -290,8 +290,6 @@ class Demo(object):
         '''Checks whether the drone is standing on the ground or flying and
         changes the self.airborne variable accordingly.
         '''
-        print 'flying state'
-        print flying_state.state
         if flying_state.state == 2:
             self.airborne = True
         elif flying_state.state == 0:
