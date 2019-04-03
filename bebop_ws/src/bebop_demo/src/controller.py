@@ -289,7 +289,9 @@ class Controller(object):
         set mp_status to configured.
         '''
         if (self.obstacles and
-                self.obstacles[0].obst_type.data == "window plate"):
+                self.obstacles[0].obst_type.data == "window plate" or
+                (self.obstacles[0].obst_type.data == "slalom plate" and
+                 len(self.obstacles) >= 3)):
             self.difficult_obst = True
         else:
             self.difficult_obst = False

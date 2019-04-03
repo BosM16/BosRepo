@@ -58,6 +58,8 @@ class MotionPlanner(object):
                 'controller/omg_update_time_slow', 0.5)
             self.safety_margin = rospy.get_param(
                 'motionplanner/safety_margin_small', 0.1)
+            self.safety_weight = rospy.get_param(
+                 'motionplanner/safety_weight', 10.)
             self.drone_radius = rospy.get_param(
                 'motionplanner/drone_radius_small', 0.20)
             self.vmax = rospy.get_param(
@@ -69,6 +71,8 @@ class MotionPlanner(object):
                 'controller/omg_update_time', 0.5)
             self.safety_margin = rospy.get_param(
                 'motionplanner/safety_margin', 0.2)
+            self.safety_weight = rospy.get_param(
+                 'motionplanner/safety_weight_slow', 10.)
             self.drone_radius = rospy.get_param(
                 'motionplanner/drone_radius', 0.225)
             self.vmax = rospy.get_param(
@@ -82,6 +86,7 @@ class MotionPlanner(object):
                     'amax': self.amax, 'amin': -self.amax})
         self._vehicle.define_knots(knot_intervals=self.knots)
         self._vehicle.set_options({'safety_distance': self.safety_margin,
+                                   'safety_weight': self.safety_weight,
                                    'syslimit': 'norm_2'})
         self._vehicle.set_initial_conditions([0., 0., 0.])
         self._vehicle.set_terminal_conditions([0., 0., 0.])
