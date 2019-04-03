@@ -1,27 +1,25 @@
 % PID controller design
 
-% COLORS FOR FIGURES:
-% Blue
-% 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',2.5
-% Yellow
-% 'Color', [0.9290, 0.6940, 0.1250], 'LineWidth',2.5
-% Red
-% 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5
-
 clear variables
 close all
 clc
-
 
 %% Identify models
 run identify_params
 
 
 %% Calculate PID controller parameters
-fprintf('\n= Start PI(D) controller parameter calculation =\n')
-options.figures = false;
+% Colors for figures:
+colors.blue   = [0.3010, 0.7450, 0.9330];
+colors.red    = [0.6350, 0.0780, 0.1840];
+colors.yellow = [0.9290, 0.6940, 0.1250];
+
+set(0, 'DefaultLineLineWidth', 1.5);
+
+% Settings
+options.figures = true;
 options.prints = false;
-options.range = true;
+options.range = false;
 options.low_i = true;
 
 % Desired phase margin
@@ -35,14 +33,14 @@ PM_des = 35;
 
 % Function calls
 % --------------
-
+fprintf('\n= Start PI(D) controller parameter calculation =\n')
 %  To calculate pids in a range of 10 to 70 degrees phase margin.
 if options.range
     for PM_des=10:5:70
 
-        [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options);
-        [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options);
-        [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options);
+        [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
+        [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
+        [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
 
         fprintf('----------------\n   PM =  %i : \n----------------\n',PM_des)
         display(xPIDparams)
@@ -52,11 +50,11 @@ if options.range
 %  To calculate pids for one desired phase margin.    
 else
     fprintf('\n----------------- x direction -----------------\n')
-    [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options);
+    [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
     fprintf('\n----------------- y direction -----------------\n')
-    [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options);
+    [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
     fprintf('\n----------------- z direction -----------------\n')
-    [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options);
+    [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
 end
 
 
@@ -67,7 +65,7 @@ fprintf('\n======== PID controller design finished ========\n')
 %                               Main functions
 %  ========================================================================
 
-function [sys_cl,D,PIDparams] = PID_design(model, PM, options)
+function [sys_cl,D,PIDparams] = PID_design(model, PM, options, colors)
 
 G = model.tf_pos;
 
@@ -144,10 +142,10 @@ if options.figures
     % Some dirty manipulating to choose color and line thickness:
     bodeplot(G,'b');
     lineHandle = findobj(gcf,'Type','line','-and','Color','b');
-    set(lineHandle,'Color',[0.3010, 0.7450, 0.9330]);
+    set(lineHandle,'Color',colors.blue);
     bodeplot(sys_ol,'b');
     lineHandle = findobj(gcf,'Type','line','-and','Color','b');
-    set(lineHandle,'Color',[0.6350, 0.0780, 0.1840])
+    set(lineHandle,'Color',colors.red)
     
     set(findall(gcf,'type','line'),'linewidth',2)
     
@@ -161,7 +159,7 @@ if options.figures
     figure('Name','Closed loop frequency response')
     bodeplot(sys_cl,'b')
     lineHandle = findobj(gcf,'Type','line','-and','Color','b');
-    set(lineHandle,'Color',[0.3010, 0.7450, 0.9330]);
+    set(lineHandle,'Color',colors.blue);
     set(findall(gcf,'type','line'),'linewidth',2)
     grid on
     
@@ -186,7 +184,7 @@ end
 
 end
 
-function [sys_cl,D,PIparams] = PI_design(model, PM, options)
+function [sys_cl,D,PIparams] = PI_design(model, PM, options, colors)
 
 G = model.tf_pos;
 
@@ -263,10 +261,10 @@ if options.figures
     % Some dirty manipulating to choose color and line thickness:
     bodeplot(G,'b');
     lineHandle = findobj(gcf,'Type','line','-and','Color','b');
-    set(lineHandle,'Color',[0.3010, 0.7450, 0.9330]);
+    set(lineHandle,'Color',colors.blue);
     bodeplot(sys_ol,'b');
     lineHandle = findobj(gcf,'Type','line','-and','Color','b');
-    set(lineHandle,'Color',[0.6350, 0.0780, 0.1840])
+    set(lineHandle,'Color',colors.red)
     
     set(findall(gcf,'type','line'),'linewidth',2)
     
@@ -280,7 +278,7 @@ if options.figures
     figure('Name','Closed loop frequency response')
     bodeplot(sys_cl,'b')
     lineHandle = findobj(gcf,'Type','line','-and','Color','b');
-    set(lineHandle,'Color',[0.3010, 0.7450, 0.9330]);
+    set(lineHandle,'Color',colors.blue);
     set(findall(gcf,'type','line'),'linewidth',2)
     grid on
     
