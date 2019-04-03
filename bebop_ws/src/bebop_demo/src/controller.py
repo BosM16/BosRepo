@@ -222,7 +222,7 @@ class Controller(object):
         self.measurement_valid = False
         self.obstacles = []
         self.omg_index = 1
-        self.low_update_rate = False
+        self.difficult_obst = False
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
@@ -285,9 +285,9 @@ class Controller(object):
         '''
         if (self.obstacles and
                 self.obstacles[0].obst_type.data == "window plate"):
-            self.low_update_rate = True
+            self.difficult_obst = True
         else:
-            self.low_update_rate = False
+            self.difficult_obst = False
 
         rospy.wait_for_service("/motionplanner/config_motionplanner")
         config_success = False
@@ -296,7 +296,7 @@ class Controller(object):
                 "/motionplanner/config_motionplanner", ConfigMotionplanner)
             config_success = config_mp_resp(
                                           obst_list=self.obstacles,
-                                          low_update_rate=self.low_update_rate)
+                                          difficult_obst=self.difficult_obst)
         except rospy.ServiceException, e:
             print highlight_red('Service call failed: %s') % e
             config_success = False
@@ -992,7 +992,7 @@ class Controller(object):
         '''Adapts the MPC update rate to the difficulty of the obstacles and
         corresponding computation time.
         '''
-        if self.low_update_rate:
+        if self.difficult_obst:
             self.omg_update_time = rospy.get_param(
                                         'controller/omg_update_time_slow', 0.5)
             self.pos_nrm_tol = rospy.get_param(
@@ -1007,7 +1007,7 @@ class Controller(object):
         '''Sets pid gains to a lower setting for combination with feedforward
         flight to keep the controller stable.
         '''
-        if self.state in {"omg fly", "fly to start"} and self.low_update_rate:
+        if self.state in {"omg fly", "fly to start"} and self.difficult_obst:
             self.Kp_x = rospy.get_param('controller/Kp_omg_low_x', 0.6864)
             self.Ki_x = rospy.get_param('controller/Ki_omg_low_x', 0.6864)
             self.Kd_x = rospy.get_param('controller/Kd_omg_low_x', 0.6864)
@@ -1090,7 +1090,7 @@ class Controller(object):
         self.meas['est_vel_y'].append(self.drone_vel_est.y)
         self.meas['est_vel_z'].append(self.drone_vel_est.z)
         self.meas['est_time'].append(rospy.get_rostime())
-    
+
     def new_measurement(self, data):
       '''Reads out vive pose and saves this data when flying with the gamepad.
       '''
@@ -1099,7 +1099,7 @@ class Controller(object):
           self.meas['meas_pos_y'].append(data.meas_world.pose.position.y)
           self.meas['meas_pos_z'].append(data.meas_world.pose.position.z)
           self.meas['meas_time'].append(rospy.get_rostime())
-      
+
 
     ####################
     # Helper functions #

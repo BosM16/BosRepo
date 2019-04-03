@@ -14,8 +14,8 @@
   <param name='controller/standard_height' value="1.7" />
 
   <!-- PID: -->
-  <!-- hovering (aggressive) -->
-  <param name='controller/Kp_x' value="3.48" />
+  <!-- hovering (aggressive) - PM 30 high I -->
+  <param name='controller/Kp_x' value="3.4806" />
   <param name='controller/Ki_x' value="1.3391" />
   <param name='controller/Kd_x' value="1.7900" />
   <param name='controller/Kp_y' value="2.6439" />
@@ -23,16 +23,18 @@
   <param name='controller/Kd_y' value="1.5528" />
   <param name='controller/Kp_z' value="4.1593" />
   <param name='controller/Ki_z' value="4.0299" />
+  <!-- <param name='controller/Kp_z' value="8.8233" />
+  <param name='controller/Ki_z' value="14.8069" />   -->
 
-  <!-- ff flying omg-tools-->
-  <param name='controller/Kp_omg_x' value="1.0995" />
-  <param name='controller/Ki_omg_x' value="0.2578" />
-  <param name='controller/Kd_omg_x' value="0.9279" />
-  <param name='controller/Kp_omg_y' value="0.9445" />
-  <param name='controller/Ki_omg_y' value="0.2062" />
-  <param name='controller/Kd_omg_y' value="0.8560" />
-  <param name='controller/Kp_omg_z' value="4.1593" />
-  <param name='controller/Ki_omg_z' value="4.0299" />
+  <!-- ff flying omg-tools - PM 45 low I -->
+  <param name='controller/Kp_omg_x' value="0.8135" />
+  <param name='controller/Ki_omg_x' value="0.1637" />
+  <param name='controller/Kd_omg_x' value="0.9476" />
+  <param name='controller/Kp_omg_y' value="0.6988" />
+  <param name='controller/Ki_omg_y' value="0.1309" />
+  <param name='controller/Kd_omg_y' value="0.8742" />
+  <param name='controller/Kp_omg_z' value="4.2476" />
+  <param name='controller/Ki_omg_z' value="2.5585" />
 
   <!-- <param name='controller/Kp_omg_low_x' value="0.3236" />
   <param name='controller/Ki_omg_low_x' value="0.0428" />
@@ -43,16 +45,17 @@
   <param name='controller/Kp_omg_low_z' value="1.7674" />
   <param name='controller/Ki_omg_low_z' value="0.4941" /> -->
 
-  <param name='controller/Kp_omg_low_x' value="1.0995" />
-  <param name='controller/Ki_omg_low_x' value="0.2578" />
-  <param name='controller/Kd_omg_low_x' value="0.9279" />
-  <param name='controller/Kp_omg_low_y' value="0.9445" />
-  <param name='controller/Ki_omg_low_y' value="0.2062" />
-  <param name='controller/Kd_omg_low_y' value="0.8560" />
-  <param name='controller/Kp_omg_low_z' value="4.1593" />
-  <param name='controller/Ki_omg_low_z' value="4.0299" />
+  <!-- slow ff flying omg-tools - PM 50 low I -->
+  <param name='controller/Kp_omg_low_x' value="0.5488" />
+  <param name='controller/Ki_omg_low_x' value="0.0923" />
+  <param name='controller/Kd_omg_low_x' value="0.7651" />
+  <param name='controller/Kp_omg_low_y' value="0.5038" />
+  <param name='controller/Ki_omg_low_y' value="0.0815" />
+  <param name='controller/Kd_omg_low_y' value="0.7297" />
+  <param name='controller/Kp_omg_low_z' value="3.2782" />
+  <param name='controller/Ki_omg_low_z' value="1.5948" />
 
-  <!-- ff flying draw traj flying-->
+  <!-- ff flying draw traj flying PM 45 high I-->
   <param name='controller/Kp_dt_x' value="1.0995" />
   <param name='controller/Ki_dt_x' value="0.2578" />
   <param name='controller/Kd_dt_x' value="0.9279" />
@@ -78,12 +81,15 @@
 
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="30.0" />
-  <!-- <param name='motionplanner/vmax' value="0.6" />
-  <param name='motionplanner/amax' value="0.4" /> -->
+
   <param name='motionplanner/vmax' value="1.2" />
   <param name='motionplanner/amax' value="0.8" />
-  <param name='motionplanner/drone_radius' value="0.20" />
+  <param name='motionplanner/vmax_low' value="0.6" />
+  <param name='motionplanner/amax_low' value="0.4" />
+  <param name='motionplanner/drone_radius' value="0.225" />
+  <param name='motionplanner/drone_radius_small' value="0.20" />
   <param name='motionplanner/safety_margin' value="0.20" />
+  <param name='motionplanner/safety_margin_small' value="0.10" />
   <param name='motionplanner/room_width' value="5.5" />
   <param name='motionplanner/room_depth' value="3.6" />
   <param name='motionplanner/room_height' value="2.5" />

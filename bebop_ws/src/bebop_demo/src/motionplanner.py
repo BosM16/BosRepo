@@ -24,19 +24,10 @@ class MotionPlanner(object):
         """
         self._sample_time = rospy.get_param(
             'controller/sample_time', 0.01)
-
         self.knots = rospy.get_param(
             'motionplanner/knot_intervals', 10)
         self.horizon_time = rospy.get_param(
             'motionplanner/horizon_time', 10.)
-        self.vmax = rospy.get_param(
-            'motionplanner/vmax', 0.2)
-        self.amax = rospy.get_param(
-            'motionplanner/amax', 0.3)
-        self.drone_radius = rospy.get_param(
-            'motionplanner/drone_radius', 0.20)
-        self.safety_margin = rospy.get_param(
-            'motionplanner/safety_margin', 0.2)
 
         self._result = Trajectories()
         self._obstacles = []
@@ -58,16 +49,32 @@ class MotionPlanner(object):
         Args:
             data :
                 obst_list
-                low_update_rate
+                difficult_obst
         """
         mp_configured = False
 
-        if data.low_update_rate:
+        if data.difficult_obst:
             self.omg_update_time = rospy.get_param(
                 'controller/omg_update_time_slow', 0.5)
+            self.safety_margin = rospy.get_param(
+                'motionplanner/safety_margin_small', 0.1)
+            self.drone_radius = rospy.get_param(
+                'motionplanner/drone_radius_small', 0.20)
+            self.vmax = rospy.get_param(
+                'motionplanner/vmax_low', 0.2)
+            self.amax = rospy.get_param(
+                'motionplanner/amax_low', 0.3)
         else:
             self.omg_update_time = rospy.get_param(
                 'controller/omg_update_time', 0.5)
+            self.safety_margin = rospy.get_param(
+                'motionplanner/safety_margin', 0.2)
+            self.drone_radius = rospy.get_param(
+                'motionplanner/drone_radius', 0.225)
+            self.vmax = rospy.get_param(
+                'motionplanner/vmax', 0.2)
+            self.amax = rospy.get_param(
+                'motionplanner/amax', 0.3)
 
         self._vehicle = omg.Holonomic3D(
             shapes=omg.Sphere(self.drone_radius),
