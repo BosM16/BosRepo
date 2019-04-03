@@ -17,7 +17,7 @@ colors.yellow = [0.9290, 0.6940, 0.1250];
 set(0, 'DefaultLineLineWidth', 1.5);
 
 % Settings
-options.figures = true;
+options.figures = false;
 options.prints = false;
 options.range = false;
 options.low_i = true;
@@ -41,20 +41,24 @@ if options.range
         [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
         [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
         [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
+        [yawsys_cl,yawPIsys,yawPIparams] = PI_design(yawmodel, PM_des, options, colors);
 
         fprintf('----------------\n   PM =  %i : \n----------------\n',PM_des)
         display(xPIDparams)
         display(yPIDparams)
         display(zPIparams)
+        display(yawPIparams)
     end
 %  To calculate pids for one desired phase margin.    
 else
-    fprintf('\n----------------- x direction -----------------\n')
+    fprintf('\n----------------- x direction ------------------\n')
     [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
-    fprintf('\n----------------- y direction -----------------\n')
+    fprintf('\n----------------- y direction ------------------\n')
     [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
-    fprintf('\n----------------- z direction -----------------\n')
+    fprintf('\n----------------- z direction ------------------\n')
     [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
+    fprintf(strcat("\n----------------- ", char(952), ' direction ------------------\n'))
+    [yawsys_cl,yawPIsys,yawPIparams] = PI_design(yawmodel, PM_des, options, colors);
 end
 
 

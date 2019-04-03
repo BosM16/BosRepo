@@ -1,7 +1,7 @@
 clear variables
 close all
 clc
-fprintf('============ Start identification ============= \n')
+fprintf('============ Start identification ============== \n')
 
 
 %% Settings & Execution
@@ -12,9 +12,10 @@ options.prints = false;
 % SYNTAX: 
 %   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
 % -----------------------------------------------------------------
-xmodel = identify("data/angle_identification_x",'x',0.02,0.53,0.6,options);
-ymodel = identify("data/angle_identification_y",'y',0.02,0.53,0.6,options);
-zmodel = identify("data/vel_identification_z",'z',0.02,0.3,1.,options);
+xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options);
+ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options);
+zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options);
+yawmodel = identify("data/vel_identification_z","theta",char(952),0.02,0.3,1.,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -22,22 +23,22 @@ zmodel = identify("data/vel_identification_z",'z',0.02,0.3,1.,options);
 %       information that CAN be fitted does not disappear.
 %
 % SECOND NOTE: Fc (cutoff for continuous butterworth LPF for inverting
-%       velocity model) is design parameter. Chosen that flat part at high
-%       frequencies is +- 0 dB. 
+%       velocity model) is a design parameter. Chosen such that flat part 
+%       at high frequencies is +- 0 dB. 
 
 
-fprintf('\n=========== Identification finished =========== \n')
+fprintf('\n=========== Identification finished ============ \n')
 
 
 %% ========================================================================
 %                                Main function
 %  ========================================================================
 
-function model = identify(data_file, ax, Ts, f0, Fc, options)
+function model = identify(data_file, ax, axplot, Ts, f0, Fc, options)
 % IDENTIFY - identifies LTI parameters for the drone model based on
 % the data contained in the specified data file.
 %
-% Syntax:  data = identify_params(data_file)
+% Syntax:  data = identify(data_file)
 %
 % Input:
 %   xdata_file - string representing data file name to perform parameter
@@ -57,7 +58,7 @@ function model = identify(data_file, ax, Ts, f0, Fc, options)
 %       ...
 %
 % Example: 
-%    x_data = identify_params("angle_identification_x")
+%    xmodel = identify("data/angle_identification_x","x",0.02,0.53,0.6,options)
 %
 % Other m-files required: none
 % Subfunctions: none
@@ -67,7 +68,7 @@ function model = identify(data_file, ax, Ts, f0, Fc, options)
 % Website: https://github.com/BosMathias/BosRepo
 % 2018-2019;
 
-fprintf(strcat("\n----------------- ",ax, ' direction -----------------\n'))
+fprintf(strcat("\n----------------- ",axplot, ' direction ------------------\n'))
 
 
 %% Load requested data file
@@ -95,16 +96,14 @@ data.t = t;
 data.f = f;
 
 
-
-
 % Differentiation of position
 velocity = gradient(output)/Ts;
 data.velocity = velocity;
 
 if options.figures
     figure('Name','Measurement Data')
-    subplot(211), plot(t, output, t, input), title(strcat(ax,' position')), xlabel('time [s]'), ylabel('position [m]'), legend('output','input')
-    subplot(212), plot(t, velocity), title(strcat(ax,' velocity')), xlabel('time [s]'), ylabel('velocity [m/s]')
+    subplot(211), plot(t, output, t, input), title(strcat(axplot,' position')), xlabel('time [s]'), ylabel('position [m]'), legend('output','input')
+    subplot(212), plot(t, velocity), title(strcat(axplot,' velocity')), xlabel('time [s]'), ylabel('velocity [m/s]')
     
 end
 
@@ -120,7 +119,7 @@ fcn = fc/(fs/2); % normalized cutoff frequency (as butter() accepts)
 
 
 %% Filtering of the in- and output data using Butterworth filter
-if ax == 'z'
+if or(ax == "z", ax == "theta")
     nb = 2;
 else
     nb = 3;
@@ -144,21 +143,21 @@ if options.figures
     figure('Name','filtered output measurement')
     
     plot(t, velocity, t, velocity_filt)
-    title(strcat('v_{',ax,',filt}'))
+    title(strcat('v_{',axplot,',filt}'))
 
 end
 
 
 %% Fitting parameters
-if ax == 'z'
-    [params, tf_vel, data] = fit_1st_order(data, ax, Ts, options);
+if or(ax == "z", ax == "theta")
+    [params, tf_vel, data] = fit_1st_order(data, axplot, Ts, options);
 else
-    [params, tf_vel, data] = fit_2nd_order(data, ax, Ts, options);
+    [params, tf_vel, data] = fit_2nd_order(data, axplot, Ts, options);
 end
 
 %% Integrating velocity models
 
-[tf_pos, data] = integrate(tf_vel.cont, data, ax, options);
+[tf_pos, data] = integrate(tf_vel.cont, data, axplot, options);
 
 %% Invert velocity model + LPF, state space for feedforward control
 
@@ -177,7 +176,7 @@ end
 %                              Helper functions 
 %  ========================================================================
 
-function [params, transff, data] = fit_1st_order(data, ax, Ts, options)
+function [params, transff, data] = fit_1st_order(data, axplot, Ts, options)
 % id_1st_order - calculates transfer function parameters for 1st order 
 % transfer function based on least squares fit for supplied in- and
 % outputs.
@@ -228,7 +227,7 @@ FRF = squeeze(freqresp(transff.discr,2*pi*f));
 data.FRF_vel = FRF;
 
 if options.prints
-   fprintf(strcat("\n* Discrete time velocity transfer function ",ax,' direction:\n'))
+   fprintf(strcat("\n* Discrete time velocity transfer function ",axplot,' direction:\n'))
    display(transff.discr) 
 end
 
@@ -258,7 +257,7 @@ if options.figures
     plot(t, velocity)
     plot(t, velocity_filt)
     plot(t, x)
-    legend(strcat('v_{',ax,',meas}'), strcat('v_{',ax,',filt}'), strcat('v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
     title('1st - filtered - strictly proper - Minimum Phase: Simulation vs Measurement')
     xlabel('Time [s]')
     axis tight
@@ -266,7 +265,7 @@ if options.figures
     subplot(212)
     plot(t,velocity - x)
     title('Difference between simulation and measurement')
-    legend(strcat('v_{',ax,',meas}-v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}-v_{',axplot,',sim}'))
     xlabel('Time [s]')
     ylabel('Velocity [m/s]')
     axis tight
@@ -284,7 +283,7 @@ FRFc = squeeze(freqresp(transff.cont,2*pi*f));
 data.FRFc_vel = FRFc;
 
 if options.prints
-   fprintf(strcat("\n* Continuous time velocity transfer function ",ax,' direction:\n'))
+   fprintf(strcat("\n* Continuous time velocity transfer function ",axplot,' direction:\n'))
    display(transff.cont) 
 end
 
@@ -312,7 +311,7 @@ if options.figures
     plot(t, velocity,'g')
     plot(t, velocity_filt)
     plot(t,xc)
-    legend(strcat('v_{',ax,',meas}'), strcat('v_{',ax,',filt}'), strcat('v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
     title('1st - filtered - strictly proper - Minimum Phase: Simulation vs Measurement')
     xlabel('Time [s]')
     axis tight
@@ -320,7 +319,7 @@ if options.figures
     subplot(212)
     plot(t,velocity - xc)
     title('Difference between simulation and measurement')
-    legend(strcat('v_{',ax,',meas}-v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}-v_{',axplot,',sim}'))
     xlabel('Time [s]')
     ylabel('Velocity [m/s]')
     axis tight
@@ -337,7 +336,7 @@ f0 = f(index);
 params.f0 = f0;
 
 if options.prints 
-    fprintf(strcat('Crossover - f0',ax,': %d \n'), f0); 
+    fprintf(strcat('Crossover - f0',axplot,': %d \n'), f0); 
 end 
 
 
@@ -345,7 +344,7 @@ end
 
 % -------------------------------------------------------------------------
 
-function [params, transff, data] = fit_2nd_order(data, ax, Ts, options)
+function [params, transff, data] = fit_2nd_order(data, axplot, Ts, options)
 % id_2nd_order - calculates transfer function parameters for 2nd order 
 % transfer function based on least squares fit for supplied in- and
 % outputs.
@@ -394,7 +393,7 @@ FRF = squeeze(freqresp(transff.discr,2*pi*f));
 data.FRF_vel = FRF;
 
 if options.prints
-   fprintf(strcat("\n* Discrete time velocity transfer function ",ax,' direction:\n'))
+   fprintf(strcat("\n* Discrete time velocity transfer function ",axplot,' direction:\n'))
    display(transff.discr) 
 end
 
@@ -424,7 +423,7 @@ if options.figures
     plot(t, velocity)
     plot(t, velocity_filt)
     plot(t, x)
-    legend(strcat('v_{',ax,',meas}'), strcat('v_{',ax,',filt}'), strcat('v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
     title('2nd - filtered - strictly proper - Minimum Phase: Simulation vs Measurement')
     xlabel('Time [s]')
     axis tight
@@ -432,7 +431,7 @@ if options.figures
     subplot(212)
     plot(t,velocity - x)
     title('Difference between simulation and measurement')
-    legend(strcat('v_{',ax,',meas}-v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}-v_{',axplot,',sim}'))
     xlabel('Time [s]')
     ylabel('Velocity [m/s]')
     axis tight
@@ -451,7 +450,7 @@ FRFc = squeeze(freqresp(transff.cont,2*pi*f));
 data.FRFc_vel = FRFc;
 
 if options.prints
-   fprintf(strcat("* Continuous time velocity transfer function ",ax,' direction:\n'))
+   fprintf(strcat("* Continuous time velocity transfer function ",axplot,' direction:\n'))
    display(transff.cont) 
 end
 
@@ -479,7 +478,7 @@ if options.figures
     plot(t, velocity,'g')
     plot(t, velocity_filt)
     plot(t,xc)
-    legend(strcat('v_{',ax,',meas}'), strcat('v_{',ax,',filt}'), strcat('v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
     title('2nd - filtered - strictly proper - Minimum Phase: Simulation vs Measurement')
     xlabel('Time [s]')
     axis tight
@@ -487,7 +486,7 @@ if options.figures
     subplot(212)
     plot(t,velocity - xc)
     title('Difference between simulation and measurement')
-    legend(strcat('v_{',ax,',meas}-v_{',ax,',sim}'))
+    legend(strcat('v_{',axplot,',meas}-v_{',axplot,',sim}'))
     xlabel('Time [s]')
     ylabel('Velocity [m/s]')
     axis tight
@@ -504,7 +503,7 @@ f0 = f(index);
 params.f0 = f0;
 
 if options.prints 
-    fprintf(strcat('Crossover - f0',ax,': %d \n'), f0); 
+    fprintf(strcat('Crossover - f0',axplot,': %d \n'), f0); 
 end 
 
 
@@ -512,7 +511,7 @@ end
 
 % -------------------------------------------------------------------------
 
-function [tf_pos, data] = integrate(tf_vel, data, ax, options)
+function [tf_pos, data] = integrate(tf_vel, data, axplot, options)
 s = tf('s');
 tf_pos = 1/s*tf_vel;
 
@@ -525,7 +524,7 @@ FRF = squeeze(freqresp(tf_pos,2*pi*f));
 data.FRFc_pos = FRF;
 
 if options.prints
-   fprintf(strcat("\n* Continuous time position transfer function ",ax,' direction:\n'))
+   fprintf(strcat("\n* Continuous time position transfer function ",axplot,' direction:\n'))
    display(tf_pos) 
 end
 
@@ -552,14 +551,14 @@ if options.figures
     plot(t, output,'g')
     plot(t, x)
     title('Integrated, filtered, strictly proper - Simulation VS Measurement')
-    legend(strcat('pos_{',ax,',meas}'), strcat('pos_{',ax,',sim}'))
+    legend(strcat('pos_{',axplot,',meas}'), strcat('pos_{',axplot,',sim}'))
     xlabel('Time [s]')
     ylabel('Displacement [m]')
     axis tight
     subplot(212)
     plot(t,output - x)
     title('Difference between simulation and measurement')
-    legend(strcat('pos_{',ax,',meas} - pos_{',ax,',sim}'))
+    legend(strcat('pos_{',axplot,',meas} - pos_{',axplot,',sim}'))
     xlabel('Time [s]')
     ylabel('Displacement [m]')
     axis tight
@@ -588,7 +587,7 @@ FRF_diff = (FRF_emp-FRFc)./FRFc;
 
 
 %% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
-if ax == 'z'
+if or(ax == "z", ax == "theta")
     nb = 1;
 else
     nb = 2;
@@ -673,7 +672,7 @@ if options.figures
     plot(t100Hz, sim_ss)
 
     % - manual simulation
-    if ax == 'z'
+    if or(ax == "z", ax == "theta")
         xsim = zeros(1, length(t100Hz));
         xstep = zeros(1, length(t100Hz));
     else
