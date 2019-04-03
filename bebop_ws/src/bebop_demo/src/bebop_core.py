@@ -253,18 +253,18 @@ class Demo(object):
         '''Check if menu button is pressed and switch to take-off or land
         sequence depending on last task that was executed.
         '''
-        if self.state not in {"take-off", "land"}:
-            if pressed.data and not self.menu_button_held:
-                if self.airborne:
-                    self.state_sequence = self.task_dict.get("land", [])
-                else:
-                    self.state_sequence = self.task_dict.get("take-off", [])
-                self.new_task = True
-                print cyan(
-                    ' Bebop_core received a new task:', self.state_sequence[0])
-                self.menu_button_held = True
-            elif not pressed.data and self.menu_button_held:
-                self.menu_button_held = False
+        if pressed.data and not self.menu_button_held:
+            if self.airborne:
+                self.state_sequence = self.task_dict.get("land", [])
+            else:
+                self.state_sequence = self.task_dict.get("take-off", [])
+            self.new_task = True
+            print cyan(
+                ' Bebop_core received a new task: ',
+                self.state_sequence[0])
+            self.menu_button_held = True
+        elif not pressed.data and self.menu_button_held:
+            self.menu_button_held = False
 
 ####################
 # Helper functions #
@@ -290,9 +290,11 @@ class Demo(object):
         '''Checks whether the drone is standing on the ground or flying and
         changes the self.airborne variable accordingly.
         '''
-        if flying_state.state == 1:
+        print 'flying state'
+        print flying_state.state
+        if flying_state.state == 2:
             self.airborne = True
-        elif flying_state.state == 4:
+        elif flying_state.state == 0:
             self.airborne = False
 
     def ctrl_state_finish(self, empty):

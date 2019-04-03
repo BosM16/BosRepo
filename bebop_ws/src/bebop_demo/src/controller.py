@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
+from bebop_msgs.msg import Ardrone3PilotingStateFlyingStateChanged
 from geometry_msgs.msg import (Twist, TwistStamped, Point, PointStamped,
                                Pose, PoseStamped)
 from std_msgs.msg import Bool, Empty, String
 from visualization_msgs.msg import Marker, MarkerArray
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
-from bebop_msgs.msg import Ardrone3PilotingStateFlyingStateChanged
+from vive_localization.msg import PoseMeas
 
 from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 
@@ -206,6 +207,7 @@ class Controller(object):
         self.state_killed = False
         self.trackpad_held = False
         self.r_trigger_held = False
+        self.save_meas_data = False
 
         # Other
         self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
@@ -213,7 +215,7 @@ class Controller(object):
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.desired_yaw = 0
+        self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.feedback_cmd_prev = Twist()
@@ -519,17 +521,16 @@ class Controller(object):
         if not (state.data == self.state):
             self.state = state.data
             self.state_changed = True
+            # If new state received before old one is finished, kill current state.
+            if self.executing_state:
+                self.state_killed = True
         else:
             print yellow(' Controller already in the correct state!')
-            self.ctrl_state_finish.publish(Empty())
+            # self.ctrl_state_finish.publish(Empty())
 
         # When going to standby, remove markers in Rviz from previous task.
         if state.data == "standby":
             self.reset_markers()
-
-        # If new state received before old one is finished, kill current state.
-        if self.executing_state:
-            self.state_killed = True
 
     def hover(self):
         '''Drone keeps itself in same location through a PID controller.
@@ -562,12 +563,14 @@ class Controller(object):
 
         if self.state == "take-off" and not self.airborne:
             self.take_off.publish(Empty())
-            while not self.airborne:
+            while not (self.airborne or (
+                    rospy.is_shutdown() or self.state_killed)):
                 rospy.sleep(0.1)
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
             self.land.publish(Empty())
-            while self.airborne:
+            while self.airborne and (
+                    not (rospy.is_shutdown() or self.state_killed)):
                 rospy.sleep(0.1)
 
     def place_cyl_hex_obst(self):
@@ -1054,19 +1057,22 @@ class Controller(object):
         '''Sets up a ros subscriber to read out the inputs given by the gamepad
         and removes this subscriber when the controller switches states.
         '''
-        self.gamepad_input = rospy.Subscriber('bebop/cmd_vel',
-                                              Twist, self.retrieve_gp_input)
         self.meas = {}
         self.meas['meas_pos_x'], self.meas['meas_pos_y'], self.meas['meas_pos_z'] = [], [], []
         self.meas['est_pos_x'], self.meas['est_pos_y'], self.meas['est_pos_z'] = [], [], []
         self.meas['est_vel_x'], self.meas['est_vel_y'], self.meas['est_vel_z'] = [], [], []
         self.meas['meas_time'], self.meas['est_time'] = [], []
 
+        self.gamepad_input = rospy.Subscriber('bebop/cmd_vel',
+                                              Twist, self.retrieve_gp_input)
+        self.save_meas_data = True
+
         while not (rospy.is_shutdown() or self.state_killed):
             if self.state_changed:
                 self.state_changed = False
                 break
             rospy.sleep(0.1)
+        self.save_meas_data = False
         self.gamepad_input.unregister()
         io.savemat('../vhat_data_check.mat', self.meas)
 
@@ -1092,13 +1098,13 @@ class Controller(object):
         self.meas['est_time'].append(rospy.get_rostime())
 
     def new_measurement(self, data):
-      '''Reads out vive pose and saves this data when flying with the gamepad.
-      '''
-      if self.state == "gamepad flying":
-          self.meas['meas_pos_x'].append(data.meas_world.pose.position.x)
-          self.meas['meas_pos_y'].append(data.meas_world.pose.position.y)
-          self.meas['meas_pos_z'].append(data.meas_world.pose.position.z)
-          self.meas['meas_time'].append(rospy.get_rostime())
+        '''Reads out vive pose and saves this data when flying with the gamepad.
+        '''
+        if (self.state == "gamepad flying") and self.save_meas_data:
+            self.meas['meas_pos_x'].append(data.meas_world.pose.position.x)
+            self.meas['meas_pos_y'].append(data.meas_world.pose.position.y)
+            self.meas['meas_pos_z'].append(data.meas_world.pose.position.z)
+            self.meas['meas_time'].append(rospy.get_rostime())
 
 
     ####################

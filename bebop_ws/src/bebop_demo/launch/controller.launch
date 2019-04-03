@@ -21,10 +21,8 @@
   <param name='controller/Kp_y' value="2.6439" />
   <param name='controller/Ki_y' value="0.8907" />
   <param name='controller/Kd_y' value="1.5528" />
-  <param name='controller/Kp_z' value="4.1593" />
-  <param name='controller/Ki_z' value="4.0299" />
-  <!-- <param name='controller/Kp_z' value="8.8233" />
-  <param name='controller/Ki_z' value="14.8069" />   -->
+  <param name='controller/Kp_z' value="8.8233" />
+  <param name='controller/Ki_z' value="14.8069" />
 
   <!-- ff flying omg-tools - PM 45 low I -->
   <param name='controller/Kp_omg_x' value="0.8135" />
