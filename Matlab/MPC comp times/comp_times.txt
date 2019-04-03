@@ -1,0 +1,131 @@
+===================================================
+mpc_calc_time_2difficultslalom.mat
+
+average =
+
+    0.1789
+
+
+peak =
+
+    0.6378
+
+===================================================
+mpc_calc_time_2easyslalom.mat
+
+average =
+
+    0.1623
+
+
+peak =
+
+    0.3327
+
+===================================================
+mpc_calc_time_2infcyl.mat
+
+average =
+
+    0.1710
+
+
+peak =
+
+    0.2768
+
+===================================================
+mpc_calc_time_3slalomeasy_TELANG.mat
+
+average =
+
+    0.1627
+
+
+peak =
+
+    0.4316
+
+===================================================
+mpc_calc_time_4cyl.mat
+
+average =
+
+    0.2226
+
+
+peak =
+
+    0.4121
+
+===================================================
+mpc_calc_time_hex_obst.mat
+
+average =
+
+    0.1917
+
+
+peak =
+
+    0.5497
+
+===================================================
+mpc_calc_time_largewindow_easy.mat
+
+average =
+
+    0.2190
+
+
+peak =
+
+    0.3484
+
+===================================================
+mpc_calc_time_largewindow_mediumcurve.mat
+
+average =
+
+    0.2470
+
+
+peak =
+
+    0.3862
+
+===================================================
+mpc_calc_time_no_obst.mat
+
+average =
+
+    0.1428
+
+
+peak =
+
+    0.2004
+
+===================================================
+mpc_calc_time_smallwindow.mat
+
+average =
+
+    0.2369
+
+
+peak =
+
+    0.5559
+
+===================================================
+mpc_calc_time_tinywindow.mat
+
+average =
+
+    0.3959
+
+
+peak =
+
+    1.0665
