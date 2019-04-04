@@ -227,9 +227,6 @@ class Controller(object):
         self.ctrl_r_pos = Pose()
         self.ctrl_l_pos = Pose()
         self.draw = False
-        self.drawn_pos_x = []
-        self.drawn_pos_y = []
-        self.drawn_pos_z = []
         self.drag = False
 
         self.cmd_twist_convert = TwistStamped()
@@ -381,7 +378,7 @@ class Controller(object):
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        print '2 publish input cmd', self.cmd_twist_convert.twist.linear
+        # print '2 publish input cmd', self.cmd_twist_convert.twist.linear
 
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
@@ -473,7 +470,7 @@ class Controller(object):
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        print '3 publish input cmd', self.cmd_twist_convert.twist.linear
+        # print '3 publish input cmd', self.cmd_twist_convert.twist.linear
 
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
@@ -487,9 +484,12 @@ class Controller(object):
         self.publish_real(self.drone_pose_est.position.x,
                           self.drone_pose_est.position.y,
                           self.drone_pose_est.position.z)
-        self.tracking_meas['real_path_x'] += self.drone_pose_est.position.x
-        self.tracking_meas['real_path_y'] += self.drone_pose_est.position.y
-        self.tracking_meas['real_path_z'] += self.drone_pose_est.position.z
+        self.tracking_meas['real_path_x'].append(
+                                                self.drone_pose_est.position.x)
+        self.tracking_meas['real_path_y'].append(
+                                                self.drone_pose_est.position.y)
+        self.tracking_meas['real_path_z'].append(
+                                                self.drone_pose_est.position.z)
 
         if not measurement_valid:
             self.safety_brake()
@@ -564,7 +564,7 @@ class Controller(object):
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
             self.cmd_vel.publish(self.cmd_twist_convert.twist)
-            print '4 publish input cmd', self.cmd_twist_convert.twist.linear
+            # print '4 publish input cmd', self.cmd_twist_convert.twist.linear
 
     def take_off_land(self):
         '''Function needed to wait when taking of or landing to make sure no
@@ -831,11 +831,14 @@ class Controller(object):
         print highlight_green('---- Start drawing path with left Vive'
                               ' controller while holding trigger ----')
         self.tracking_meas = {}
+        self.tracking_meas['real_path_x'] = []
+        self.tracking_meas['real_path_y'] = []
+        self.tracking_meas['real_path_z'] = []
         self.stop_drawing = False
+        self.draw = True
 
         while not (self.stop_drawing or (
                 rospy.is_shutdown() or self.state_killed)):
-            self.draw = True
             if self.draw:
                 # Erase previous markers in Rviz.
                 self.reset_markers()
@@ -844,22 +847,21 @@ class Controller(object):
                              'path will be calculated ----')
 
                 # Clip positions to make sure path does not lie outside room.
-                self.drawn_pos_x = [
-                            max(- (self.room_width/2. - self.drone_radius),
-                                min((self.room_width/2. - self.drone_radius),
-                                (elem))) for elem in self.drawn_pos_x]
-                self.drawn_pos_y = [
-                            max(- (self.room_depth/2. - self.drone_radius),
-                                min((self.room_depth/2. - self.drone_radius),
-                                (elem))) for elem in self.drawn_pos_y]
-                self.drawn_pos_z = [
-                            max(- (0 + self.drone_radius),
-                                min((self.room_height - self.drone_radius),
-                                (elem))) for elem in self.drawn_pos_z]
+                # self.drawn_pos_x = [
+                #             max(- (self.room_width/2. - self.drone_radius),
+                #                 min((self.room_width/2. - self.drone_radius),
+                #                 (elem))) for elem in self.drawn_pos_x]
+                # self.drawn_pos_y = [
+                #             max(- (self.room_depth/2. - self.drone_radius),
+                #                 min((self.room_depth/2. - self.drone_radius),
+                #                 (elem))) for elem in self.drawn_pos_y]
+                # self.drawn_pos_z = [
+                #             max(- (0 + self.drone_radius),
+                #                 min((self.room_height - self.drone_radius),
+                #                 (elem))) for elem in self.drawn_pos_z]
 
-                print 'drawn path\n', self.drawn_pos_x
-                print self.drawn_pos_y
-                print self.drawn_pos_z
+                self.draw_ctrl_path()
+
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
                 if len(self.drawn_pos_x) > 50:
@@ -872,6 +874,7 @@ class Controller(object):
                 else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
+                self.draw = False
 
             rospy.sleep(0.1)
 
@@ -1187,16 +1190,16 @@ class Controller(object):
         feedback_cmd = self.feedbeck(pos_desired, vel_desired)
 
         self.cmd_twist_convert.twist.linear.x = max(min((
-                        self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
+                        feedback_cmd.linear.x),
                         self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.linear.y = max(min((
-                        self.feedforward_cmd.linear.y + feedback_cmd.linear.y),
+                        feedback_cmd.linear.y),
                         self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.linear.z = max(min((
-                        self.feedforward_cmd.linear.z + feedback_cmd.linear.z),
+                        feedback_cmd.linear.z),
                         self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.angular.z = max(min((
-                    self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
+                    feedback_cmd.angular.z),
                     self.max_input), - self.max_input)
 
     def feedbeck(self, pos_desired, vel_desired):
@@ -1305,7 +1308,7 @@ class Controller(object):
         '''
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        print '1 publish input cmd', self.cmd_twist_convert.twist.linear
+        # print '1 publish input cmd', self.cmd_twist_convert.twist.linear
 
     def repeat_safety_brake(self):
         '''More permanent emergency measure: keep safety braking until new task
@@ -1962,14 +1965,13 @@ class Controller(object):
         '''
         self.drawn_path.header.stamp = rospy.get_rostime()
 
-        point = Point(x=self.ctrl_l_pos.position.x,
-                      y=self.ctrl_l_pos.position.y,
-                      z=self.ctrl_l_pos.position.z)
-        self.drawn_path.points.append(point)
+        self.drawn_path.points = []
 
-        self.drawn_pos_x += [point.x]
-        self.drawn_pos_y += [point.y]
-        self.drawn_pos_z += [point.z]
+        for index in range(len(self.drawn_pos_x)):
+            point = Point(x=self.drawn_pos_x[index],
+                          y=self.drawn_pos_y[index],
+                          z=self.drawn_pos_z[index])
+            self.drawn_path.points.append(point)
 
         self.trajectory_drawn.publish(self.drawn_path)
 

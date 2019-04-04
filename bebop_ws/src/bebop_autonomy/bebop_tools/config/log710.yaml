@@ -60,7 +60,7 @@ teleop:
     type: topic
     message_type: "std_msgs/Empty"
     topic_name: reset
-    deadman_buttons: [2, 7] # RT + B
+    deadman_buttons: [2, 7, 6] # RT + LT + B
     axis_mappings: []
   flattrim:
     type: topic
