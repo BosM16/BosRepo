@@ -7,7 +7,7 @@ PIDS for varying desired phase margin.
 * HIGH INTEGRATION *
 ********************
 
----------------
+----------------
    PM =  10 : 
 ----------------
 
@@ -43,6 +43,16 @@ zPIparams =
      K: 31.6590
     Kp: 31.6590
     Ki: 113.9360
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 0.5333
+     K: 9.2110
+    Kp: 9.2110
+    Ki: 17.2720
 
 ----------------
    PM =  15 : 
@@ -81,6 +91,16 @@ zPIparams =
     Kp: 21.6126
     Ki: 62.8205
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 0.6603
+     K: 6.2881
+    Kp: 6.2881
+    Ki: 9.5234
+
 ----------------
    PM =  20 : 
 ----------------
@@ -117,6 +137,16 @@ zPIparams =
      K: 15.5345
     Kp: 15.5345
     Ki: 37.2312
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 0.8008
+     K: 4.5197
+    Kp: 4.5197
+    Ki: 5.6441
 
 ----------------
    PM =  25 : 
@@ -155,6 +185,16 @@ zPIparams =
     Kp: 11.5674
     Ki: 23.1343
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 0.9596
+     K: 3.3655
+    Kp: 3.3655
+    Ki: 3.5071
+
 ----------------
    PM =  30 : 
 ----------------
@@ -191,6 +231,16 @@ zPIparams =
      K: 8.8233
     Kp: 8.8233
     Ki: 14.8069
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.1436
+     K: 2.5671
+    Kp: 2.5671
+    Ki: 2.2447
 
 ----------------
    PM =  35 : 
@@ -229,6 +279,16 @@ zPIparams =
     Kp: 6.8340
     Ki: 9.6233
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.3629
+     K: 1.9883
+    Kp: 1.9883
+    Ki: 1.4589
+
 ----------------
    PM =  40 : 
 ----------------
@@ -265,6 +325,16 @@ zPIparams =
      K: 5.3331
     Kp: 5.3331
     Ki: 6.2667
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.6333
+     K: 1.5516
+    Kp: 1.5516
+    Ki: 0.9500
 
 ----------------
    PM =  45 : 
@@ -303,6 +373,16 @@ zPIparams =
     Kp: 4.1593
     Ki: 4.0299
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.9808
+     K: 1.2101
+    Kp: 1.2101
+    Ki: 0.6109
+
 ----------------
    PM =  50 : 
 ----------------
@@ -339,6 +419,16 @@ zPIparams =
      K: 3.2101
     Kp: 3.2101
     Ki: 2.5120
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 2.4525
+     K: 0.9339
+    Kp: 0.9339
+    Ki: 0.3808
 
 ----------------
    PM =  55 : 
@@ -377,6 +467,16 @@ zPIparams =
     Kp: 2.4165
     Ki: 1.4760
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 3.1421
+     K: 0.7031
+    Kp: 0.7031
+    Ki: 0.2238
+
 ----------------
    PM =  60 : 
 ----------------
@@ -413,6 +513,16 @@ zPIparams =
      K: 1.7307
     Kp: 1.7307
     Ki: 0.7782
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: NaN
+     K: NaN
+    Kp: NaN
+    Ki: NaN
 
 ----------------
    PM =  65 : 
@@ -451,6 +561,16 @@ zPIparams =
     Kp: 1.1171
     Ki: 0.3305
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: NaN
+     K: NaN
+    Kp: NaN
+    Ki: NaN
+
 ----------------
    PM =  70 : 
 ----------------
@@ -487,6 +607,17 @@ zPIparams =
      K: NaN
     Kp: NaN
     Ki: NaN
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: NaN
+     K: NaN
+    Kp: NaN
+    Ki: NaN
+
 
 ********************
 * LOW INTEGRATION *
@@ -528,6 +659,16 @@ zPIparams =
     Kp: 32.3311
     Ki: 72.3338
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 0.8578
+     K: 9.4065
+    Kp: 9.4065
+    Ki: 10.9654
+
 ----------------
    PM =  15 : 
 ----------------
@@ -564,6 +705,16 @@ zPIparams =
      K: 22.0713
     Kp: 22.0713
     Ki: 39.8824
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.0621
+     K: 6.4216
+    Kp: 6.4216
+    Ki: 6.0460
 
 ----------------
    PM =  20 : 
@@ -602,6 +753,16 @@ zPIparams =
     Kp: 15.8643
     Ki: 23.6367
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.2881
+     K: 4.6156
+    Kp: 4.6156
+    Ki: 3.5832
+
 ----------------
    PM =  25 : 
 ----------------
@@ -638,6 +799,16 @@ zPIparams =
      K: 11.8129
     Kp: 11.8129
     Ki: 14.6871
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.5436
+     K: 3.4369
+    Kp: 3.4369
+    Ki: 2.2265
 
 ----------------
    PM =  30 : 
@@ -676,6 +847,16 @@ zPIparams =
     Kp: 9.0106
     Ki: 9.4004
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 1.8396
+     K: 2.6216
+    Kp: 2.6216
+    Ki: 1.4251
+
 ----------------
    PM =  35 : 
 ----------------
@@ -712,6 +893,16 @@ zPIparams =
      K: 6.9791
     Kp: 6.9791
     Ki: 6.1095
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 2.1924
+     K: 2.0305
+    Kp: 2.0305
+    Ki: 0.9262
 
 ----------------
    PM =  40 : 
@@ -750,6 +941,16 @@ zPIparams =
     Kp: 5.4463
     Ki: 3.9785
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 2.6273
+     K: 1.5846
+    Kp: 1.5846
+    Ki: 0.6031
+
 ----------------
    PM =  45 : 
 ----------------
@@ -786,6 +987,16 @@ zPIparams =
      K: 4.2476
     Kp: 4.2476
     Ki: 2.5585
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 3.1863
+     K: 1.2358
+    Kp: 1.2358
+    Ki: 0.3879
 
 ----------------
    PM =  50 : 
@@ -824,6 +1035,16 @@ zPIparams =
     Kp: 3.2782
     Ki: 1.5948
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 3.9451
+     K: 0.9538
+    Kp: 0.9538
+    Ki: 0.2418
+
 ----------------
    PM =  55 : 
 ----------------
@@ -860,6 +1081,16 @@ zPIparams =
      K: 2.4678
     Kp: 2.4678
     Ki: 0.9371
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: 5.0544
+     K: 0.7180
+    Kp: 0.7180
+    Ki: 0.1421
 
 ----------------
    PM =  60 : 
@@ -898,6 +1129,16 @@ zPIparams =
     Kp: 1.7674
     Ki: 0.4941
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: NaN
+     K: NaN
+    Kp: NaN
+    Ki: NaN
+
 ----------------
    PM =  65 : 
 ----------------
@@ -934,6 +1175,16 @@ zPIparams =
      K: 1.1408
     Kp: 1.1408
     Ki: 0.2099
+
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: NaN
+     K: NaN
+    Kp: NaN
+    Ki: NaN
 
 ----------------
    PM =  70 : 
@@ -972,3 +1223,12 @@ zPIparams =
     Kp: NaN
     Ki: NaN
 
+
+yawPIparams = 
+
+  struct with fields:
+
+    Ti: NaN
+     K: NaN
+    Kp: NaN
+    Ki: NaN

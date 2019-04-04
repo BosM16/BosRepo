@@ -1,3 +1,4 @@
+% Identification of LTI models for x, y, z, yaw motion.
 clear variables
 close all
 clc
@@ -10,12 +11,13 @@ options.prints = false;
 
 % ----------------------------------------------------------------- 
 % SYNTAX: 
-%   model = identify("data/data_mat_file",'axis',Ts,f0,Fc,options);
+%   model = identify("data/data_mat_file",'axis','axis symbol',Ts,f0,Fc,options);
 % -----------------------------------------------------------------
 xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options);
+% xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options);
 ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options);
 zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options);
-yawmodel = identify("data/vel_identification_z","theta",char(952),0.02,0.3,1.,options);
+yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -119,7 +121,7 @@ fcn = fc/(fs/2); % normalized cutoff frequency (as butter() accepts)
 
 
 %% Filtering of the in- and output data using Butterworth filter
-if or(ax == "z", ax == "theta")
+if or(ax == "z", ax == "yaw")
     nb = 2;
 else
     nb = 3;
@@ -149,7 +151,7 @@ end
 
 
 %% Fitting parameters
-if or(ax == "z", ax == "theta")
+if or(ax == "z", ax == "yaw")
     [params, tf_vel, data] = fit_1st_order(data, axplot, Ts, options);
 else
     [params, tf_vel, data] = fit_2nd_order(data, axplot, Ts, options);
@@ -587,7 +589,7 @@ FRF_diff = (FRF_emp-FRFc)./FRFc;
 
 
 %% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
-if or(ax == "z", ax == "theta")
+if or(ax == "z", ax == "yaw")
     nb = 1;
 else
     nb = 2;
@@ -672,7 +674,7 @@ if options.figures
     plot(t100Hz, sim_ss)
 
     % - manual simulation
-    if or(ax == "z", ax == "theta")
+    if or(ax == "z", ax == "yaw")
         xsim = zeros(1, length(t100Hz));
         xstep = zeros(1, length(t100Hz));
     else

@@ -19,8 +19,8 @@ set(0, 'DefaultLineLineWidth', 1.5);
 % Settings
 options.figures = false;
 options.prints = false;
-options.range = false;
-options.low_i = true;
+options.range = true;
+options.low_i = false;
 
 % Desired phase margin
 % --------------------
