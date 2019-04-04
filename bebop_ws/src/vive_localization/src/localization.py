@@ -265,10 +265,16 @@ class ViveLocalization(object):
         '''Returns PoseStamped of the i'th object in self.tracked_objects.
         Pose is expressed in vive reference frame.
         '''
+        # Extra added noise for Kalman filter testing.
+        mu = 0.
+        sigma = 0.05
+
         pose = np.array(
             self.v.devices[object].get_pose_euler())
-
-        pose[3:6] = pose[3:6]*np.pi/180.
+        pose[3:6] = pose[3:6]*np.pi/180
+        pose[3] += np.random.normal(mu, sigma)
+        pose[4] += np.random.normal(mu, sigma)
+        pose[5] += np.random.normal(mu, sigma)
 
         quat = tf.transformations.quaternion_from_euler(
             pose[5], pose[4], pose[3])
@@ -276,9 +282,10 @@ class ViveLocalization(object):
         pose_t_in_v = PoseStamped()
         pose_t_in_v.header.frame_id = "vive"
         pose_t_in_v.header.stamp = rospy.Time.now()
-        pose_t_in_v.pose.position.x = pose[0]
-        pose_t_in_v.pose.position.y = pose[1]
-        pose_t_in_v.pose.position.z = pose[2]
+
+        pose_t_in_v.pose.position.x = pose[0] + np.random.normal(mu, sigma)
+        pose_t_in_v.pose.position.y = pose[1] + np.random.normal(mu, sigma)
+        pose_t_in_v.pose.position.z = pose[2] + np.random.normal(mu, sigma)
         pose_t_in_v.pose.orientation.x = quat[0]
         pose_t_in_v.pose.orientation.y = quat[1]
         pose_t_in_v.pose.orientation.z = quat[2]
