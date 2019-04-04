@@ -6,6 +6,8 @@ import rospy
 import numpy as np
 import scipy.io as io
 
+import tf
+
 
 class Ident(object):
 
@@ -18,6 +20,8 @@ class Ident(object):
         self.wait = 0.1
         span = int(self.ident_length*(self.wait*10)*self.rate*50 + 15)
         self.input = np.zeros(span)
+        self.output_roll = np.zeros(span)
+        self.output_pitch = np.zeros(span)
         self.output_yaw = np.zeros(span)
         self.vel = Twist()
         self.measuring = False
@@ -132,7 +136,10 @@ class Ident(object):
     def update_pose(self, pose):
         if self.measuring:
             self.input[self.index] = self.vel.angular.z
-            euler = tf.transformations.euler_from_quaternion(pose.pose.orientation)
+            euler = tf.transformations.euler_from_quaternion((pose.pose.orientation.x,
+                                                              pose.pose.orientation.y,
+                                                              pose.pose.orientation.z,
+                                                              pose.pose.orientation.w))
             self.output_roll[self.index] = euler[0]
             self.output_pitch[self.index] = euler[1]
             self.output_yaw[self.index] = euler[2]

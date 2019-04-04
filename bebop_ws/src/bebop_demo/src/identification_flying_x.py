@@ -14,7 +14,7 @@ class Ident(object):
         """
         self.ident_length = 10
         self.index = 0
-        self.rate = 12
+        self.rate = 14
         self.wait1 = 0.1
         self.wait2 = 0.10
         self.wait3 = 0.10
@@ -45,7 +45,7 @@ class Ident(object):
         print 'Billie is flying'
 
         rospy.sleep(4)
-        velocity_max = 0.6
+        velocity_max = 0.25
 
         # move back and forth with a pause in between
         self.vel.linear.x = 0.0
