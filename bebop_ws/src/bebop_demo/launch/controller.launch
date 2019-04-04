@@ -98,6 +98,8 @@
   <param name='motionplanner/drone_radius_small' value="0.20" />
   <param name='motionplanner/safety_margin' value="0.20" />
   <param name='motionplanner/safety_margin_small' value="0.10" />
+  <param name='motionplanner/safety_weight' value="10" />
+  <param name='motionplanner/safety_weight_slow' value="10" />
   <param name='motionplanner/room_width' value="5.5" />
   <param name='motionplanner/room_depth' value="3.6" />
   <param name='motionplanner/room_height' value="2.5" />
