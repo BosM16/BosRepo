@@ -492,12 +492,6 @@ class Controller(object):
         self.publish_real(self.drone_pose_est.position.x,
                           self.drone_pose_est.position.y,
                           self.drone_pose_est.position.z)
-        self.tracking_meas['real_path_x'].append(
-                                                self.drone_pose_est.position.x)
-        self.tracking_meas['real_path_y'].append(
-                                                self.drone_pose_est.position.y)
-        self.tracking_meas['real_path_z'].append(
-                                                self.drone_pose_est.position.z)
 
         if not measurement_valid:
             self.safety_brake()
@@ -838,12 +832,7 @@ class Controller(object):
         self.reset_markers()
         print highlight_green('---- Start drawing path with left Vive'
                               ' controller while holding trigger ----')
-        self.tracking_meas = {}
-        self.tracking_meas['real_path_x'] = []
-        self.tracking_meas['real_path_y'] = []
-        self.tracking_meas['real_path_z'] = []
         self.stop_drawing = False
-        self.draw = True
 
         while not (self.stop_drawing or (
                 rospy.is_shutdown() or self.state_killed)):
@@ -855,20 +844,18 @@ class Controller(object):
                              'path will be calculated ----')
 
                 # Clip positions to make sure path does not lie outside room.
-                # self.drawn_pos_x = [
-                #             max(- (self.room_width/2. - self.drone_radius),
-                #                 min((self.room_width/2. - self.drone_radius),
-                #                 (elem))) for elem in self.drawn_pos_x]
-                # self.drawn_pos_y = [
-                #             max(- (self.room_depth/2. - self.drone_radius),
-                #                 min((self.room_depth/2. - self.drone_radius),
-                #                 (elem))) for elem in self.drawn_pos_y]
-                # self.drawn_pos_z = [
-                #             max(- (0 + self.drone_radius),
-                #                 min((self.room_height - self.drone_radius),
-                #                 (elem))) for elem in self.drawn_pos_z]
-
-                self.draw_ctrl_path()
+                self.drawn_pos_x = [
+                            max(- (self.room_width/2. - self.drone_radius),
+                                min((self.room_width/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_x]
+                self.drawn_pos_y = [
+                            max(- (self.room_depth/2. - self.drone_radius),
+                                min((self.room_depth/2. - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_y]
+                self.drawn_pos_z = [
+                            max(- (0 + self.drone_radius),
+                                min((self.room_height - self.drone_radius),
+                                (elem))) for elem in self.drawn_pos_z]
 
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
@@ -876,13 +863,8 @@ class Controller(object):
                     self.diff_interp_traj()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
-                    self.tracking_meas['drawn_path_x'] = self.drawn_pos_x
-                    self.tracking_meas['drawn_path_y'] = self.drawn_pos_y
-                    self.tracking_meas['drawn_path_z'] = self.drawn_pos_z
-                else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
-                self.draw = False
 
             rospy.sleep(0.1)
 
@@ -951,7 +933,6 @@ class Controller(object):
                 self.check_goal_reached()
 
             self.rate.sleep()
-        io.savemat('../tracking_performance_meas.mat', self.tracking_meas)
         self.reset_pid_gains()
 
     def drag_drone(self):
