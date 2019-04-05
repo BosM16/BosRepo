@@ -164,15 +164,14 @@ class Controller(object):
         self.Kd_y = rospy.get_param('controller/Kd_y', 0.6864)
         self.Kp_z = rospy.get_param('controller/Kp_z', 0.5)
         self.Ki_z = rospy.get_param('controller/Ki_z', 1.5792)
-        self.K_theta = rospy.get_param('controller/K_theta', 0.3)
+        self.Kp_theta = rospy.get_param('controller/Kp_theta', 0.3)
+        self.Ki_theta = rospy.get_param('controller/Ki_theta', 0.3)
         self.max_input = rospy.get_param('controller/max_input', 0.5)
         self.max_vel = rospy.get_param('motionplanner/vmax', 0.5)
         self.room_width = rospy.get_param('motionplanner/room_width', 1.)
         self.room_depth = rospy.get_param('motionplanner/room_depth', 1.)
         self.room_height = rospy.get_param('motionplanner/room_height', 1.)
         self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
-        self.safety_treshold = rospy.get_param('controller/safety_treshold',
-                                               0.5)
         self.pos_nrm_tol = rospy.get_param(
                                        'controller/goal_reached_pos_tol', 0.05)
         self._sample_time = rospy.get_param('controller/sample_time', 0.01)
@@ -214,11 +213,12 @@ class Controller(object):
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
         self.desired_yaw = np.pi/2.
-        self.drone_yaw_est = 0.0
+        self.drone_yaw_est = 0.
         self.pos_nrm = np.inf
         self.feedback_cmd_prev = Twist()
         self.pos_error_prev = PointStamped()
         self.vel_error_prev = PointStamped()
+        self.yaw_error_prev = 0.
         self.measurement_valid = False
         self.obstacles = []
         self.omg_index = 1
@@ -554,7 +554,8 @@ class Controller(object):
                                       z=self.hover_setpoint.position.z)
             vel_desired = PointStamped()
             vel_desired.point = Point()
-            feedback_cmd = self.feedbeck(pos_desired, vel_desired)
+            feedback_cmd = self.feedbeck(pos_desired, vel_desired,
+                                         self.desired_yaw)
 
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
@@ -1174,7 +1175,8 @@ class Controller(object):
         '''
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
-        feedback_cmd = self.feedbeck(pos_desired, vel_desired)
+        feedback_cmd = self.feedbeck(pos_desired, vel_desired,
+                                     self.desired_yaw)
 
         self.cmd_twist_convert.twist.linear.x = max(min((
                         self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
@@ -1189,7 +1191,7 @@ class Controller(object):
                     self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
                     self.max_input), - self.max_input)
 
-    def feedbeck(self, pos_desired, vel_desired):
+    def feedbeck(self, pos_desired, vel_desired, yaw_desired):
         '''Whenever the target is reached, apply position feedback to the
         desired end position to remain in the correct spot and compensate for
         drift.
@@ -1199,7 +1201,7 @@ class Controller(object):
 
         if ((self.state == "undamped spring") or
            (self.state == "viscous fluid")):
-            # # PD
+            # PD
             pos_error = PointStamped()
             pos_error.header.frame_id = "world"
             pos_error.point.x = (pos_desired.point.x -
@@ -1226,7 +1228,7 @@ class Controller(object):
             feedback_cmd.linear.z = max(- self.max_input, min(self.max_input, (
                     self.Kp_z*pos_error.point.z)))
         else:
-            # # PID
+            # PID
             pos_error_prev = self.pos_error_prev
             pos_error = PointStamped()
             pos_error.header.frame_id = "world"
@@ -1269,19 +1271,19 @@ class Controller(object):
                     (-self.Kp_z + self.Ki_z*self._sample_time/2) *
                     pos_error_prev.point.z)))
 
-        # Add theta feedback to remain at zero yaw angle
-        angle_error = ((((self.desired_yaw - self.drone_yaw_est) -
-                         np.pi) % (2*np.pi)) - np.pi)
-        # print 'desired yaw angle', self.desired_yaw
-        # print 'real yaw angle', self.drone_yaw_est
-        # print 'angle error', angle_error
-        K_theta = self.K_theta + (np.pi - abs(angle_error))/np.pi*0.2
-        # print 'K_theta', K_theta
-        feedback_cmd.angular.z = (K_theta*angle_error)
-        # feedback_cmd.angular.z = (self.K_theta*angle_error)
+        yaw_error_prev = self.yaw_error_prev
+        yaw_error = ((((yaw_desired - self.drone_yaw_est) -
+                       np.pi) % (2*np.pi)) - np.pi)
+        feedback_cmd.angular.z = max(- self.max_input, min(self.max_input, (
+                self.feedback_cmd_prev.angular.z +
+                (self.Kp_theta + self.Ki_theta*self._sample_time/2) *
+                yaw_error +
+                (-self.Kp_theta + self.Ki_theta*self._sample_time/2) *
+                yaw_error_prev)))
 
         self.pos_error_prev = pos_error
         self.vel_error_prev = vel_error
+        self.yaw_error_prev = yaw_error
         self.feedback_cmd_prev = feedback_cmd
 
         # Publish the position error.
