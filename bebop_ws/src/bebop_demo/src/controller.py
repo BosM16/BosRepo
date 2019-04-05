@@ -280,7 +280,7 @@ class Controller(object):
         by loading in the room and static obstacles. Waits for Motionplanner to
         set mp_status to configured.
         '''
-        if (self.obstacles and
+        if self.obstacles and (
                 self.obstacles[0].obst_type.data == "window plate" or
                 (self.obstacles[0].obst_type.data == "slalom plate" and
                  len(self.obstacles) >= 3)):
@@ -833,6 +833,9 @@ class Controller(object):
                 # Erase previous markers in Rviz.
                 self.reset_markers()
 
+                while self.draw and not rospy.is_shutdown():
+                    self.rate.sleep()
+
                 print yellow('---- Trigger button has been released,'
                              'path will be calculated ----')
 
@@ -856,6 +859,7 @@ class Controller(object):
                     self.diff_interp_traj()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
+                else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
 
