@@ -33,13 +33,14 @@ class Perception(object):
 
         # Name of topic can change depending on name used in the code for
         # reading out the vive.
-        rospy.Subscriber('/bebop/odom', Odometry, self.get_bebop_data)
+        # rospy.Subscriber('/bebop/odom', Odometry, self.get_bebop_data)
         rospy.Subscriber(
             'vive_localization/calibrate', Empty, self.vive_calibrate)
 
     def get_bebop_data(self, data):
         """
         Updates pose and twist data by using measurements on the bebop itself.
+        Currently not used.
         """
         self.pose_bebop = data.pose.pose
         self.twist_bebop = data.twist.twist
@@ -48,8 +49,6 @@ class Perception(object):
         '''Monitor function: checks measurement.
         If the measurement equals the vive frame origin, this means that
         vibrations cause a false measurement.
-
-        Should be moved to monitor later.
         '''
         tf_v_in_w = self.get_transform("vive", "world")
         tf_t_in_w = self.get_transform("tracker", "world")

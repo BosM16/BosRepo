@@ -214,7 +214,7 @@ class Controller(object):
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
         self.desired_yaw = np.pi/2.
-        self.real_yaw = 0.0
+        self.drone_yaw_est = 0.0
         self.pos_nrm = np.inf
         self.feedback_cmd_prev = Twist()
         self.pos_error_prev = PointStamped()
@@ -268,7 +268,7 @@ class Controller(object):
                 # current place.
                 self.cmd_twist_convert.header.stamp = rospy.Time.now()
                 (self.drone_pose_est, self.drone_vel_est,
-                 self.real_yaw, measurement_valid) = self.get_pose_est()
+                 self.drone_yaw_est, measurement_valid) = self.get_pose_est()
                 self.hover_setpoint.position = self.drone_pose_est.position
 
             if not self.state == "initialization":
@@ -320,7 +320,7 @@ class Controller(object):
 
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         (self.drone_pose_est, self.drone_vel_est,
-         self.real_yaw, measurement_valid) = self.get_pose_est()
+         self.drone_yaw_est, measurement_valid) = self.get_pose_est()
 
         if not self.state == "fly to start":
             self.reset_markers()
@@ -379,7 +379,7 @@ class Controller(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
-        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+        (self.drone_pose_est, self.drone_vel_est, self.drone_yaw_est,
             measurement_valid) = self.get_pose_est()
         self.publish_vhat_vector(self.drone_pose_est.position,
                                  self.drone_vel_est)
@@ -476,7 +476,7 @@ class Controller(object):
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
         # if the velocity command sent above corresponds to time instance [k].
-        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+        (self.drone_pose_est, self.drone_vel_est, self.drone_yaw_est,
             measurement_valid) = self.get_pose_est()
         self.publish_vhat_vector(self.drone_pose_est.position,
                                  self.drone_vel_est)
@@ -542,7 +542,7 @@ class Controller(object):
         '''Drone keeps itself in same location through a PID controller.
         '''
         if self.airborne:
-            (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+            (self.drone_pose_est, self.drone_vel_est, self.drone_yaw_est,
                 measurement_valid) = self.get_pose_est()
 
             if not measurement_valid:
@@ -1094,7 +1094,7 @@ class Controller(object):
         '''
         self.cmd_twist_convert.twist.linear = gp_input.linear
         self.cmd_twist_convert.header.stamp = rospy.get_rostime()
-        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+        (self.drone_pose_est, self.drone_vel_est, self.drone_yaw_est,
             measurement_valid) = self.get_pose_est()
         self.publish_vhat_vector(self.drone_pose_est.position,
                                  self.drone_vel_est)
@@ -1116,7 +1116,8 @@ class Controller(object):
             self.meas['meas_time'].append(self.meas_time)
 
     def new_measurement(self, data):
-        '''Reads out vive pose and saves this data when flying with the gamepad.
+        '''Reads out vive pose and saves this data when flying with the
+        gamepad.
         '''
         if (self.state == "gamepad flying"):
             self.meas_pos_x = data.meas_world.pose.position.x
@@ -1269,10 +1270,10 @@ class Controller(object):
                     pos_error_prev.point.z)))
 
         # Add theta feedback to remain at zero yaw angle
-        angle_error = ((((self.desired_yaw - self.real_yaw) -
+        angle_error = ((((self.desired_yaw - self.drone_yaw_est) -
                          np.pi) % (2*np.pi)) - np.pi)
         # print 'desired yaw angle', self.desired_yaw
-        # print 'real yaw angle', self.real_yaw
+        # print 'real yaw angle', self.drone_yaw_est
         # print 'angle error', angle_error
         K_theta = self.K_theta + (np.pi - abs(angle_error))/np.pi*0.2
         # print 'K_theta', K_theta

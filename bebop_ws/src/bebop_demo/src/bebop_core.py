@@ -76,6 +76,15 @@ class Demo(object):
             "viscous fluid": ["viscous fluid", "reset_PID"],
             "gamepad flying": ["gamepad flying"]}
 
+        self.broadc = tf2_ros.TransformBroadcaster()
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer)
+        self.tf_r_in_w_timestamp_old = rospy.Time.now()
+
+        self.tf_r_in_w = TransformStamped()
+        self.tf_r_in_w.header.frame_id = "world"
+        self.tf_r_in_w.child_frame_id = "world_rot"
+
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
         self.pose_r_pub = rospy.Publisher(
@@ -132,6 +141,7 @@ class Demo(object):
                     else:
                         self.omg_standby = False
 
+                    # Enable landing at all time as safety measure.
                     if self.state == "land":
                         self.change_state = True
 
@@ -185,21 +195,42 @@ class Demo(object):
         if (not self.measurement_valid) and (
              not self.state_sequence == ["emergency"]):
             req_vel.input_cmd.twist = Twist()
-            inv_meas_task = String(data="invalid measurement")
-            self.switch_task(inv_meas_task)
+            self.switch_task(String(data="invalid measurement"))
 
         self.kalman.input_cmd_list.append(req_vel.input_cmd)
         self.kalman.latest_input_cmd = req_vel.input_cmd
 
-        self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                self.kalman.latest_input_cmd, self.wm.yhat_r)
+        (self.wm.yhat_r, self.wm.vhat_r, self.wm.yaw) = (
+            self.kalman.kalman_pos_predict(self.kalman.latest_input_cmd))
 
-        # Transform the rotated yhat and vhat to world frame.
+        # Broadcast the new yaw frame.
+        # - Yaw to quaternions.
+        quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
+        self.tf_r_in_w.transform.rotation.x = quat[0]
+        self.tf_r_in_w.transform.rotation.y = quat[1]
+        self.tf_r_in_w.transform.rotation.z = quat[2]
+        self.tf_r_in_w.transform.rotation.w = quat[3]
+        self.tf_r_in_w.header.stamp = rospy.Time.now()
+        self.broadc.sendTransform(self.tf_r_in_w)
+
+        # Wait until we know the newly broadcasted transform is online and can
+        # be read out.
+        tf_r_in_w = TransformStamped()
+        tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
+        rate = rospy.Rate(20./self.sample_time)
+        while (tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old) and (
+                not rospy.is_shutdown()):
+
+            tf_r_in_w = self.kalman.get_transform("world_rot", "world")
+            rate.sleep()
+        self.tf_r_in_w_timestamp_old = tf_r_in_w.header.stamp
+
+        # Transform the rotated yhat and vhat to world frame with the new
+        # transform.
         self.wm.yhat = self.transform_point(
             self.wm.yhat_r, "world_rot", "world")
         self.wm.vhat = self.transform_point(
             self.wm.vhat_r, "world_rot", "world")
-        self.wm.yaw = self.pc.yaw
 
         self.pose_r_pub.publish(self.wm.yhat_r)
         self.pose_pub.publish(self.wm.yhat)
@@ -214,7 +245,6 @@ class Demo(object):
             yaw: float32
         '''
         self.pc.pose_vive = data.meas_world
-        self.pc.yaw = data.yaw
         self.measurement_valid = self.pc.measurement_check()
 
         measurement = self.kalman.transform_pose(
@@ -228,8 +258,9 @@ class Demo(object):
                 self.kalman.init = False
 
             # Apply correction step.
-            self.wm.yhat_r, self.wm.yhat_r_t0 = self.kalman.kalman_pos_correct(
-                                                measurement, self.wm.yhat_r_t0)
+            (self.wm.yhat_r, self.wm.yhat_r_t0) = (
+                self.kalman.kalman_pos_correct(measurement, self.wm.yhat_r_t0))
+
             self.wm.yhat = self.transform_point(
                 self.wm.yhat_r, "world_rot", "world")
             self.pose_pub.publish(self.wm.yhat)
