@@ -39,12 +39,6 @@ class WorldModel(object):
         self.state = "initialization"
         self.model = Model()
 
-        # Staat hier voor uitlezen van obstakels in de toekomst!
-        # rospy.Subscriber(
-        #     'vive_localization/c1_pose', PoseStamped, self.right_ctrl_update)
-        # rospy.Subscriber(
-        #     'vive_localization/c2_pose', PoseStamped, self.left_ctrl_update)
-
 
 class Model(object):
 

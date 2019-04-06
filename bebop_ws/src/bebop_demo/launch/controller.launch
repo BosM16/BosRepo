@@ -83,9 +83,11 @@
   <param name='controller/Kp_z' value="4.0" />
   <param name='controller/Ki_z' value="0.0" /> -->
 
-  <param name='controller/K_theta' value="0.15" />
+  <!-- PM 40 high I -->
+  <param name='controller/Kp_theta' value="1.5516" />
+  <param name='controller/Kp_theta' value="0.9500" />
+
   <param name='controller/max_input' value="1.0" />
-  <param name='controller/safety_treshold' value="0.2" />
 
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="30.0" />

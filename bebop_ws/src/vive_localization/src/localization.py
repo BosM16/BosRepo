@@ -41,7 +41,6 @@ class ViveLocalization(object):
         self.pos_c2_in_w = PointStamped()
         self.pos_c2_in_w.header.frame_id = "world"
 
-        self.tf_r_in_w_timestamp_old = rospy.Time.now()
         self.tf_t_in_w_timestamp_old = rospy.Time.now()
         self.sample_time = rospy.get_param(
                                         'vive_localization/sample_time', 0.02)
@@ -109,10 +108,6 @@ class ViveLocalization(object):
 
         self.stbroadc.sendTransform(self.tf_w_in_v)
         rospy.sleep(2.)
-
-        self.tf_r_in_w = TransformStamped()
-        self.tf_r_in_w.header.frame_id = "world"
-        self.tf_r_in_w.child_frame_id = "world_rot"
 
         self.tf_t_in_v = TransformStamped()
         self.tf_w_in_v.header.frame_id = "vive"
@@ -220,27 +215,7 @@ class ViveLocalization(object):
             # - Get yaw.
             yaw = euler[2]
 
-            # - Yaw only (roll and pitch 0.0) to quaternions.
-            quat = tf.transformations.quaternion_from_euler(0., 0., yaw)
-            self.tf_r_in_w.transform.rotation.x = quat[0]
-            self.tf_r_in_w.transform.rotation.y = quat[1]
-            self.tf_r_in_w.transform.rotation.z = quat[2]
-            self.tf_r_in_w.transform.rotation.w = quat[3]
-            self.tf_r_in_w.header.stamp = rospy.Time.now()
-            self.broadc.sendTransform(self.tf_r_in_w)
-
-            # Wait until transform has been updated
-            tf_r_in_w = TransformStamped()
-            tf_r_in_w.header.stamp = self.tf_r_in_w_timestamp_old
-            rate = rospy.Rate(20./self.sample_time)
-            while tf_r_in_w.header.stamp == self.tf_r_in_w_timestamp_old and (
-                    not rospy.is_shutdown()):
-
-                tf_r_in_w = self.get_transform("world_rot", "world")
-                rate.sleep()
-            self.tf_r_in_w_timestamp_old = tf_r_in_w.header.stamp
-
-            # Publish pose of drone in world frame as well as yaw angle.
+            # Publish pose and yaw angle of drone in world frame.
             data = PoseMeas(meas_world=pose_d_in_w, yaw=yaw)
             self.pos_update.publish(data)
 
