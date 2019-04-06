@@ -192,7 +192,7 @@ class Demo(object):
         self.kalman.latest_input_cmd = req_vel.input_cmd
 
         self.wm.yhat_r, self.wm.vhat_r = self.kalman.kalman_pos_predict(
-                                self.kalman.latest_input_cmd, self.wm.yhat_r)
+                                self.kalman.latest_input_cmd)
 
         # Transform the rotated yhat and vhat to world frame.
         self.wm.yhat = self.transform_point(

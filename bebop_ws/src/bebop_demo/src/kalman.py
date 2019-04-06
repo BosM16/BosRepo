@@ -29,22 +29,22 @@ class Kalman(object):
 
         self.vel_list_corr = []
 
-        self.X_r = np.zeros(shape=(8, 1))
-        self.X_r_t0 = np.zeros(shape=(8, 1))
+        self.X_r = np.zeros(shape=(10, 1))
+        self.X_r_t0 = np.zeros(shape=(10, 1))
         self.input_cmd_Ts = rospy.get_param('vel_cmd/sample_time', 0.01)  # s
 
-        self.Phat_t0 = np.zeros(8)
-        self.Phat = np.zeros(8)
+        self.Phat_t0 = np.zeros(10)
+        self.Phat = np.zeros(10)
 
         # Kalman tuning parameters.
-        self.R = np.identity(3)  # measurement noise covariance
-        self.Q = 1e-1*np.identity(8)  # process noise covariance
+        self.R = np.identity(4)  # measurement noise covariance
+        self.Q = 1e-1*np.identity(10)  # process noise covariance
         # self.Q = 1e-6*np.identity(8)  # process noise covariance
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-    def kalman_pos_predict(self, input_cmd, yhat_r):
+    def kalman_pos_predict(self, input_cmd):
         '''
         Based on the velocity commands send out by the velocity controller,
         calculate a prediction of the position in the future.
@@ -55,7 +55,7 @@ class Kalman(object):
         (self.X_r, yhat_r, vhat_r, self.Phat) = self.predict_step_calc(
             input_cmd, self.input_cmd_Ts, self.X_r, self.Phat)
         # print '---------------self.X_r after', self.X_r
-        return yhat_r, vhat_r
+        return yhat_r, vhat_r, yaw
 
     def kalman_pos_correct(self, measurement, yhat_r_t0):
         '''
@@ -104,7 +104,7 @@ class Kalman(object):
             case3 = True
             Ts = self.get_time_diff(measurement, yhat_r_t0)
         # print '\n kalman first predict step Ts, X_r_t0 \n', Ts, self.X_r_t0
-        (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
+        (X, yhat_r, vhat_r, yaw, Phat) = self.predict_step_calc(
                 self.vel_list_corr[0], Ts, self.X_r_t0, self.Phat_t0)
 
         # If not case 2 or 3 -> need to predict up to
@@ -115,7 +115,7 @@ class Kalman(object):
                 Ts = self.get_time_diff(
                     self.vel_list_corr[i+2], self.vel_list_corr[i+1])
                 # print '\n kalman second predict step Ts and yhat_r \n', Ts, yhat_r.point
-                (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
+                (X, yhat_r, vhat_r, yaw, Phat) = self.predict_step_calc(
                     self.vel_list_corr[i+1], Ts, X, Phat)
 
         B = self.get_time_diff(measurement,
@@ -126,7 +126,7 @@ class Kalman(object):
         # Now make prediction up to new t0 if not case 3.
         if not case3:
             # print '\n kalman third predict step Ts and yhat_r \n', B, yhat_r.point
-            (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
+            (X, yhat_r, vhat_r, yaw, Phat) = self.predict_step_calc(
                 self.vel_list_corr[-1], B, X, Phat)
         else:
             self.case5 = False
@@ -135,7 +135,7 @@ class Kalman(object):
         # ---- CORRECTION ----
         # Correct the estimate at new t0 with the measurement.
         # print '\n kalman correct yhat_r \n', yhat_r.point
-        (X, yhat_r_t0, Phat) = self.correct_step_calc(
+        (X, yhat_r_t0, yaw, Phat) = self.correct_step_calc(
                                                 measurement, X, yhat_r, Phat)
         self.X_r_t0 = X
         yhat_r_t0.header.stamp = measurement.header.stamp
@@ -143,7 +143,7 @@ class Kalman(object):
         # Now predict until next point t that coincides with next timepoint
         # for the controller.
         # print '\n kalman fourth predict step Ts and yhat_r \n', (1 + self.case5)*self.input_cmd_Ts - B, yhat_r_t0.point
-        (X, yhat_r, vhat_r, Phat) = self.predict_step_calc(
+        (X, yhat_r, vhat_r, yaw, Phat) = self.predict_step_calc(
                                 self.vel_list_corr[-1],
                                 (1 + self.case5)*self.input_cmd_Ts - B,
                                 X, Phat)
@@ -169,8 +169,9 @@ class Kalman(object):
 
         u = np.array([[input_cmd.linear.x],
                       [input_cmd.linear.y],
-                      [input_cmd.linear.z]])
-        X = (np.matmul(Ts*self.A + np.identity(8), X)
+                      [input_cmd.linear.z],
+                      [input_cmd.angular.z]])
+        X = (np.matmul(Ts*self.A + np.identity(10), X)
              + np.matmul(Ts*self.B, u))
 
         Y = np.matmul(self.C, X)
@@ -188,10 +189,12 @@ class Kalman(object):
         vhat_r.point.y = Y_vel[1, 0]
         vhat_r.point.z = Y_vel[2, 0]
 
-        Phat = np.matmul(Ts*self.A + np.identity(8), np.matmul(
-            Phat, np.transpose(Ts*self.A + np.identity(8)))) + self.Q
+        yaw = Y[3, 0]
 
-        return X, yhat_r, vhat_r, Phat
+        Phat = np.matmul(Ts*self.A + np.identity(10), np.matmul(
+            Phat, np.transpose(Ts*self.A + np.identity(10)))) + self.Q
+
+        return X, yhat_r, vhat_r, yaw, Phat
 
     def correct_step_calc(self, pos_meas, X, yhat_r, Phat):
         """
@@ -200,9 +203,15 @@ class Kalman(object):
         Argument:
             - pos_meas = PoseStamped expressed in "world_rot" frame.
         """
+        euler = tf.transformations.euler_from_quaternion(
+                                                (pose_meas.pose.orientation.x,
+                                                 pose_meas.pose.orientation.y,
+                                                 pose_meas.pose.orientation.z,
+                                                 pose_meas.pose.orientation.w))
         y = np.array([[pos_meas.pose.position.x],
                       [pos_meas.pose.position.y],
-                      [pos_meas.pose.position.z]])
+                      [pos_meas.pose.position.z],
+                      [euler[2]]])
 
         nu = y - np.matmul(self.C, X)
         S = np.matmul(self.C, np.matmul(
@@ -211,7 +220,7 @@ class Kalman(object):
             np.transpose(self.C), np.linalg.inv(S)))
         X = X + np.matmul(L, nu)
         Phat = np.matmul(
-            (np.identity(8) - np.matmul(L, self.C)), Phat)
+            (np.identity(10) - np.matmul(L, self.C)), Phat)
         self.Phat_t0 = Phat
 
         Y = np.matmul(self.C, X)
@@ -219,8 +228,9 @@ class Kalman(object):
         yhat_r.point.x = Y[0, 0]
         yhat_r.point.y = Y[1, 0]
         yhat_r.point.z = Y[2, 0]
+        yaw = Y[3, 0]
 
-        return X, yhat_r, Phat
+        return X, yhat_r, yaw, Phat
 
     def get_timestamp(self, stamped_var):
         '''Returns the timestamp of 'stamped_var' (any stamped msg, eg.

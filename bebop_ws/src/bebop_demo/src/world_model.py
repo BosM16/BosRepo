@@ -82,15 +82,22 @@ class Model(object):
         Az = np.array([[0., 1.],
                        [-a0z, -a1z]])
 
-        self.A = np.zeros([8, 8])  # continuous A matrix
+        a1yaw = 3.262
+        a0yaw = 0.0
+        Ayaw = np.array([[0., 1.],
+                       [-a0yaw, -a1yaw]])
+
+        self.A = np.zeros([10, 10])  # continuous A matrix
         self.A[0:3, 0:3] = Ax
         self.A[3:6, 3:6] = Ay
         self.A[6:8, 6:8] = Az
+        self.A[8:10, 8:10] = Ayaw
 
-        self.B = np.zeros([8, 3])  # continuous B matrix
+        self.B = np.zeros([10, 4])  # continuous B matrix
         self.B[2, 0] = 1
         self.B[5, 1] = 1
         self.B[7, 2] = 1
+        self.B[9, 3] = 1
 
         b2x = 0.0
         b1x = 0.0
@@ -103,10 +110,14 @@ class Model(object):
         b1z = 0.0
         b0z = 6.066
         Bz = np.array([b0z, b1z])
-        self.C = np.zeros([3, 8])
+        b1yaw = 0.0
+        b0yaw = 5.66
+        Byaw = np.array([b0yaw, b1yaw])
+        self.C = np.zeros([4, 10])
         self.C[0, 0:3] = Bx
         self.C[1, 3:6] = By
         self.C[2, 6:8] = Bz
+        self.C[3, 8:10] = Byaw
 
         Bx = np.array([-b2x*a0x, b0x - a1x*b2x, b1x - b2x*a2x])
         By = np.array([-b2y*a0y, b0y - a1y*b2y, b1y - b2y*a2y])
@@ -116,10 +127,11 @@ class Model(object):
         self.C_vel[1, 3:6] = By
         self.C_vel[2, 6:8] = Bz
 
-        self.D_vel = np.zeros([3, 3])
+        self.D_vel = np.zeros([4, 4])
         self.D_vel[0, 0] = b2x
         self.D_vel[1, 1] = b2y
         self.D_vel[2, 2] = b1z
+        self.D_vel[3, 3] = b1yaw
 
 
 if __name__ == '__main__':
