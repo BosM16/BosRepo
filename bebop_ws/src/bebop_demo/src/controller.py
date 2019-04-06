@@ -151,6 +151,10 @@ class Controller(object):
             Ardrone3PilotingStateFlyingStateChanged, self.bebop_flying_state)
         rospy.Subscriber(
             'vive_localization/pose', PoseMeas, self.new_measurement)
+        rospy.Subscriber(
+            'controller/hover_setpoint', Pose, self.set_hover_setpoint)
+        rospy.Subscriber(
+            'controller/save_hover_data', Empty, self.save_data)
 
     def _init_params(self):
         '''Initializes (reads and sets) externally configurable parameters
@@ -206,6 +210,16 @@ class Controller(object):
         self.meas_pos_y = 0.
         self.meas_pos_z = 0.
         self.meas_time = 0.
+
+        self.hover_meas = {}
+        self.hover_meas['meas_pos_x'], self.hover_meas['meas_pos_y'], self.hover_meas['meas_pos_z'] = [0.], [0.], [0.]
+        self.hover_meas['hover_setpoint_x'], self.hover_meas['hover_setpoint_y'], self.hover_meas['hover_setpoint_z'] = [], [], []
+        self.hover_meas['meas_time'] = [0.]
+
+        self.meas['meas_pos_x'].append(self.meas_pos_x)
+        self.meas['meas_pos_y'].append(self.meas_pos_y)
+        self.meas['meas_pos_z'].append(self.meas_pos_z)
+        self.meas['meas_time'].append(self.meas_time)
 
         # Other
         self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
@@ -326,9 +340,6 @@ class Controller(object):
             self.reset_markers()
 
         self._goal = goal
-        # Used to store calculation time of motionplanner.
-        self.calc_time = {}
-        self.calc_time['time'] = []
         self.fire_motionplanner()
 
         self._init = True
@@ -346,8 +357,6 @@ class Controller(object):
         trigger.vel_state = self.drone_vel_est
         trigger.current_time = self._time
 
-        self.fire_time = rospy.get_rostime()
-
         self._mp_trigger_topic.publish(trigger)
 
     def get_mp_result(self, data):
@@ -360,9 +369,6 @@ class Controller(object):
         self.store_trajectories(data.u_traj, data.v_traj, data.w_traj,
                                 data.x_traj, data.y_traj, data.z_traj,
                                 data.success)
-        self.receive_time = rospy.get_rostime()
-        self.calc_time['time'].append(
-                                (self.receive_time - self.fire_time).to_sec())
 
     def omg_update(self):
         '''
@@ -471,7 +477,7 @@ class Controller(object):
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        print '3 publish input cmd', self.cmd_twist_convert.twist.linear
+        # print '3 publish input cmd', self.cmd_twist_convert.twist.linear
 
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
@@ -559,7 +565,38 @@ class Controller(object):
             self.cmd_twist_convert.twist = feedback_cmd
             self.cmd_twist_convert.header.stamp = rospy.Time.now()
             self.cmd_vel.publish(self.cmd_twist_convert.twist)
-            print '4 publish input cmd', self.cmd_twist_convert.twist.linear
+
+            if ((self.state == "standby") and (
+                        self.hover_meas['meas_time'][-1] != self.meas_time)):
+                self.hover_meas['meas_pos_x'].append(self.meas_pos_x)
+                self.hover_meas['meas_pos_y'].append(self.meas_pos_y)
+                self.hover_meas['meas_pos_z'].append(self.meas_pos_z)
+                self.hover_meas['meas_time'].append(self.meas_time)
+                self.hover_meas['hover_setpoint_x'].append(
+                                                self.hover_setpoint.position.x)
+                self.hover_meas['hover_setpoint_y'].append(
+                                                self.hover_setpoint.position.y)
+                self.hover_meas['hover_setpoint_z'].append(
+                                                self.hover_setpoint.position.z)
+            # print '4 publish input cmd', self.cmd_twist_convert.twist.linear
+
+    def set_hover_setpoint(self, new_setpoint):
+        '''Set new hover setpoint manually.
+        '''
+        self.hover_setpoint = new_setpoint
+
+    def save_data(self, empty):
+        '''Save pid testing data.
+        '''
+        if self.airborne:
+            io.savemat('..pid_step_input.mat', self.hover_meas)
+        self.hover_meas['meas_pos_x'] = [0.]
+        self.hover_meas['meas_pos_y'] = [0.]
+        self.hover_meas['meas_pos_z'] = [0.]
+        self.hover_meas['meas_time'] = [0.]
+        self.hover_meas['hover_setpoint_x'] = [self.hover_setpoint.position.x]
+        self.hover_meas['hover_setpoint_y'] = [self.hover_setpoint.position.y]
+        self.hover_meas['hover_setpoint_z'] = [self.hover_setpoint.position.z]
 
     def take_off_land(self):
         '''Function needed to wait when taking of or landing to make sure no
@@ -1081,8 +1118,7 @@ class Controller(object):
                 break
             rospy.sleep(0.1)
         self.gamepad_input.unregister()
-        print 'length of meas', len(self.meas['meas_pos_x'])
-        io.savemat('../vhat_data_check.mat', self.meas)
+        io.savemat('..kalman_est_check.mat', self.meas)
 
     def retrieve_gp_input(self, gp_input):
         '''Reads out the commands sent by the gamepad and sends these to the
@@ -1114,7 +1150,7 @@ class Controller(object):
     def new_measurement(self, data):
         '''Reads out vive pose and saves this data when flying with the gamepad.
         '''
-        if (self.state == "gamepad flying"):
+        if (self.state in {"gamepad flying", "standby"}):
             self.meas_pos_x = data.meas_world.pose.position.x
             self.meas_pos_y = data.meas_world.pose.position.y
             self.meas_pos_z = data.meas_world.pose.position.z
@@ -1135,7 +1171,6 @@ class Controller(object):
 
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
-            io.savemat('../mpc_calc_time.mat', self.calc_time)
             print yellow('=========================')
             print yellow('==== Target Reached! ====')
             print yellow('=========================')
@@ -1290,7 +1325,7 @@ class Controller(object):
         '''
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        print '1 publish input cmd', self.cmd_twist_convert.twist.linear
+        # print '1 publish input cmd', self.cmd_twist_convert.twist.linear
 
     def repeat_safety_brake(self):
         '''More permanent emergency measure: keep safety braking until new task
