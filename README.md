@@ -7,7 +7,7 @@ Master's thesis project by Rian Beck and Mathias Bos titled
 **'Interactive demo on the indoor localization, control and navigation of drones'**  
 at KULeuven, Faculty of Engineering Science, Department of Mechanical Engineering  
 
-This document serves as an instruction manual for installation and usage of the demo.
+This document serves as an instruction manual for installation and use of the demo.
 
 ## Hardware requirements
 * Parrot Bebop 2 drone  
