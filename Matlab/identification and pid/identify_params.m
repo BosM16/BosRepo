@@ -5,19 +5,29 @@ clc
 fprintf('============ Start identification ============== \n')
 
 
+
 %% Settings & Execution
-options.figures = false;
+options.all_figures = false;
+options.select_figures = true;
+% options.fig_sel = (1:800);
+options.fig_sel = (1450:2200);
 options.prints = false;
+
+% colors & linewidth for figures
+colors.blue   = [0.3010, 0.7450, 0.9330];
+colors.red    = [0.6350, 0.0780, 0.1840];
+colors.yellow = [0.9290, 0.6940, 0.1250];
+set(0, 'DefaultLineLineWidth', 1);
 
 % ----------------------------------------------------------------- 
 % SYNTAX: 
-%   model = identify("data/data_mat_file",'axis','axis symbol',Ts,f0,Fc,options);
+%   model = identify("data/data_mat_file",'axis','axis symbol',Ts,f0,Fc,options,colors);
 % -----------------------------------------------------------------
-xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options);
-% xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options);
-ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options);
-zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options);
-yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options);
+xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options,colors);
+% xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options,colors);
+% ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
+% zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options,colors);
+% yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -36,7 +46,7 @@ fprintf('\n=========== Identification finished ============ \n')
 %                                Main function
 %  ========================================================================
 
-function model = identify(data_file, ax, axplot, Ts, f0, Fc, options)
+function model = identify(data_file, ax, axplot, Ts, f0, Fc, options,colors)
 % IDENTIFY - identifies LTI parameters for the drone model based on
 % the data contained in the specified data file.
 %
@@ -60,7 +70,7 @@ function model = identify(data_file, ax, axplot, Ts, f0, Fc, options)
 %       ...
 %
 % Example: 
-%    xmodel = identify("data/angle_identification_x","x",0.02,0.53,0.6,options)
+%    xmodel = identify("data/angle_identification_x","x",0.02,0.53,0.6,options,colors)
 %
 % Other m-files required: none
 % Subfunctions: none
@@ -102,10 +112,20 @@ data.f = f;
 velocity = gradient(output)/Ts;
 data.velocity = velocity;
 
-if options.figures
-    figure('Name','Measurement Data')
-    subplot(211), plot(t, output, t, input), title(strcat(axplot,' position')), xlabel('time [s]'), ylabel('position [m]'), legend('output','input')
-    subplot(212), plot(t, velocity), title(strcat(axplot,' velocity')), xlabel('time [s]'), ylabel('velocity [m/s]')
+if options.all_figures
+    figure('Name','Measurement Data full')
+    subplot(311)
+    plot(t, input, 'Color',colors.red)
+   
+    subplot(312)
+    plot(t, output, 'Color',colors.blue)
+    title(strcat(axplot,' position'))
+    xlabel('time [s]'), ylabel('position [m]')
+    
+    subplot(313)
+    plot(t, velocity, 'Color',colors.yellow)
+    title(strcat(axplot,' velocity'))
+    xlabel('time [s]'), ylabel('velocity [m/s]')
     
 end
 
@@ -129,14 +149,16 @@ end
 
 [B, A] = butter(nb,fcn);
 % input filtering
-input_filt = filter(B,A,input);
+input_filt = filtfilt(B,A,input);
 % output filtering
-velocity_filt = filter(B,A,velocity);
+output_filt = filtfilt(B,A,output);
+velocity_filt = filtfilt(B,A,velocity);
 
 data.input_filt = input_filt;
 data.velocity_filt = velocity_filt;
+data.output_filt = output_filt;
 
-if options.figures
+if options.all_figures
     figure('Name','filtered input')
     
     plot(t,input,t,input_filt)
@@ -149,21 +171,80 @@ if options.figures
 
 end
 
+if or(options.all_figures, options.select_figures)
+    tsel = t(options.fig_sel);
+    figure('Name','Measurement Data cut')
+    subplot(311)
+    hold on
+    plot(tsel, input(options.fig_sel), 'Color',colors.blue)
+    plot(tsel, input_filt(options.fig_sel), 'Color',colors.red)
+    title(strcat(axplot,'-input'))
+    legend('Applied','Filtered')
+    axis tight
+    ylim([-1, 1])
+    xlabel('time (s)');
+    ylab = ylabel('j (-)');
+    
+    subplot(312)
+    hold on
+    plot(tsel, output(options.fig_sel), 'Color',colors.blue)
+    plot(tsel, output_filt(options.fig_sel), 'Color',colors.red,'LineStyle','--')
+    xlim([min(tsel),max(tsel)])
+%     axis tight
+    title(strcat(axplot,'-position'))
+    legend('Measured','Filtered')
+    xlabel('time (s)')
+    ylab = ylabel('p (m)');
+%     ylab = ylabel('x (m)', 'Rotation',0);
+%     ylab.Position(1) = ylab.Position(1) - 0.8;
+%     ylab.Position(2) = ylab.Position(2) + 0.5;
+    
+    subplot(313)
+    hold on
+    plot(tsel, velocity(options.fig_sel), 'Color',colors.blue)
+    plot(tsel, velocity_filt(options.fig_sel), 'Color',colors.red)
+    title(strcat(axplot,'-velocity'))   
+    legend('Finite differences','Filtered')
+
+    xlim([min(tsel),max(tsel)])
+    %     axis tight
+    xlabel('time (s)')
+    ylab = ylabel('v (m/s)');
+%     ylab.Position(1) = ylab.Position(1) - 0.8;
+%     ylab.Position(2) = ylab.Position(2) + 0.5;
+    
+    % === Zoom on position ===
+    figure()
+    hold on
+    plot(tsel, output(options.fig_sel), 'Color',colors.red)
+    plot(tsel, output_filt(options.fig_sel), 'Color',colors.blue,'LineStyle','--')
+    xlim([min(tsel),max(tsel)])
+%     axis tight
+    title(strcat(axplot,'-position'))
+    legend('Measured','Filtered')
+    xlabel('time (s)')
+    ylab = ylabel('p (m)');
+%     ylab.Position(1) = ylab.Position(1) - 0.8;
+%     ylab.Position(2) = ylab.Position(2) + 0.5;
+    
+    
+    
+end
 
 %% Fitting parameters
 if or(ax == "z", ax == "yaw")
-    [params, tf_vel, data] = fit_1st_order(data, axplot, Ts, options);
+    [params, tf_vel, data] = fit_1st_order(data, axplot, Ts, options,colors);
 else
-    [params, tf_vel, data] = fit_2nd_order(data, axplot, Ts, options);
+    [params, tf_vel, data] = fit_2nd_order(data, axplot, Ts, options,colors);
 end
 
 %% Integrating velocity models
 
-[tf_pos, data] = integrate(tf_vel.cont, data, axplot, options);
+[tf_pos, data] = integrate(tf_vel.cont, data, axplot, options,colors);
 
 %% Invert velocity model + LPF, state space for feedforward control
 
-ss_vel_invLPF = invert_LPF_ss(tf_vel, ax, data, Fc, options);
+ss_vel_invLPF = invert_LPF_ss(tf_vel, ax, data, Fc, options,colors);
 
 
 %% Return results
@@ -178,7 +259,7 @@ end
 %                              Helper functions 
 %  ========================================================================
 
-function [params, transff, data] = fit_1st_order(data, axplot, Ts, options)
+function [params, transff, data] = fit_1st_order(data, axplot, Ts, options,colors)
 % id_1st_order - calculates transfer function parameters for 1st order 
 % transfer function based on least squares fit for supplied in- and
 % outputs.
@@ -233,7 +314,7 @@ if options.prints
    display(transff.discr) 
 end
 
-if options.figures
+if options.all_figures
     
 
     figure('Name','1st - filtered - strictly proper - Minimum Phase: Freq Response')
@@ -289,7 +370,7 @@ if options.prints
    display(transff.cont) 
 end
 
-if options.figures
+if options.all_figures
     figure('Name','Continuous - 1st - filtered - strictly proper - Minimum Phase: Freq Response')
     subplot(2,1,1)
     semilogx(f, 20*log10(abs(FRFc)))
@@ -346,7 +427,7 @@ end
 
 % -------------------------------------------------------------------------
 
-function [params, transff, data] = fit_2nd_order(data, axplot, Ts, options)
+function [params, transff, data] = fit_2nd_order(data, axplot, Ts, options,colors)
 % id_2nd_order - calculates transfer function parameters for 2nd order 
 % transfer function based on least squares fit for supplied in- and
 % outputs.
@@ -394,12 +475,15 @@ transff.discr = tf(params.b, params.a, Ts);
 FRF = squeeze(freqresp(transff.discr,2*pi*f));
 data.FRF_vel = FRF;
 
+% simulation
+v = lsim(transff.discr,input,t);
+
 if options.prints
    fprintf(strcat("\n* Discrete time velocity transfer function ",axplot,' direction:\n'))
    display(transff.discr) 
 end
 
-if options.figures
+if options.all_figures
     
 
     figure('Name','2nd - filtered - strictly proper - Minimum Phase: Freq Response')
@@ -417,21 +501,19 @@ if options.figures
     xlabel('f  [Hz]')
     ylabel('\phi(FRF)  [^\circ]')
 
-    x = lsim(transff.discr,input,t);
-
     figure('Name','2nd - filtered - strictly proper - Minimum Phase: Simulation')
     subplot(211)
     hold on
     plot(t, velocity)
     plot(t, velocity_filt)
-    plot(t, x)
+    plot(t, v)
     legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
     title('2nd - filtered - strictly proper - Minimum Phase: Simulation vs Measurement')
     xlabel('Time [s]')
     axis tight
     ylabel('Velocity [m/s]')
     subplot(212)
-    plot(t,velocity - x)
+    plot(t,velocity - v)
     title('Difference between simulation and measurement')
     legend(strcat('v_{',axplot,',meas}-v_{',axplot,',sim}'))
     xlabel('Time [s]')
@@ -456,7 +538,7 @@ if options.prints
    display(transff.cont) 
 end
 
-if options.figures
+if options.all_figures
     figure('Name','Continuous - 2nd - filtered - strictly proper - Minimum Phase: Freq Response')
     subplot(2,1,1)
     semilogx(f, 20*log10(abs(FRFc)))
@@ -513,7 +595,7 @@ end
 
 % -------------------------------------------------------------------------
 
-function [tf_pos, data] = integrate(tf_vel, data, axplot, options)
+function [tf_pos, data] = integrate(tf_vel, data, axplot, options,colors)
 s = tf('s');
 tf_pos = 1/s*tf_vel;
 
@@ -525,13 +607,17 @@ f = data.f;
 FRF = squeeze(freqresp(tf_pos,2*pi*f));
 data.FRFc_pos = FRF;
 
+% simulation
+v = lsim(tf_vel,input,t);
+x = lsim(tf_pos,input,t);
+
+
 if options.prints
    fprintf(strcat("\n* Continuous time position transfer function ",axplot,' direction:\n'))
    display(tf_pos) 
 end
 
-if options.figures
-
+if options.all_figures
 
     figure('Name','Integrated, filtered, strictly proper - Freq. Resp.'), subplot(211)
     semilogx(f, 20*log10(abs(FRF)))
@@ -544,8 +630,6 @@ if options.figures
     xlim([f(1) f(end)])
     xlabel('f  [Hz]')
     ylabel('\phi(FRF)  [^\circ]')
-
-    x = lsim(tf_pos,input,t);
 
     figure('Name','Integrated, filtered, strictly proper - Simulation')
     subplot(211)
@@ -569,11 +653,49 @@ if options.figures
     pzmap(tf_pos)
 end
 
+if options.select_figures
+    
+    figure('Name','Velocity fit result')
+    subplot(311)
+    hold on
+%     plot(t(options.fig_sel), velocity(options.fig_sel), 'Color', colors.blue)
+    plot(t(options.fig_sel), data.velocity_filt(options.fig_sel), 'Color',colors.blue)
+    plot(t(options.fig_sel), v(options.fig_sel),'Color',colors.red)
+%     legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
+    legend(strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
+    title('Velocity fit result')
+    xlabel('Time (s)')
+    axis tight
+    ylabel('v (m/s)')
+    
+    subplot(312)
+    plot(t(options.fig_sel),data.velocity_filt(options.fig_sel) - v(options.fig_sel),'Color',colors.yellow)
+    title('Difference between simulation and measurement')
+    legend(strcat('v_{',axplot,',filt}-v_{',axplot,',sim}'))
+    xlabel('Time (s)')
+    ylabel('\Delta v (m/s)')
+    axis tight
+    
+    subplot(313)
+    hold on
+%     plot(t(options.fig_sel), velocity(options.fig_sel), 'Color', colors.blue)
+    plot(t(options.fig_sel), data.output_filt(options.fig_sel), 'Color',colors.blue)
+    plot(t(options.fig_sel), x(options.fig_sel),'Color',colors.red)
+%     legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
+    legend(strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
+    title('Position fit result')
+    xlabel('Time (s)')
+    axis tight
+    ylabel('p (m)')
+    
+end
+
+
 end
 
 % -------------------------------------------------------------------------
 
-function [ss_vel_invLPF, data] = invert_LPF_ss(tf_vel, ax, data, Fc, options)
+function [ss_vel_invLPF, data] = invert_LPF_ss(tf_vel, ax, data, Fc, options,colors)
 t = data.t;
 f = data.f;
 dt = data.Ts;
@@ -607,7 +729,7 @@ LPF = tf(Bpre,Apre);
 sys_LPF = sys_c/LPF;
 
 
-if options.figures
+if options.all_figures
     figure('Name','Low Pass Filter (Butterworth)')
     bode(LPF)
 
@@ -644,7 +766,7 @@ end
 
 sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 
-if options.figures
+if options.all_figures
     figure('Name','Butterworth filtered, discretized (100Hz) system: Freq resp')
     bode(sys_dLPF)
 
@@ -662,7 +784,7 @@ sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 [A_dLPFi, B_dLPFi, C_dLPFi, D_dLPFi] = tf2ss(b_dLPFi, a_dLPFi);
 ss_vel_invLPF = ss(A_dLPFi,B_dLPFi,C_dLPFi,D_dLPFi,0.01);
     
-if options.figures
+if options.all_figures
     % Simulate on realistic desired speed signal: interpolated simulation result
     dt100Hz = .01;
     t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
