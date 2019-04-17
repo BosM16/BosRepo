@@ -57,6 +57,10 @@ Example default.vrsettings files are found [here](https://github.com/BosMathias/
 
 **Note -**  Even when the null driver is working properly, Steam might complain that the Vive Hmd is not found. The error 306 message can safely be ignored. Also the message in some versions of SteamVR that it is 'Not Ready' is normal. The demo will work just as well.
 
+### OMG-tools setup
+We use OMG-tools with HSL's linear solver *ma57* which can be obtained [here](http://www.hsl.rl.ac.uk/download/MA57/3.10.0/
+). The demo can be used without the solver, but equal performance is not guaranteed.
+
 
 ## Executing the demo
 ### Launch
@@ -158,6 +162,8 @@ Check your Steam 'default.vrsettings' files as discussed above in the Section 'S
 Check the 'flat trim' of your drone. The config files from bebop_tools contain the button combination to set the flat trim (define level for your drone). This can alternatively be set via the [Parrot FreeFlight Pro](https://www.parrot.com/global/freeflight-pro#freeflight-pro-the-indispensable-application-to-pilot-your-drone) application on a smartphone.
 * *Behavior that can not be explained by what is in the code*.  
 Consider recompiling the code, using the commands mentioned under the Section 'Demo Setup' above. This is especially important when switching git branches.
+* *Error 'Invalid_option [...] Holonomic has no attribute trajectories' or similar*
+Make sure the ma57-solver is correctly installed or removed as option.
 
 
 ## Acknowledgements
