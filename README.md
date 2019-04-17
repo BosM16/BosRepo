@@ -162,7 +162,7 @@ Check your Steam 'default.vrsettings' files as discussed above in the Section 'S
 Check the 'flat trim' of your drone. The config files from bebop_tools contain the button combination to set the flat trim (define level for your drone). This can alternatively be set via the [Parrot FreeFlight Pro](https://www.parrot.com/global/freeflight-pro#freeflight-pro-the-indispensable-application-to-pilot-your-drone) application on a smartphone.
 * *Behavior that can not be explained by what is in the code*.  
 Consider recompiling the code, using the commands mentioned under the Section 'Demo Setup' above. This is especially important when switching git branches.
-* *Error 'Invalid_option [...] Holonomic has no attribute trajectories' or similar*
+* *Error 'Invalid_option [...] Holonomic has no attribute trajectories' or similar*  
 Make sure the ma57-solver is correctly installed or removed as option.
 
 
