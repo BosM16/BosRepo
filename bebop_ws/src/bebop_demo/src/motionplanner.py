@@ -48,45 +48,46 @@ class MotionPlanner(object):
 
         Args:
             data :
-                obst_list
+                static_obst_list
+                dyn_obst_list
                 difficult_obst
         """
         mp_configured = False
 
         if data.difficult_obst:
-            self.omg_update_time = rospy.get_param(
+            omg_update_time = rospy.get_param(
                 'controller/omg_update_time_slow', 0.5)
-            self.safety_margin = rospy.get_param(
+            safety_margin = rospy.get_param(
                 'motionplanner/safety_margin_small', 0.1)
-            self.safety_weight = rospy.get_param(
+            safety_weight = rospy.get_param(
                  'motionplanner/safety_weight', 10.)
-            self.drone_radius = rospy.get_param(
+            drone_radius = rospy.get_param(
                 'motionplanner/drone_radius_small', 0.20)
-            self.vmax = rospy.get_param(
+            vmax = rospy.get_param(
                 'motionplanner/vmax_low', 0.2)
-            self.amax = rospy.get_param(
+            amax = rospy.get_param(
                 'motionplanner/amax_low', 0.3)
         else:
-            self.omg_update_time = rospy.get_param(
+            omg_update_time = rospy.get_param(
                 'controller/omg_update_time', 0.5)
-            self.safety_margin = rospy.get_param(
+            safety_margin = rospy.get_param(
                 'motionplanner/safety_margin', 0.2)
-            self.safety_weight = rospy.get_param(
+            safety_weight = rospy.get_param(
                  'motionplanner/safety_weight_slow', 10.)
-            self.drone_radius = rospy.get_param(
+            drone_radius = rospy.get_param(
                 'motionplanner/drone_radius', 0.225)
-            self.vmax = rospy.get_param(
+            vmax = rospy.get_param(
                 'motionplanner/vmax', 0.2)
-            self.amax = rospy.get_param(
+            amax = rospy.get_param(
                 'motionplanner/amax', 0.3)
 
         self._vehicle = omg.Holonomic3D(
-            shapes=omg.Sphere(self.drone_radius),
-            bounds={'vmax': self.vmax, 'vmin': -self.vmax,
-                    'amax': self.amax, 'amin': -self.amax})
+            shapes=omg.Sphere(drone_radius),
+            bounds={'vmax': vmax, 'vmin': -vmax,
+                    'amax': amax, 'amin': -amax})
         self._vehicle.define_knots(knot_intervals=self.knots)
-        self._vehicle.set_options({'safety_distance': self.safety_margin,
-                                   'safety_weight': self.safety_weight,
+        self._vehicle.set_options({'safety_distance': safety_margin,
+                                   'safety_weight': safety_weight,
                                    'syslimit': 'norm_2'})
         self._vehicle.set_initial_conditions([0., 0., 0.])
         self._vehicle.set_terminal_conditions([0., 0., 0.])
@@ -102,7 +103,9 @@ class MotionPlanner(object):
         room = {'shape': omg.Cuboid(room_width, room_depth, room_height),
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
-        for k, obst in enumerate(data.obst_list):
+        # Static obstacles.
+        self.n_stat_obst = len(data.static_obst_list)
+        for k, obst in enumerate(data.static_obst_list):
             if obst.obst_type.data == "inf_cylinder":
                 # 2D shape is extended infinitely along z.
                 shape = omg.Circle(obst.shape[0])
@@ -141,6 +144,15 @@ class MotionPlanner(object):
             self._obstacles.append(omg.Obstacle(
                                         {'position': position}, shape=shape))
 
+        # Dynamic obstacles.
+        self.n_dyn_obst = len(data.dyn_obst_list)
+        for obst in data.dyn_obst_list:
+            shape = omg.Circle(obst.shape[0])
+            position = [obst.pose[0], obst.pose[1]]
+            self._obstacles.append(omg.Obstacle(
+                                        {'position': position}, shape=shape))
+
+        # Create the environment as room with obstacles.
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
 
@@ -213,6 +225,12 @@ class MotionPlanner(object):
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
+
+        for k in range(self.n_dyn_obst):
+            pos = cmd.dyn_obstacles[k].pose
+            vel = cmd.dyn_obstacles[k].velocity
+            (self._deployer.problem.environment.obstacles[k + self.n_stat_obst]
+                                .set_state({'position': pos, 'velocity': vel}))
 
         trajectories = self._deployer.update(cmd.current_time, state0)  # input0)
 

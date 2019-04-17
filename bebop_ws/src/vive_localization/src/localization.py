@@ -28,6 +28,10 @@ class ViveLocalization(object):
 
         self.tracked_objects = ["tracker_1", "controller_1", "controller_2"]
 
+        self.controller_vel = TwistStamped()
+        self.controller_vel.frame_id = "world"
+        self.old_controller_pos = Point()
+
         self.pose_t_in_w = PoseStamped()
         self.pose_t_in_w.header.frame_id = "world"
 
@@ -60,6 +64,9 @@ class ViveLocalization(object):
             'vive_localization/c2_position', PointStamped, queue_size=1)
         self.c_publishers = [self.c1_pose_update, self.c1_pos_update,
                              self.c2_pose_update, self.c2_pos_update]
+
+        self.c1_vel_update = rospy.Publisher(
+            'vive_localization/c1_velocity', TwistStamped, queue_size=1)
 
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
@@ -258,6 +265,22 @@ class ViveLocalization(object):
 
                 self.c_publishers[2*i-2].publish(pose_c_in_w)
                 self.c_publishers[2*i-1].publish(pos_c_in_w)
+
+                if i == 1:
+                    new_vel_x = (pos_c_in_w.point.x -
+                                    self.old_controller_pos.x)*self.sample_time
+                    new_vel_y = (pos_c_in_w.point.y -
+                                    self.old_controller_pos.y)*self.sample_time
+                    new_vel_z = (pos_c_in_w.point.z -
+                                    self.old_controller_pos.z)*self.sample_time
+                    self.controller_vel.twist.linear.x = (new_vel_x*0.1 +
+                                        self.controller_vel.twist.linear.x*0.9)
+                    self.controller_vel.twist.linear.y = (new_vel_y*0.1 +
+                                        self.controller_vel.twist.linear.y*0.9)
+                    self.controller_vel.twist.linear.z = (new_vel_z*0.1 +
+                                        self.controller_vel.twist.linear.z*0.9)
+                    self.old_controller_pos = pos_c_in_w.point
+                    self.c1_vel_update.publish(self.controller_vel)
 
             self.rate.sleep()
 

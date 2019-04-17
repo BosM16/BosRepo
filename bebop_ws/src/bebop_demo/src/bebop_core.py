@@ -73,9 +73,11 @@ class Demo(object):
             "draw follow traj": ["land", "draw path", "take-off",
                                  "fly to start", "follow path"],
             "drag drone": ["drag drone"],
-            "undamped spring": ["undamped spring", "reset_PID"],
-            "viscous fluid": ["viscous fluid", "reset_PID"],
-            "gamepad flying": ["gamepad flying"]}
+            "undamped spring": ["undamped spring", "reset PID"],
+            "viscous fluid": ["viscous fluid", "reset PID"],
+            "gamepad flying": ["gamepad flying"],
+            "dodge dynamic obstacle": ["dodge dyn obst",
+                                       "configure motionplanner"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
@@ -298,9 +300,9 @@ class Demo(object):
             self.airborne = True
         elif flying_state.state == 0:
             self.airborne = False
-            
+
     def battery_state(self, battery):
-        '''Checks the discharge state of the battery and gives a warning 
+        '''Checks the discharge state of the battery and gives a warning
         when the battery voltage gets low.
         '''
         if (battery.percent <= 20) and ((battery.percent % 5) == 0):
