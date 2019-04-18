@@ -305,8 +305,9 @@ class Demo(object):
         '''Checks the discharge state of the battery and gives a warning
         when the battery voltage gets low.
         '''
-        if (battery.percent <= 20) and ((battery.percent % 5) == 0):
-            print highlight_red(' Battery voltage low, switch to a freshly charged battery! ')
+        if ((battery.percent <= 20) and ((battery.percent % 5) == 0)):
+            print 'battery.precent', battery.percent, (battery.precent%5)
+            print highlight_yellow(' Battery voltage low, switch to a freshly charged battery! ')
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.

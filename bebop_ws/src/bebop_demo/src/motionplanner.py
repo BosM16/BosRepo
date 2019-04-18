@@ -48,14 +48,14 @@ class MotionPlanner(object):
 
         Args:
             data :
-                static_obst_list
-                dyn_obst_list
+                static_obstacles
+                dyn_obstacles
                 difficult_obst
         """
         mp_configured = False
 
         if data.difficult_obst:
-            omg_update_time = rospy.get_param(
+            self.omg_update_time = rospy.get_param(
                 'controller/omg_update_time_slow', 0.5)
             safety_margin = rospy.get_param(
                 'motionplanner/safety_margin_small', 0.1)
@@ -68,7 +68,7 @@ class MotionPlanner(object):
             amax = rospy.get_param(
                 'motionplanner/amax_low', 0.3)
         else:
-            omg_update_time = rospy.get_param(
+            self.omg_update_time = rospy.get_param(
                 'controller/omg_update_time', 0.5)
             safety_margin = rospy.get_param(
                 'motionplanner/safety_margin', 0.2)
@@ -104,8 +104,8 @@ class MotionPlanner(object):
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
         # Static obstacles.
-        self.n_stat_obst = len(data.static_obst_list)
-        for k, obst in enumerate(data.static_obst_list):
+        self.n_stat_obst = len(data.static_obstacles)
+        for k, obst in enumerate(data.static_obstacles):
             if obst.obst_type.data == "inf_cylinder":
                 # 2D shape is extended infinitely along z.
                 shape = omg.Circle(obst.shape[0])
@@ -145,8 +145,9 @@ class MotionPlanner(object):
                                         {'position': position}, shape=shape))
 
         # Dynamic obstacles.
-        self.n_dyn_obst = len(data.dyn_obst_list)
-        for obst in data.dyn_obst_list:
+        self.n_dyn_obst = len(data.dyn_obstacles)
+        for obst in data.dyn_obstacles:
+            print 'motionplanner radius', obst.shape[0]
             shape = omg.Circle(obst.shape[0])
             position = [obst.pose[0], obst.pose[1]]
             self._obstacles.append(omg.Obstacle(
@@ -171,7 +172,7 @@ class MotionPlanner(object):
             }}})
 
         problem.set_options({
-            'hard_term_con': True, 'horizon_time': self.horizon_time,
+            'hard_term_con': False, 'horizon_time': self.horizon_time,
             'verbose': 1.})
 
         problem.init()
@@ -225,21 +226,24 @@ class MotionPlanner(object):
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
-
+        print 'update in motionplanner'
         for k in range(self.n_dyn_obst):
             pos = cmd.dyn_obstacles[k].pose
             vel = cmd.dyn_obstacles[k].velocity
+            print 'pos', pos
+            print 'vel', vel
             (self._deployer.problem.environment.obstacles[k + self.n_stat_obst]
-                                .set_state({'position': pos, 'velocity': vel}))
-
+                .set_state({'position': pos, 'velocity': vel}))
+        print 'got through first'
         trajectories = self._deployer.update(cmd.current_time, state0)  # input0)
+        print 'got through second'
 
         calc_succeeded = True
         return_status = self._deployer.problem.problem.stats()['return_status']
         if (return_status != 'Solve_Succeeded'):
             print highlight_red(return_status, ' -- brake! ')
             calc_succeeded = False
-
+        print 'got through third'
         self._result = Trajectories(
             u_traj=trajectories['input'][0, :],
             v_traj=trajectories['input'][1, :],
@@ -248,8 +252,6 @@ class MotionPlanner(object):
             y_traj=trajectories['state'][1, :],
             z_traj=trajectories['state'][2, :],
             success=calc_succeeded)
-
-        self._mp_result_topic.publish(self._result)
 
     def interrupt(self, empty):
         '''Stop calculations when goal is reached.
