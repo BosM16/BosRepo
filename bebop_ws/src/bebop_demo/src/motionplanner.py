@@ -251,6 +251,8 @@ class MotionPlanner(object):
             z_traj=trajectories['state'][2, :],
             success=calc_succeeded)
 
+        self._mp_result_topic.publish(self._result)
+
 
 if __name__ == '__main__':
     motionplanner = MotionPlanner()

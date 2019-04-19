@@ -145,7 +145,9 @@ class Controller(object):
         rospy.Subscriber(
             'vive_localization/c2_pose', PoseStamped, self.get_ctrl_l_pos)
         rospy.Subscriber(
-            'vive_localization/c1_velocity', TwistStamped,self.get_ctrl_r_vel)
+            'vive_localization/c1_velocity', TwistStamped, self.get_ctrl_r_vel)
+        rospy.Subscriber(
+            'vive_localization/c2_velocity', TwistStamped, self.get_ctrl_l_vel)
         rospy.Subscriber('fsm/state', String, self.switch_state)
         rospy.Subscriber(
             '/bebop/states/ardrone3/PilotingState/FlyingStateChanged',
@@ -203,6 +205,8 @@ class Controller(object):
         self.trackpad_held = False
         self.r_trigger_held = False
         self.overtime = False
+
+        # Measurement related variables
         self.meas_pos_x = 0.
         self.meas_pos_y = 0.
         self.meas_pos_z = 0.
@@ -230,6 +234,7 @@ class Controller(object):
         self.ctrl_r_pos = Pose()
         self.ctrl_r_vel = Twist()
         self.ctrl_l_pos = Pose()
+        self.ctrl_l_vel = Twist()
         self.draw = False
         self.drag = False
 
@@ -556,7 +561,13 @@ class Controller(object):
                                       y=self.hover_setpoint.position.y,
                                       z=self.hover_setpoint.position.z)
             vel_desired = PointStamped()
-            vel_desired.point = Point()
+            if self.state == "drag drone":
+                vel_desired.point = Point(
+                        x=(self.ctrl_l_vel.linear.x),
+                        y=(self.ctrl_l_vel.linear.y),
+                        z=(self.ctrl_l_vel.linear.z))
+                self.old_vel_desired = vel_desired.point
+
             feedback_cmd = self.feedbeck(pos_desired, vel_desired)
 
             self.cmd_twist_convert.twist = feedback_cmd
@@ -1415,6 +1426,11 @@ class Controller(object):
         self.ctrl_l_pos = ctrl_pose.pose
         if (self.state == 'draw path' and self.draw):
             self.draw_ctrl_path()
+
+    def get_ctrl_l_vel(self, ctrl_vel):
+        '''Retrieves the velocity of the right hand controller.
+        '''
+        self.ctrl_l_vel = ctrl_vel.twist
 
     def trackpad_press(self, trackpad_pressed):
         '''If state is equal to state in list and trackpad is pressed,

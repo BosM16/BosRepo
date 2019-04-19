@@ -306,7 +306,7 @@ class Demo(object):
         when the battery voltage gets low.
         '''
         if ((battery.percent <= 20) and ((battery.percent % 5) == 0)):
-            print 'battery.precent', battery.percent, (battery.precent%5)
+            print 'battery.precent', battery.percent, (battery.percent % 5)
             print highlight_yellow(' Battery voltage low, switch to a freshly charged battery! ')
 
     def ctrl_state_finish(self, empty):

@@ -26,13 +26,20 @@ class ViveLocalization(object):
         Initialization of Demo object.
         '''
         rospy.init_node('vive_localization')
+        # Exp smoothing value
+        self.alpha = 0.1
+
+        # testing
         self.index = -3000
 
         self.tracked_objects = ["tracker_1", "controller_1", "controller_2"]
 
-        self.controller_vel = TwistStamped()
-        self.controller_vel.header.frame_id = "world"
-        self.old_controller_pos = Point()
+        self.ctrl_dict = {"ctrl_1_old_pos": Point(),
+                          "ctrl_1_vel": TwistStamped(),
+                          "ctrl_2_old_pos": Point(),
+                          "ctrl_2_vel": TwistStamped()}
+        self.ctrl_dict["ctrl_1_vel"].header.frame_id = "world"
+        self.ctrl_dict["ctrl_2_vel"].header.frame_id = "world"
 
         self.pose_t_in_w = PoseStamped()
         self.pose_t_in_w.header.frame_id = "world"
@@ -64,11 +71,15 @@ class ViveLocalization(object):
             'vive_localization/c1_position', PointStamped, queue_size=1)
         self.c2_pos_update = rospy.Publisher(
             'vive_localization/c2_position', PointStamped, queue_size=1)
-        self.c_publishers = [self.c1_pose_update, self.c1_pos_update,
-                             self.c2_pose_update, self.c2_pos_update]
+        self.c_pos_publishers = [self.c1_pose_update, self.c1_pos_update,
+                                 self.c2_pose_update, self.c2_pos_update]
 
         self.c1_vel_update = rospy.Publisher(
             'vive_localization/c1_velocity', TwistStamped, queue_size=1)
+        self.c2_vel_update = rospy.Publisher(
+            'vive_localization/c2_velocity', TwistStamped, queue_size=1)
+
+        self.c_vel_publishers = [self.c1_vel_update, self.c2_vel_update]
 
         self.ready = rospy.Publisher(
             'vive_localization/ready', Empty, queue_size=1)
@@ -261,32 +272,41 @@ class ViveLocalization(object):
                 pose_c_in_v = self.get_pose_vive(self.tracked_objects[i])
                 pose_c_in_w = self.transform_pose(pose_c_in_v, "vive", "world")
 
+                # For testing
                 self.index += 1
                 pose_c_in_w.pose.position.x = pose_c_in_w.pose.position.x + self.index*0.0025
 
-
+                # Pose
                 pos_c_in_w = PointStamped()
                 pos_c_in_w.header = pose_c_in_w.header
                 pos_c_in_w.point = pose_c_in_w.pose.position
 
-                self.c_publishers[2*i-2].publish(pose_c_in_w)
-                self.c_publishers[2*i-1].publish(pos_c_in_w)
+                self.c_pos_publishers[2*i-2].publish(pose_c_in_w)
+                self.c_pos_publishers[2*i-1].publish(pos_c_in_w)
 
-                if i == 1:
-                    new_vel_x = (pos_c_in_w.point.x -
-                                 self.old_controller_pos.x)/self.sample_time
-                    new_vel_y = (pos_c_in_w.point.y -
-                                 self.old_controller_pos.y)/self.sample_time
-                    new_vel_z = (pos_c_in_w.point.z -
-                                 self.old_controller_pos.z)/self.sample_time
-                    self.controller_vel.twist.linear.x = (
-                        new_vel_x*0.1 + self.controller_vel.twist.linear.x*0.9)
-                    self.controller_vel.twist.linear.y = (
-                        new_vel_y*0.1 + self.controller_vel.twist.linear.y*0.9)
-                    self.controller_vel.twist.linear.z = (
-                        new_vel_z*0.1 + self.controller_vel.twist.linear.z*0.9)
-                    self.old_controller_pos = pos_c_in_w.point
-                    self.c1_vel_update.publish(self.controller_vel)
+                # Twist
+                new_vel_x = ((pos_c_in_w.point.x -
+                              self.ctrl_dict["ctrl_" + i + "_old_pos"].x) /
+                             self.sample_time)
+                new_vel_y = ((pos_c_in_w.point.y -
+                              self.ctrl_dict["ctrl_" + i + "_old_pos"].y) /
+                             self.sample_time)
+                new_vel_z = ((pos_c_in_w.point.z -
+                              self.ctrl_dict["ctrl_" + i + "_old_pos"].z) /
+                             self.sample_time)
+                self.ctrl_dict["ctrl_" + i + "_vel"].twist.linear.x = (
+                    new_vel_x*self.alpha + self.ctrl_dict["ctrl_" + i + "_vel"]
+                    .twist.linear.x*(1.0 - self.alpha))
+                self.ctrl_dict["ctrl_" + i + "_vel"].twist.linear.y = (
+                    new_vel_y*self.alpha + self.ctrl_dict["ctrl_" + i + "_vel"]
+                    .twist.linear.y*(1.0 - self.alpha))
+                self.ctrl_dict["ctrl_" + i + "_vel"].twist.linear.z = (
+                    new_vel_z*self.alpha + self.ctrl_dict["ctrl_" + i + "_vel"]
+                    .twist.linear.z*(1.0 - self.alpha))
+                self.ctrl_dict["ctrl_" + i + "_old_pos"] = pos_c_in_w.point
+
+                self.c_vel_publishers[i-1].publish(
+                                        self.ctrl_dict["ctrl_" + i + "_vel"])
 
             self.rate.sleep()
 
