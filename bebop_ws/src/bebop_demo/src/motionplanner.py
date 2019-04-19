@@ -36,7 +36,6 @@ class MotionPlanner(object):
             'motionplanner/result', Trajectories, queue_size=1)
 
         rospy.Subscriber('motionplanner/trigger', Trigger, self.update)
-        rospy.Subscriber('motionplanner/interrupt', Empty, self.interrupt)
 
         self.configure = rospy.Service(
             "motionplanner/config_motionplanner", ConfigMotionplanner,
@@ -234,16 +233,15 @@ class MotionPlanner(object):
             print 'vel', vel
             (self._deployer.problem.environment.obstacles[k + self.n_stat_obst]
                 .set_state({'position': pos, 'velocity': vel}))
-        print 'got through first'
+
         trajectories = self._deployer.update(cmd.current_time, state0)  # input0)
-        print 'got through second'
 
         calc_succeeded = True
         return_status = self._deployer.problem.problem.stats()['return_status']
         if (return_status != 'Solve_Succeeded'):
             print highlight_red(return_status, ' -- brake! ')
             calc_succeeded = False
-        print 'got through third'
+
         self._result = Trajectories(
             u_traj=trajectories['input'][0, :],
             v_traj=trajectories['input'][1, :],
@@ -252,11 +250,6 @@ class MotionPlanner(object):
             y_traj=trajectories['state'][1, :],
             z_traj=trajectories['state'][2, :],
             success=calc_succeeded)
-
-    def interrupt(self, empty):
-        '''Stop calculations when goal is reached.
-        '''
-        self._deployer.reset()
 
 
 if __name__ == '__main__':

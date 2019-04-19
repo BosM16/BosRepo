@@ -112,8 +112,6 @@ class Controller(object):
             'bebop/land', Empty, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
             'motionplanner/trigger', Trigger, queue_size=1)
-        self.interrupt_mp = rospy.Publisher(
-            'motionplanner/interrupt', Empty, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', MarkerArray, queue_size=1)
         self.vhat_vector_pub = rospy.Publisher(
@@ -224,7 +222,7 @@ class Controller(object):
         self.vel_error_prev = PointStamped()
         self.measurement_valid = False
         self.static_obst = []
-        self.dyn_obst = []
+        self.dynamic_obst = []
         self.omg_index = 1
         self.difficult_obst = False
         self._goal = Pose()
@@ -300,7 +298,7 @@ class Controller(object):
                 "/motionplanner/config_motionplanner", ConfigMotionplanner)
             config_success = config_mp_resp(
                                           static_obstacles=self.static_obst,
-                                          dyn_obstacles=self.dyn_obst,
+                                          dyn_obstacles=self.dynamic_obst,
                                           difficult_obst=self.difficult_obst)
         except rospy.ServiceException, e:
             print highlight_red('Service call failed: %s') % e
@@ -350,7 +348,7 @@ class Controller(object):
         trigger.goal_vel = Point()
         trigger.pos_state = self.drone_pose_est
         trigger.vel_state = self.drone_vel_est
-        trigger.dyn_obstacles = self.dyn_obst
+        trigger.dyn_obstacles = self.dynamic_obst
         trigger.current_time = self._time
 
         self.fire_time = rospy.get_rostime()
@@ -1094,14 +1092,15 @@ class Controller(object):
 
         '''
         radius = 0.25
-        # self.dyn_obst = [Obstacle(obst_type=String(
+        # self.dynamic_obst = [Obstacle(obst_type=String(
         #                     data="inf_cylinder"),
         #                     shape=[radius],
         #                     pose=[self.ctrl_r_pos.position.x,
         #                           self.ctrl_r_pos.position.y],
         #                     velocity=[self.ctrl_r_vel.linear.x,
         #                               self.ctrl_r_vel.linear.y])]
-        self.dyn_obst = []
+        self.dynamic_obst = []
+        self.static_obst = []
         self.config_mp()
         self.set_omg_goal(self.drone_pose_est)
         self.omg_index = 1
@@ -1117,7 +1116,7 @@ class Controller(object):
                 #         or (self.omg_index >= len(self._traj['u'])-2)):
                     # print 'pos controller', self.ctrl_r_pos.position
                     # print 'vel controller', self.ctrl_r_vel.linear
-                    # self.dyn_obst = [Obstacle(obst_type=String(
+                    # self.dynamic_obst = [Obstacle(obst_type=String(
                     #                       data="inf_cylinder"),
                     #                       shape=[radius],
                     #                       pose=[self.ctrl_r_pos.position.x,
@@ -1126,7 +1125,7 @@ class Controller(object):
                     #                                 self.ctrl_r_vel.linear.y])]
                 self.omg_update()
             self.rate.sleep()
-        self.dyn_obst = []
+        self.dynamic_obst = []
         self.config_mp()
         self.hover_setpoint = self.drone_pose_est
         self.reset_pid_gains()
