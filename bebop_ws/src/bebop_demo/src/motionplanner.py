@@ -170,9 +170,14 @@ class MotionPlanner(object):
             'ipopt.hessian_approximation': 'limited-memory'
             }}})
 
-        problem.set_options({
-            'hard_term_con': False, 'horizon_time': self.horizon_time,
-            'verbose': 1.})
+        if self.n_dyn_obst != 0:
+            problem.set_options({
+                'hard_term_con': False, 'horizon_time': self.horizon_time,
+                'verbose': 1.})
+        else:
+            problem.set_options({
+                'hard_term_con': True, 'horizon_time': self.horizon_time,
+                'verbose': 1.})
 
         problem.init()
         # problem.fullstop = True

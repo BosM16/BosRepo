@@ -941,6 +941,7 @@ class Controller(object):
         '''Adapts hover setpoint to follow vive right controller when trigger
         is pressed.
         '''
+        self.set_ff_pid_gains()
         while not (rospy.is_shutdown() or self.state_killed):
             drag_offset = Point(
                 x=(self.drone_pose_est.position.x-self.ctrl_l_pos.position.x),
@@ -971,6 +972,7 @@ class Controller(object):
 
             self.hover()
             self.rate.sleep()
+        self.reset_pid_gains()
 
     def hover_changed_gains(self):
         '''Adapts gains for the undamped spring (only Kp) or viscous fluid
@@ -1043,7 +1045,7 @@ class Controller(object):
             self.Kp_z = rospy.get_param('controller/Kp_omg_z', 0.5)
             self.Ki_z = rospy.get_param('controller/Ki_omg_z', 1.5792)
 
-        elif self.state == "follow path":
+        elif self.state in {"follow path", "drag drone"}:
             self.Kp_x = rospy.get_param('controller/Kp_dt_x', 0.6864)
             self.Ki_x = rospy.get_param('controller/Ki_dt_x', 0.6864)
             self.Kd_x = rospy.get_param('controller/Kd_dt_x', 0.6864)
