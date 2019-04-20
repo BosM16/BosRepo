@@ -11,7 +11,7 @@ yellow = [0.9290, 0.6940, 0.1250];
 black = [0, 0, 0];
 
 % Settings
-figures = true;
+figures = false;
 
 %% Load data
 data = load("data/vhat_data_check_xy");
@@ -151,6 +151,7 @@ end
 
 %% Compare ZOH using only measurements VS AKF predictions
 
+% pos
 reference = interp1(t_meas,data.meas_pos_x,t_est);
 zoh = interp1(t_meas,data.meas_pos_x,t_est,'previous');
 
@@ -161,7 +162,40 @@ plot(t_est,reference,'--','Color',black)
 plot(t_est,zoh,'-x','Color',yellow)
 plot(t_est, data.est_pos_x, '-x', 'Color',red)
 legend('measurements','reference','zoh','AKF')
+% xlim([6.3,6.65]);
+% ylim([0.22, 0.25]);
+xlim([8.44,8.8]);
+ylim([-0.723, -0.7]);
+xlabel('Time (s)')
+ylabel('Position (m)')
 
+% z
+% reference = interp1(t_measz,dataz.meas_pos_z,t_estz);
+% zoh = interp1(t_measz,dataz.meas_pos_z,t_estz,'previous');
+% 
+% figure
+% hold on
+% plot(t_measz, dataz.meas_pos_z,'o','Color',blue)
+% plot(t_estz,reference,'--','Color',black)
+% plot(t_estz,zoh,'-x','Color',yellow)
+% plot(t_estz, dataz.est_pos_z, '-x', 'Color',red)
+% legend('measurements','reference','zoh','AKF')
+
+
+% vreference = interp1(t_meas,vel_FD_x_accurate,t_est);
+% zoh = interp1(t_meas,vel_FD_x_accurate,t_est,'previous');
+figure('Name','Comparison estimated vel with num diff vel')
+hold on
+plot(t_meas(1:end-1), vel_FD_x_accurate, '-x', 'Color', blue)
+plot(t_est(1:end-1), data.est_vel_x, '-*', 'Color', red)
+% xlim([6.3,6.65]);
+% ylim([-0.2, 0.2]);
+xlim([8.44,8.8]);
+ylim([-0.2, 0.2]);
+legend('Finite diff', 'Kalman estimation')
+xlabel('Time (s)')
+% axis tight
+ylabel('Velocity (m/s)')
 
 
 
