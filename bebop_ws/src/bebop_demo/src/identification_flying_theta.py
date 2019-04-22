@@ -23,6 +23,7 @@ class Ident(object):
         self.output_roll = np.zeros(span)
         self.output_pitch = np.zeros(span)
         self.output_yaw = np.zeros(span)
+        self.time = np.zeros(span)
         self.vel = Twist()
         self.measuring = False
 
@@ -31,7 +32,7 @@ class Ident(object):
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
         rospy.Subscriber(
-            'vive_localization/pose', PoseStamped, self.update_pose)
+            'vive_localization/pose', PoseMeas, self.update_pose)
 
     def start(self):
         rospy.init_node('identification')
@@ -131,18 +132,20 @@ class Ident(object):
         meas['output_roll'] = self.output_roll
         meas['output_pitch'] = self.output_pitch
         meas['output_yaw'] = self.output_yaw
+        meas['time'] = self.time
         io.savemat('../vel_identification_yaw.mat', meas)
 
-    def update_pose(self, pose):
+    def update_pose(self, meas):
         if self.measuring:
             self.input[self.index] = self.vel.angular.z
-            euler = tf.transformations.euler_from_quaternion((pose.pose.orientation.x,
-                                                              pose.pose.orientation.y,
-                                                              pose.pose.orientation.z,
-                                                              pose.pose.orientation.w))
+            euler = tf.transformations.euler_from_quaternion((meas.meas_world.pose.orientation.x,
+                                                              meas.meas_world.pose.orientation.y,
+                                                              meas.meas_world.pose.orientation.z,
+                                                              meas.meas_world.pose.orientation.w))
             self.output_roll[self.index] = euler[0]
             self.output_pitch[self.index] = euler[1]
             self.output_yaw[self.index] = euler[2]
+            self.time[self.index] = meas.meas_world.header.stamp.to_sec()
             self.index += 1
 
 

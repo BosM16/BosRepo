@@ -33,7 +33,7 @@ class Ident(object):
         self.land = rospy.Publisher('bebop/land', Empty, queue_size=1)
         rospy.Subscriber('demo', Empty, self.flying)
         rospy.Subscriber(
-            'vive_localization/pose', PoseStamped, self.update_pose)
+            'vive_localization/pose', PoseMeas, self.update_pose)
 
     def start(self):
         rospy.init_node('identification')
@@ -111,13 +111,13 @@ class Ident(object):
         meas['time'] = self.time
         io.savemat('../angle_identification_x.mat', meas)
 
-    def update_pose(self, pose):
+    def update_pose(self, meas):
         if self.measuring:
             self.input[self.index] = self.vel.linear.x
-            self.output_x[self.index] = pose.pose.position.x
-            self.output_y[self.index] = pose.pose.position.y
-            self.output_z[self.index] = pose.pose.position.z
-            self.time[self.index] = rospy.get_time()
+            self.output_x[self.index] = meas.meas_world.pose.position.x
+            self.output_y[self.index] = meas.meas_world.pose.position.y
+            self.output_z[self.index] = meas.meas_world.pose.position.z
+            self.time[self.index] = meas.meas_world.header.stamp.to_sec()
             self.index += 1
 
 
