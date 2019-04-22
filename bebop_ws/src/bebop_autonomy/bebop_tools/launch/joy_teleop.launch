@@ -2,7 +2,7 @@
 <!-- based on example launch files from joy_teleop and teleop_twist_joy packages -->
 <launch>
   <arg name="joy_dev" default="/dev/input/js1" />
-  <arg name="joy_config" default="log710" />
+  <arg name="joy_config" default="Frsky_X9D" />
   <arg name="teleop_config" default="$(find bebop_tools)/config/$(arg joy_config).yaml" />
   <arg name="namespace" default="bebop" />
 
@@ -11,7 +11,7 @@
 
     <node pkg="joy" type="joy_node" name="joy_node">
       <param name="dev" value="$(arg joy_dev)" />
-      <param name="deadzone" value="0.0" />
+      <param name="deadzone" value="0.00" />
       <param name="autorepeat_rate" value="100" />
       <param name="coalesce_interval" value="0.01" />
     </node>
