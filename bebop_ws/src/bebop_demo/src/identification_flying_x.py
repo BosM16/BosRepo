@@ -2,6 +2,7 @@
 
 from std_msgs.msg import Empty, UInt8
 from geometry_msgs.msg import Twist, Pose, PoseStamped
+from vive_localization.msg import PoseMeas
 import rospy
 import numpy as np
 import scipy.io as io
@@ -12,11 +13,11 @@ class Ident(object):
     def __init__(self):
         """
         """
-        self.ident_length = 10
+        self.ident_length = 3
         self.index = 0
         self.rate = 14
         self.wait1 = 0.1
-        self.wait2 = 0.10
+        self.wait2 = 0.11
         self.wait3 = 0.10
         span = int(self.ident_length*(
                     self.wait1*4 + self.wait2+self.wait3)*self.rate*50 + 10)
