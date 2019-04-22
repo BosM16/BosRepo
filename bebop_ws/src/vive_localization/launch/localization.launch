@@ -1,6 +1,6 @@
 <launch>
 
-  <param name="vive_localization/sample_time" value="0.02" />
+  <param name="vive_localization/sample_time" value="0.05" />
 
   <node name="vive_localization" pkg="vive_localization" type="localization.py" output="screen"/>
 

@@ -267,7 +267,7 @@ class ViveLocalization(object):
         '''
         # Extra added noise for Kalman filter testing.
         mu = 0.
-        sigma = 0.05
+        sigma = 0.005
 
         pose = np.array(
             self.v.devices[object].get_pose_euler())

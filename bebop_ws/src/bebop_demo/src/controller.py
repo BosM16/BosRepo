@@ -288,9 +288,9 @@ class Controller(object):
         set mp_status to configured.
         '''
         if (self.obstacles and
-                self.obstacles[0].obst_type.data == "window plate" or
-                (self.obstacles[0].obst_type.data == "slalom plate" and
-                 len(self.obstacles) >= 3)):
+                (self.obstacles[0].obst_type.data == "window plate" or
+                 (self.obstacles[0].obst_type.data == "slalom plate" and
+                 len(self.obstacles) >= 3))):
             self.difficult_obst = True
         else:
             self.difficult_obst = False
@@ -1089,7 +1089,7 @@ class Controller(object):
             rospy.sleep(0.1)
         self.gamepad_input.unregister()
         print 'length of meas', len(self.meas['meas_pos_x'])
-        io.savemat('../vhat_data_check.mat', self.meas)
+        io.savemat('../kalman_check.mat', self.meas)
 
     def retrieve_gp_input(self, gp_input):
         '''Reads out the commands sent by the gamepad and sends these to the
