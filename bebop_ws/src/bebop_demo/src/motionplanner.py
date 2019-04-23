@@ -146,7 +146,7 @@ class MotionPlanner(object):
         # Dynamic obstacles.
         self.n_dyn_obst = len(data.dyn_obstacles)
         for obst in data.dyn_obstacles:
-            print 'motionplanner radius', obst.shape[0]
+            print 'obstacle in mp', obst
             shape = omg.Circle(obst.shape[0])
             position = [obst.pose[0], obst.pose[1]]
             self._obstacles.append(omg.Obstacle(
@@ -171,6 +171,7 @@ class MotionPlanner(object):
             }}})
 
         if self.n_dyn_obst != 0:
+            print 'hard_term_con set to false'
             problem.set_options({
                 'hard_term_con': False, 'horizon_time': self.horizon_time,
                 'verbose': 1.})
@@ -225,19 +226,19 @@ class MotionPlanner(object):
             self._deployer.reset()
             print magenta('---- Motionplanner received a new goal -'
                           ' deployer resetted ----')
-
+        print 'motionplanner update'
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
-        print 'update in motionplanner'
         for k in range(self.n_dyn_obst):
             pos = cmd.dyn_obstacles[k].pose
             vel = cmd.dyn_obstacles[k].velocity
-            print 'pos', pos
-            print 'vel', vel
-            (self._deployer.problem.environment.obstacles[k + self.n_stat_obst]
-                .set_state({'position': pos, 'velocity': vel}))
+            obst_i = k + self.n_stat_obst
+            (self._deployer.problem.environment.obstacles[obst_i].set_state(
+                                        {'position': pos, 'velocity': vel}))
+            print 'obst state pos', self._deployer.problem.environment.obstacles[obst_i].signals['position']
+            print 'obst state vel', self._deployer.problem.environment.obstacles[obst_i].signals['velocity']
 
         trajectories = self._deployer.update(cmd.current_time, state0)  # input0)
 

@@ -30,7 +30,7 @@ class ViveLocalization(object):
         self.alpha = 0.1
 
         # testing
-        self.index = -3000
+        self.index = -2000
 
         self.tracked_objects = ["tracker_1", "controller_1", "controller_2"]
 
@@ -274,7 +274,8 @@ class ViveLocalization(object):
 
                 # For testing
                 self.index += 1
-                pose_c_in_w.pose.position.x = pose_c_in_w.pose.position.x #+ self.index*0.0025
+                pose_c_in_w.pose.position.x = pose_c_in_w.pose.position.x  + self.index*0.00006
+                pose_c_in_w.pose.position.y = pose_c_in_w.pose.position.y + 3.1
 
                 # Pose
                 pos_c_in_w = PointStamped()
@@ -286,13 +287,13 @@ class ViveLocalization(object):
 
                 # Twist
                 new_vel_x = ((pos_c_in_w.point.x -
-                              self.ctrl_dict["ctrl_" + str(i) + "_old_pos"].x) /
+                             self.ctrl_dict["ctrl_" + str(i) + "_old_pos"].x) /
                              self.sample_time)
                 new_vel_y = ((pos_c_in_w.point.y -
-                              self.ctrl_dict["ctrl_" + str(i) + "_old_pos"].y) /
+                             self.ctrl_dict["ctrl_" + str(i) + "_old_pos"].y) /
                              self.sample_time)
                 new_vel_z = ((pos_c_in_w.point.z -
-                              self.ctrl_dict["ctrl_" + str(i) + "_old_pos"].z) /
+                             self.ctrl_dict["ctrl_" + str(i) + "_old_pos"].z) /
                              self.sample_time)
                 self.ctrl_dict["ctrl_" + str(i) + "_vel"].twist.linear.x = (
                     new_vel_x*self.alpha + self.ctrl_dict[

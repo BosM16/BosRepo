@@ -448,9 +448,9 @@ class Controller(object):
                           z=self._traj['z'][self.omg_index + 1])
         vel = TwistStamped()
         vel.header.frame_id = "world"
-        vel.linear.x = self._traj['u'][self.omg_index + 1]
-        vel.linear.y = self._traj['v'][self.omg_index + 1]
-        vel.linear.z = self._traj['w'][self.omg_index + 1]
+        vel.twist.linear.x = self._traj['u'][self.omg_index + 1]
+        vel.twist.linear.y = self._traj['v'][self.omg_index + 1]
+        vel.twist.linear.z = self._traj['w'][self.omg_index + 1]
 
         self.publish_current_ff_vel(pos, vel)
 
@@ -506,9 +506,9 @@ class Controller(object):
                           z=self.drawn_pos_z[index])
         vel = TwistStamped()
         vel.header.frame_id = "world"
-        vel.linear.x = self.drawn_vel_x[index]
-        vel.linear.y = self.drawn_vel_y[index]
-        vel.linear.z = self.drawn_vel_z[index]
+        vel.twist.linear.x = self.drawn_vel_x[index]
+        vel.twist.linear.y = self.drawn_vel_y[index]
+        vel.twist.linear.z = self.drawn_vel_z[index]
 
         self.publish_current_ff_vel(pos, vel)
 
@@ -580,6 +580,11 @@ class Controller(object):
             while not (self.airborne or (
                     rospy.is_shutdown() or self.state_killed)):
                 rospy.sleep(0.1)
+
+            #for testing
+            self.airborne = True
+
+
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
             self.land.publish(Empty())
@@ -1108,14 +1113,14 @@ class Controller(object):
 
         '''
         radius = 0.25
-        # self.dynamic_obst = [Obstacle(obst_type=String(
-        #                     data="inf_cylinder"),
-        #                     shape=[radius],
-        #                     pose=[self.ctrl_r_pos.position.x,
-        #                           self.ctrl_r_pos.position.y],
-        #                     velocity=[self.ctrl_r_vel.linear.x,
-        #                               self.ctrl_r_vel.linear.y])]
-        self.dynamic_obst = []
+        self.dynamic_obst = [Obstacle(obst_type=String(
+                            data="inf_cylinder"),
+                            shape=[radius],
+                            pose=[self.ctrl_r_pos.position.x,
+                                  self.ctrl_r_pos.position.y],
+                            velocity=[self.ctrl_r_vel.linear.x,
+                                      self.ctrl_r_vel.linear.y])]
+        # self.dynamic_obst = []
         self.static_obst = []
         self.config_mp()
         self.set_omg_goal(self.drone_pose_est)
@@ -1126,19 +1131,19 @@ class Controller(object):
         while not (self.state_changed or (
                 rospy.is_shutdown() or self.state_killed)):
 
-            if self.startup:  # Becomes True when goal is set.
+            # Becomes True when goal is set.
+            if self.startup:
                 # Send current dynamic obstacle info to motionplanner.
-                # if ((self.omg_index >= int(self.omg_update_time/self._sample_time))
-                #         or (self.omg_index >= len(self._traj['u'])-2)):
-                    # print 'pos controller', self.ctrl_r_pos.position
-                    # print 'vel controller', self.ctrl_r_vel.linear
-                    # self.dynamic_obst = [Obstacle(obst_type=String(
-                    #                       data="inf_cylinder"),
-                    #                       shape=[radius],
-                    #                       pose=[self.ctrl_r_pos.position.x,
-                    #                             self.ctrl_r_pos.position.y],
-                    #                       velocity=[self.ctrl_r_vel.linear.x,
-                    #                                 self.ctrl_r_vel.linear.y])]
+                # if ((self.omg_index >= int(
+                #                     self.omg_update_time/self._sample_time))
+                #    or (self.omg_index >= len(self._traj['u'])-2)):
+                self.dynamic_obst = [Obstacle(obst_type=String(
+                                      data="inf_cylinder"),
+                                      shape=[radius],
+                                      pose=[self.ctrl_r_pos.position.x,
+                                            self.ctrl_r_pos.position.y],
+                                      velocity=[self.ctrl_r_vel.linear.x,
+                                                self.ctrl_r_vel.linear.y])]
                 self.omg_update()
             self.rate.sleep()
         self.dynamic_obst = []
