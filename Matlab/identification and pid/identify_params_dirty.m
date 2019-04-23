@@ -9,7 +9,7 @@ fprintf('============ Start identification ============== \n')
 %% Settings & Execution
 options.all_figures = false;
 options.select_figures = true;
-options.fig_sel = (1:800);
+options.fig_sel = (1:500);
 % options.fig_sel = (1450:2200);
 options.prints = false;
 
@@ -23,8 +23,9 @@ set(0, 'DefaultLineLineWidth', 1);
 % SYNTAX: 
 %   model = identify("data/data_mat_file",'axis','axis symbol',Ts,f0,Fc,options,colors);
 % -----------------------------------------------------------------
-xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options,colors);
+% xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options,colors);
 % xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options,colors);
+xmodel_fig = identify("data/identification_x_3period","x","x",0.02,0.53,0.6,options,colors);
 % ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
 % zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options,colors);
 % yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
@@ -46,7 +47,7 @@ fprintf('\n=========== Identification finished ============ \n')
 %                                Main function
 %  ========================================================================
 
-function model = identify(data_file, ax, axplot, Ts, f0, Fc, options, colors)
+function model = identify(data_file, ax, axplot, Ts, f0, Fc, options,colors)
 % IDENTIFY - identifies LTI parameters for the drone model based on
 % the data contained in the specified data file.
 %
@@ -106,11 +107,13 @@ data.Ts = Ts;
 data.fs = fs;
 data.t = t;
 data.f = f;
+data.time_edit = data.time - data.time(1);
+
+
 
 % Differentiation of position
 velocity = gradient(output)/Ts;
 data.velocity = velocity;
-acc = gradient(velocity)/Ts;
 
 if options.all_figures
     figure('Name','Measurement Data full')
@@ -153,8 +156,6 @@ input_filt = filtfilt(B,A,input);
 % output filtering
 output_filt = filtfilt(B,A,output);
 velocity_filt = filtfilt(B,A,velocity);
-acc_filt = filtfilt(B,A,acc);
-
 
 data.input_filt = input_filt;
 data.velocity_filt = velocity_filt;
@@ -174,7 +175,10 @@ if options.all_figures
 end
 
 if or(options.all_figures, options.select_figures)
-    tsel = t(options.fig_sel);
+    % dirty stuff to get the time axis good
+    tsel = data.time_edit(options.fig_sel) + 29;
+    
+    
     figure('Name','Measurement Data cut')
     subplot(311)
     hold on
@@ -215,19 +219,15 @@ if or(options.all_figures, options.select_figures)
 %     ylab.Position(1) = ylab.Position(1) - 0.8;
 %     ylab.Position(2) = ylab.Position(2) + 0.5;
     
-    figure('Name','Acceleration')
-    plot(t,acc_filt)
-    title('Acceleration')
-    xlabel('Time (s)')
-    ylabel('Acceleration (m/s^2)')
-
-
+    % ========================
     % === Zoom on position ===
+    % ========================
     figure()
     hold on
-    plot(tsel, output(options.fig_sel), 'Color',colors.red)
-    plot(tsel, output_filt(options.fig_sel), 'Color',colors.blue,'LineStyle','--')
-    xlim([min(tsel),max(tsel)])
+    plot(tsel, output(options.fig_sel)+1.1, 'o', 'Color',colors.red)
+    plot(tsel, output_filt(options.fig_sel)+1.1, 'Color',colors.blue,'LineStyle','--')
+%     xlim([min(tsel),max(tsel)])
+    xlim([33.7, 35])
 %     axis tight
     title(strcat(axplot,'-position'))
     legend('Measured','Filtered')
@@ -691,7 +691,7 @@ if options.select_figures
     plot(t(options.fig_sel), data.output_filt(options.fig_sel), 'Color',colors.blue)
     plot(t(options.fig_sel), x(options.fig_sel),'Color',colors.red)
 %     legend(strcat('v_{',axplot,',meas}'), strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
-    legend(strcat('p_{',axplot,',filt}'), strcat('p_{',axplot,',sim}'))
+    legend(strcat('v_{',axplot,',filt}'), strcat('v_{',axplot,',sim}'))
     title('Position fit result')
     xlabel('Time (s)')
     axis tight
