@@ -446,11 +446,11 @@ class Controller(object):
         pos.point = Point(x=self._traj['x'][self.omg_index + 1],
                           y=self._traj['y'][self.omg_index + 1],
                           z=self._traj['z'][self.omg_index + 1])
-        vel = PointStamped()
+        vel = TwistStamped()
         vel.header.frame_id = "world"
-        vel.point = Point(x=self._traj['u'][self.omg_index + 1],
-                          y=self._traj['v'][self.omg_index + 1],
-                          z=self._traj['w'][self.omg_index + 1])
+        vel.linear.x = self._traj['u'][self.omg_index + 1]
+        vel.linear.y = self._traj['v'][self.omg_index + 1]
+        vel.linear.z = self._traj['w'][self.omg_index + 1]
 
         self.publish_current_ff_vel(pos, vel)
 
@@ -504,11 +504,12 @@ class Controller(object):
         pos.point = Point(x=self.drawn_pos_x[index],
                           y=self.drawn_pos_y[index],
                           z=self.drawn_pos_z[index])
-        vel = PointStamped()
+        vel = TwistStamped()
         vel.header.frame_id = "world"
-        vel.point = Point(x=self.drawn_vel_x[index],
-                          y=self.drawn_vel_y[index],
-                          z=self.drawn_vel_z[index])
+        vel.linear.x = self.drawn_vel_x[index]
+        vel.linear.y = self.drawn_vel_y[index]
+        vel.linear.z = self.drawn_vel_z[index]
+
         self.publish_current_ff_vel(pos, vel)
 
         # Calculate the desired yaw angle based on the pointing direction of
@@ -546,7 +547,7 @@ class Controller(object):
         if state.data == "standby":
             self.reset_markers()
 
-    def hover(self):
+    def hover(self, vel_desired=Twist()):
         '''Drone keeps itself in same location through a PID controller.
         '''
         if self.airborne:
@@ -560,13 +561,6 @@ class Controller(object):
             pos_desired.point = Point(x=self.hover_setpoint.position.x,
                                       y=self.hover_setpoint.position.y,
                                       z=self.hover_setpoint.position.z)
-            vel_desired = PointStamped()
-            if self.state == "drag drone":
-                vel_desired.point = Point(
-                        x=(self.ctrl_l_vel.linear.x),
-                        y=(self.ctrl_l_vel.linear.y),
-                        z=(self.ctrl_l_vel.linear.z))
-                self.old_vel_desired = vel_desired.point
 
             feedback_cmd = self.feedbeck(pos_desired, vel_desired)
 
@@ -942,6 +936,7 @@ class Controller(object):
         is pressed.
         '''
         self.set_ff_pid_gains()
+        self.drag_velocity = Twist()
         while not (rospy.is_shutdown() or self.state_killed):
             drag_offset = Point(
                 x=(self.drone_pose_est.position.x-self.ctrl_l_pos.position.x),
@@ -951,8 +946,11 @@ class Controller(object):
             while (self.drag and not (
                                     self.state_killed or rospy.is_shutdown())):
                 # When trigger pulled, freeze offset controller-drone and adapt
-                # hover setpoint, until trigger is released.
-                # print yellow('in den drag while, drag = ', self.drag)
+                # hover position and velocity setpoint, until trigger is
+                # released. print yellow('in den drag while, drag = ',
+                # self.drag)
+
+                # Position setpoint
                 self.hover_setpoint.position = Point(
                     x=max(- (self.room_width/2. - self.drone_radius),
                           min((self.room_width/2. - self.drone_radius),
@@ -963,7 +961,12 @@ class Controller(object):
                     z=max(self.drone_radius * 2,
                           min(self.room_height - self.drone_radius,
                               (self.ctrl_l_pos.position.z + drag_offset.z))))
-                self.hover()
+                # Velocity setpoint
+                self.drag_velocity.linear.x = self.ctrl_l_vel.linear.x
+                self.drag_velocity.linear.y = self.ctrl_l_vel.linear.y
+                self.drag_velocity.linear.z = self.ctrl_l_vel.linear.z
+
+                self.hover(self.drag_velocity)
                 self.rate.sleep()
 
             if self.state_changed:
@@ -1169,9 +1172,9 @@ class Controller(object):
         '''Transforms the velocity commands from the global world frame to the
         rotated world frame world_rot.
         '''
-        self.feedforward_cmd.linear.x = vel.point.x
-        self.feedforward_cmd.linear.y = vel.point.y
-        self.feedforward_cmd.linear.z = vel.point.z
+        self.feedforward_cmd.linear.x = vel.twist.linear.x
+        self.feedforward_cmd.linear.y = vel.twist.linear.y
+        self.feedforward_cmd.linear.z = vel.twist.linear.z
         self.feedforward_cmd = self.transform_twist(
                                     self.feedforward_cmd, "world", "world_rot")
 
@@ -1194,7 +1197,7 @@ class Controller(object):
         '''
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
-        feedback_cmd = self.feedbeck(pos_desired, vel_desired)
+        feedback_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
         self.cmd_twist_convert.twist.linear.x = max(min((
                         self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
@@ -1231,8 +1234,8 @@ class Controller(object):
 
             vel_error = PointStamped()
             vel_error.header.frame_id = "world"
-            vel_error.point.x = vel_desired.point.x - self.drone_vel_est.x
-            vel_error.point.y = vel_desired.point.y - self.drone_vel_est.y
+            vel_error.point.x = vel_desired.linear.x - self.drone_vel_est.x
+            vel_error.point.y = vel_desired.linear.y - self.drone_vel_est.y
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
@@ -1260,8 +1263,8 @@ class Controller(object):
             vel_error_prev = self.vel_error_prev
             vel_error = PointStamped()
             vel_error.header.frame_id = "world"
-            vel_error.point.x = vel_desired.point.x - self.drone_vel_est.x
-            vel_error.point.y = vel_desired.point.y - self.drone_vel_est.y
+            vel_error.point.x = vel_desired.linear.x - self.drone_vel_est.x
+            vel_error.point.y = vel_desired.linear.y - self.drone_vel_est.y
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
@@ -1794,9 +1797,9 @@ class Controller(object):
         self.current_ff_vel.header.stamp = rospy.get_rostime()
 
         point_start = Point(x=pos.point.x, y=pos.point.y, z=pos.point.z)
-        point_end = Point(x=(pos.point.x + vel.point.x),
-                          y=(pos.point.y + vel.point.y),
-                          z=(pos.point.z + vel.point.z))
+        point_end = Point(x=(pos.point.x + vel.twist.linear.x),
+                          y=(pos.point.y + vel.twist.linear.y),
+                          z=(pos.point.z + vel.twist.linear.z))
         self.current_ff_vel.points = [point_start, point_end]
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)

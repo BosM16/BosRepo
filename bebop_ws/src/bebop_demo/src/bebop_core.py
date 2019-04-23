@@ -16,7 +16,7 @@ import tf2_ros
 import tf2_geometry_msgs as tf2_geom
 
 from fabulous.color import (highlight_red, highlight_green, highlight_blue,
-                            cyan, green)
+                            highlight_yellow, cyan, green)
 
 from perception import *
 from world_model import *
@@ -306,8 +306,10 @@ class Demo(object):
         when the battery voltage gets low.
         '''
         if ((battery.percent <= 20) and ((battery.percent % 5) == 0)):
-            print 'battery.precent', battery.percent, (battery.percent % 5)
-            print highlight_yellow(' Battery voltage low, switch to a freshly charged battery! ')
+            print 'battery.percent', battery.percent, (battery.percent % 5)
+            print highlight_yellow(
+                        ' Battery voltage low -- ', battery.percent,
+                        '% left, switch to a freshly charged battery! ')
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
