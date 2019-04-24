@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from geometry_msgs.msg import Pose
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, Empty, String
 
 from bebop_demo.msg import Trigger, Trajectories, Obstacle
 
@@ -12,6 +12,8 @@ import numpy as np
 import omgtools as omg
 import rospy
 
+from fabulous.color import highlight_red, highlight_yellow, magenta, green
+
 
 class MotionPlanner(object):
 
@@ -20,15 +22,12 @@ class MotionPlanner(object):
         controller. Sets self as publisher of topics to which controller
         subscribes.
         """
-        self._sample_time = rospy.get_param('vel_cmd/sample_time', 0.01)
-        self._update_time = rospy.get_param('vel_cmd/update_time', 0.5)
-        self.knots = rospy.get_param('motionplanner/knot_intervals', 10)
-        self.horizon_time = rospy.get_param('motionplanner/horizon_time', 10.)
-        self.vmax = rospy.get_param('motionplanner/vmax', 0.2)
-        self.amax = rospy.get_param('motionplanner/amax', 0.3)
-        self.drone_radius = rospy.get_param('motionplanner/drone_radius', 0.20)
-        self.safety_margin = rospy.get_param(
-                    'motionplanner/safety_margin', 0.2)
+        self._sample_time = rospy.get_param(
+            'controller/sample_time', 0.01)
+        self.knots = rospy.get_param(
+            'motionplanner/knot_intervals', 10)
+        self.horizon_time = rospy.get_param(
+            'motionplanner/horizon_time', 10.)
 
         self._result = Trajectories()
         self._obstacles = []
@@ -39,94 +38,157 @@ class MotionPlanner(object):
         rospy.Subscriber('motionplanner/trigger', Trigger, self.update)
 
         self.configure = rospy.Service(
-            "/motionplanner/config_motionplanner", ConfigMotionplanner,
+            "motionplanner/config_motionplanner", ConfigMotionplanner,
             self.configure)
 
-    def configure(self, obstacles):
+    def configure(self, data):
         """Configures the motionplanner. Creates omgtools Point2point problem
         with room, static and dynamic obstacles.
 
         Args:
-            obstacles : contains the obstacles sent over the configure service.
+            data :
+                static_obstacles
+                dyn_obstacles
+                difficult_obst
         """
-        print '----------------------------'
-        print 'Motionplanner configuring...'
-        print '----------------------------'
         mp_configured = False
 
+        if data.difficult_obst:
+            self.omg_update_time = rospy.get_param(
+                'controller/omg_update_time_slow', 0.5)
+            safety_margin = rospy.get_param(
+                'motionplanner/safety_margin_small', 0.1)
+            safety_weight = rospy.get_param(
+                 'motionplanner/safety_weight', 10.)
+            drone_radius = rospy.get_param(
+                'motionplanner/drone_radius_small', 0.20)
+            vmax = rospy.get_param(
+                'motionplanner/vmax_low', 0.2)
+            amax = rospy.get_param(
+                'motionplanner/amax_low', 0.3)
+        else:
+            self.omg_update_time = rospy.get_param(
+                'controller/omg_update_time', 0.5)
+            safety_margin = rospy.get_param(
+                'motionplanner/safety_margin', 0.2)
+            safety_weight = rospy.get_param(
+                 'motionplanner/safety_weight_slow', 10.)
+            drone_radius = rospy.get_param(
+                'motionplanner/drone_radius', 0.225)
+            vmax = rospy.get_param(
+                'motionplanner/vmax', 0.2)
+            amax = rospy.get_param(
+                'motionplanner/amax', 0.3)
+
         self._vehicle = omg.Holonomic3D(
-            shapes=omg.Sphere(self.drone_radius),
-            bounds={'vmax': self.vmax, 'vmin': -self.vmax,
-                    'amax': self.amax, 'amin': -self.amax})
+            shapes=omg.Sphere(drone_radius),
+            bounds={'vmax': vmax, 'vmin': -vmax,
+                    'amax': amax, 'amin': -amax})
         self._vehicle.define_knots(knot_intervals=self.knots)
-        self._vehicle.set_options({'safety_distance': self.safety_margin})
+        self._vehicle.set_options({'safety_distance': safety_margin,
+                                   'safety_weight': safety_weight,
+                                   'syslimit': 'norm_2'})
         self._vehicle.set_initial_conditions([0., 0., 0.])
         self._vehicle.set_terminal_conditions([0., 0., 0.])
 
         # Environment.
-        room_origin_x = rospy.get_param('motionplanner/room_origin_x', 0.)
-        room_origin_y = rospy.get_param('motionplanner/room_origin_y', 0.)
-        room_origin_z = rospy.get_param('motionplanner/room_origin_z', 0.)
-        room_width = rospy.get_param('motionplanner/room_width', 1.)
-        room_depth = rospy.get_param('motionplanner/room_depth', 1.)
-        room_height = rospy.get_param('motionplanner/room_height', 1.)
+        room_width = rospy.get_param('motionplanner/room_width', 5.)
+        room_depth = rospy.get_param('motionplanner/room_depth', 5.)
+        room_height = rospy.get_param('motionplanner/room_height', 3.)
+        room_origin_x = 0.
+        room_origin_y = 0.
+        room_origin_z = room_height/2
 
         room = {'shape': omg.Cuboid(room_width, room_depth, room_height),
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
-        for k, obst in enumerate(obstacles.obst_list):
+        # Static obstacles.
+        self.n_stat_obst = len(data.static_obstacles)
+        for k, obst in enumerate(data.static_obstacles):
             if obst.obst_type.data == "inf_cylinder":
+                # 2D shape is extended infinitely along z.
                 shape = omg.Circle(obst.shape[0])
                 position = [obst.pose[0], obst.pose[1]]
+
+            elif obst.obst_type.data == "slalom plate":
+                shape = omg.Beam(obst.shape[1]-0.1, 0.1, np.pi/2)
+                position = [obst.pose[0], obst.pose[1]]
+
             elif obst.obst_type.data == "hexagon":
                 shape = omg.RegularPrisma(obst.shape[0], obst.shape[1], 6)
-            elif obst.obst_type.data in {"slalom plate",
-                                         "plate",
-                                         "window plate"}:
-                if obst.obst_type.data != "plate":
-                    obst.direction = 0.
-                shape = omg.Plate(shape2d=omg.Rectangle(
+                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
+            elif obst.obst_type.data == "window plate":
+                if (k % 4) <= 1:  # Side plates 1 and 2.
+                    shape = omg.Beam(obst.shape[1]-0.1, 0.1, np.pi/2)
+                    position = [obst.pose[0], obst.pose[1]]
+                else:  # Upper and lower plates 3 and 4.
+                    shape = omg.Plate(shape2d=omg.Rectangle(
                                                 obst.shape[0], obst.shape[1]),
+                                      height=obst.shape[2],
+                                      orientation=[0., np.pi/2, 0.])
+                    position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
+            elif obst.obst_type.data == "plate":
+                shape = omg.Plate(shape2d=omg.Rectangle(
+                                            obst.shape[0], obst.shape[1]),
                                   height=obst.shape[2],
-                                  orientation=[0., np.pi/2, obst.direction])
-                print 'obst\n', obst
-            elif obst.obst_type.data == "cuboid":
-                shape = omg.Cuboid(
-                    width=obst.shape[0],
-                    depth=obst.shape[1],
-                    height=obst.shape[2])
+                                  orientation=[0., np.pi/2,
+                                               obst.direction])
+                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+
             else:
                 print highlight_yellow(' Warning: invalid obstacle type ')
 
-            if not obst.obst_type.data == "inf_cylinder":
-                position = [obst.pose[0], obst.pose[1], obst.pose[2]]
-
             self._obstacles.append(omg.Obstacle(
                                         {'position': position}, shape=shape))
+
+        # Dynamic obstacles.
+        self.n_dyn_obst = len(data.dyn_obstacles)
+        for obst in data.dyn_obstacles:
+            print 'obstacle in mp', obst
+            shape = omg.Circle(obst.shape[0])
+            position = [obst.pose[0], obst.pose[1]]
+            self._obstacles.append(omg.Obstacle(
+                                        {'position': position}, shape=shape))
+
+        # Create the environment as room with obstacles.
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
 
         # Create problem.
-        print '----------------------------------'
-        print 'Motionplanner Creating Problem ...'
-        print '----------------------------------'
-
-        problem = omg.Point2point(self._vehicle, environment, freeT=True)
+        problem = omg.Point2point(self._vehicle, environment, freeT=False)
         problem.set_options({'solver_options': {'ipopt': {
-            # 'ipopt.linear_solver': 'ma57',
-            'ipopt.print_level': 0}}})
-        problem.set_options({
-            'hard_term_con': False, 'horizon_time': self.horizon_time,
-            'verbose': 1.})
+            'ipopt.linear_solver': 'ma57',
+            'ipopt.max_iter': 800,
+            'ipopt.print_level': 0,
+            'ipopt.tol': 1e-5,
+            'ipopt.warm_start_init_point': 'yes',
+            'ipopt.warm_start_bound_push': 1e-6,
+            'ipopt.warm_start_mult_bound_push': 1e-6,
+            'ipopt.mu_init': 1e-5,
+            'ipopt.hessian_approximation': 'limited-memory'
+            }}})
+
+        if self.n_dyn_obst != 0:
+            print 'hard_term_con set to false'
+            problem.set_options({
+                'hard_term_con': False, 'horizon_time': self.horizon_time,
+                'verbose': 1.})
+        else:
+            problem.set_options({
+                'hard_term_con': True, 'horizon_time': self.horizon_time,
+                'verbose': 1.})
 
         problem.init()
-        problem.fullstop = True
+        # problem.fullstop = True
 
         self._deployer = omg.Deployer(
-            problem, self._sample_time, self._update_time)
+            problem, self._sample_time, self.omg_update_time)
         self._deployer.reset()
 
         mp_configured = True
+        print green('----   Motionplanner running   ----')
 
         return ConfigMotionplannerResponse(mp_configured)
 
@@ -138,10 +200,6 @@ class MotionPlanner(object):
         self._goal.position.x = np.inf
         self._goal.position.y = np.inf
         self._goal.position.z = np.inf
-
-        print '---------------------------'
-        print '- Motionplanner Listening -'
-        print '---------------------------'
 
         rospy.spin()
 
@@ -159,42 +217,45 @@ class MotionPlanner(object):
                 [cmd.pos_state.position.x,
                  cmd.pos_state.position.y,
                  cmd.pos_state.position.z],
-                [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z])
+                # [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
+                )
             self._vehicle.set_terminal_conditions(
                 [self._goal.position.x,
                  self._goal.position.y,
                  self._goal.position.z])
             self._deployer.reset()
-            print '-------------------------------------------'
-            print 'New Goal - Motionplanner Resetted Deployer!'
-            print '-------------------------------------------'
-
+            print magenta('---- Motionplanner received a new goal -'
+                          ' deployer resetted ----')
+        print 'motionplanner update'
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
-        trajectories = self._deployer.update(cmd.current_time, state0, input0)
+        for k in range(self.n_dyn_obst):
+            pos = cmd.dyn_obstacles[k].pose
+            vel = cmd.dyn_obstacles[k].velocity
+            obst_i = k + self.n_stat_obst
+            (self._deployer.problem.environment.obstacles[obst_i].set_state(
+                                        {'position': pos, 'velocity': vel}))
+            print 'obst state pos', self._deployer.problem.environment.obstacles[obst_i].signals['position']
+            print 'obst state vel', self._deployer.problem.environment.obstacles[obst_i].signals['velocity']
 
-        if (self._deployer.problem.problem.stats()['return_status']
-                == 'Infeasible_Problem_Detected'):
-            print ('send trajectory of zero input commands since problem'
-                   ' is infeasible')
-            self._result = Trajectories(
-                u_traj=100*[0],
-                v_traj=100*[0],
-                w_traj=100*[0],
-                x_traj=[cmd.pos_state.position.x for i in range(0, 100)],
-                y_traj=[cmd.pos_state.position.y for i in range(0, 100)],
-                z_traj=[cmd.pos_state.position.z for i in range(0, 100)])
+        trajectories = self._deployer.update(cmd.current_time, state0)  # input0)
 
-        else:
-            self._result = Trajectories(
-                u_traj=trajectories['input'][0, :],
-                v_traj=trajectories['input'][1, :],
-                w_traj=trajectories['input'][2, :],
-                x_traj=trajectories['state'][0, :],
-                y_traj=trajectories['state'][1, :],
-                z_traj=trajectories['state'][2, :])
+        calc_succeeded = True
+        return_status = self._deployer.problem.problem.stats()['return_status']
+        if (return_status != 'Solve_Succeeded'):
+            print highlight_red(return_status, ' -- brake! ')
+            calc_succeeded = False
+
+        self._result = Trajectories(
+            u_traj=trajectories['input'][0, :],
+            v_traj=trajectories['input'][1, :],
+            w_traj=trajectories['input'][2, :],
+            x_traj=trajectories['state'][0, :],
+            y_traj=trajectories['state'][1, :],
+            z_traj=trajectories['state'][2, :],
+            success=calc_succeeded)
 
         self._mp_result_topic.publish(self._result)
 

@@ -1,3 +1,5 @@
-bebop_demo/Obstacle[] obst_list
+bebop_demo/Obstacle[] static_obstacles
+bebop_demo/Obstacle[] dyn_obstacles
+bool difficult_obst
 ---
 bool config_success

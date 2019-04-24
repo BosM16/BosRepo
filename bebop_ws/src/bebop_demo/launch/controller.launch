@@ -1,0 +1,108 @@
+<launch>
+
+  <node name="controller" pkg="bebop_demo" type="controller.py" output="screen"/>
+  <node name="motionplanner" pkg="bebop_demo" type="motionplanner.py" output="screen"/>
+
+  <param name="controller/omg_update_time" value="0.25" />
+  <param name="controller/omg_update_time_slow" value="0.5" />
+  <param name="controller/sample_time" value="0.01" />
+  <param name="controller/LPF_cutoff" value="0.5" />
+  <param name="controller/LPF_order" value="4" />
+  <param name='controller/goal_reached_pos_tol' value="0.1" />
+  <param name='controller/goal_reached_pos_tol_slow' value="0.2" />
+  <param name='controller/goal_reached_angle_tol' value="0.05" />
+  <param name='controller/standard_height' value="1.7" />
+
+  <!-- PID: -->
+  <!-- hovering (aggressive) - PM 30 high I -->
+  <param name='controller/Kp_x' value="3.4806" />
+  <param name='controller/Ki_x' value="1.3391" />
+  <param name='controller/Kd_x' value="1.7900" />
+  <param name='controller/Kp_y' value="2.6439" />
+  <param name='controller/Ki_y' value="0.8907" />
+  <param name='controller/Kd_y' value="1.5528" />
+  <param name='controller/Kp_z' value="8.8233" />
+  <param name='controller/Ki_z' value="14.8069" />
+
+  <!-- ff flying omg-tools - PM 40 low I -->
+  <param name='controller/Kp_omg_x' value="1.1950" />
+  <param name='controller/Ki_omg_x' value="0.2851" />
+  <param name='controller/Kd_omg_x' value="1.1738" />
+  <param name='controller/Kp_omg_y' value="0.9747" />
+  <param name='controller/Ki_omg_y' value="0.2110" />
+  <param name='controller/Kd_omg_y' value="1.0552" />
+  <param name='controller/Kp_omg_z' value="5.4463" />
+  <param name='controller/Ki_omg_z' value="3.9785" />
+
+  <!-- <param name='controller/Kp_omg_low_x' value="0.3236" />
+  <param name='controller/Ki_omg_low_x' value="0.0428" />
+  <param name='controller/Kd_omg_low_x' value="0.4841" />
+  <param name='controller/Kp_omg_low_y' value="0.3578" />
+  <param name='controller/Ki_omg_low_y' value="0.0500" />
+  <param name='controller/Kd_omg_low_y' value="0.5067" />
+  <param name='controller/Kp_omg_low_z' value="1.7674" />
+  <param name='controller/Ki_omg_low_z' value="0.4941" /> -->
+
+  <!-- slow ff flying omg-tools - PM 50 low I -->
+  <param name='controller/Kp_omg_low_x' value="0.5488" />
+  <param name='controller/Ki_omg_low_x' value="0.0923" />
+  <param name='controller/Kd_omg_low_x' value="0.7651" />
+  <param name='controller/Kp_omg_low_y' value="0.5038" />
+  <param name='controller/Ki_omg_low_y' value="0.0815" />
+  <param name='controller/Kd_omg_low_y' value="0.7297" />
+  <param name='controller/Kp_omg_low_z' value="3.2782" />
+  <param name='controller/Ki_omg_low_z' value="1.5948" />
+
+  <!-- ff flying draw traj flying PM 45 high I-->
+  <!-- <param name='controller/Kp_dt_x' value="1.0995" />
+  <param name='controller/Ki_dt_x' value="0.2578" />
+  <param name='controller/Kd_dt_x' value="0.9279" />
+  <param name='controller/Kp_dt_y' value="0.9445" />
+  <param name='controller/Ki_dt_y' value="0.2062" />
+  <param name='controller/Kd_dt_y' value="0.8560" />
+  <param name='controller/Kp_dt_z' value="4.1593" />
+  <param name='controller/Ki_dt_z' value="4.0299" /> -->
+
+  <!-- ff flying draw traj flying PM 40 high I-->
+  <param name='controller/Kp_dt_x' value="1.6152" />
+  <param name='controller/Ki_dt_x' value="0.4491" />
+  <param name='controller/Kd_dt_x' value="1.1494" />
+  <param name='controller/Kp_dt_y' value="1.3175" />
+  <param name='controller/Ki_dt_y' value="0.3324" />
+  <param name='controller/Kd_dt_y' value="1.0333" />
+  <param name='controller/Kp_dt_z' value="5.3331" />
+  <param name='controller/Ki_dt_z' value="6.2667" />
+
+  <!-- PD: -->
+  <!-- <param name='controller/Kp_x' value="0.9790" />
+  <param name='controller/Ki_x' value="0.0" />
+  <param name='controller/Kd_x' value="1.8532" />
+  <param name='controller/Kp_y' value="0.7436" />
+  <param name='controller/Ki_y' value="0.0" />
+  <param name='controller/Kd_y' value="1.6077" />
+  <param name='controller/Kp_z' value="4.0" />
+  <param name='controller/Ki_z' value="0.0" /> -->
+
+  <param name='controller/K_theta' value="0.15" />
+  <param name='controller/max_input' value="1.0" />
+  <param name='controller/safety_treshold' value="0.2" />
+
+  <param name='motionplanner/knot_intervals' value="10" />
+  <param name='motionplanner/horizon_time' value="30.0" />
+
+  <param name='motionplanner/vmax' value="1.2" />
+  <param name='motionplanner/amax' value="0.8" />
+  <param name='motionplanner/vmax_low' value="0.6" />
+  <param name='motionplanner/amax_low' value="0.4" />
+  <param name='motionplanner/drone_radius' value="0.225" />
+  <param name='motionplanner/drone_radius_small' value="0.20" />
+  <param name='motionplanner/safety_margin' value="0.20" />
+  <param name='motionplanner/safety_margin_small' value="0.10" />
+  <param name='motionplanner/safety_weight' value="10" />
+  <param name='motionplanner/safety_weight_slow' value="10" />
+  <param name='motionplanner/room_width' value="5.5" />
+  <param name='motionplanner/room_depth' value="3.6" />
+  <param name='motionplanner/room_height' value="2.5" />
+
+
+</launch>
