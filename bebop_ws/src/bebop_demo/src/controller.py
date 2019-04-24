@@ -581,9 +581,9 @@ class Controller(object):
                     rospy.is_shutdown() or self.state_killed)):
                 rospy.sleep(0.1)
 
-            #for testing
-            self.airborne = True
-
+            # #for testing
+            # self.airborne = True
+            #
 
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
@@ -1084,6 +1084,7 @@ class Controller(object):
         self.meas['meas_pos_x'], self.meas['meas_pos_y'], self.meas['meas_pos_z'] = [], [], []
         self.meas['est_pos_x'], self.meas['est_pos_y'], self.meas['est_pos_z'] = [], [], []
         self.meas['est_vel_x'], self.meas['est_vel_y'], self.meas['est_vel_z'] = [], [], []
+        self.meas['input_x'], self.meas['input_y'], self.meas['input_z'] = [], [], []
         self.meas['meas_time'], self.meas['est_time'] = [], []
 
         self.meas['meas_pos_x'].append(self.meas_pos_x)
@@ -1101,7 +1102,7 @@ class Controller(object):
             rospy.sleep(0.1)
         self.gamepad_input.unregister()
         print 'length of meas', len(self.meas['meas_pos_x'])
-        io.savemat('../vhat_data_check.mat', self.meas)
+        io.savemat('../kalman_check.mat', self.meas)
 
     def dodge_dyn_obst(self):
         '''Uses OMG-tools to dodge a moving obstacle coming towards the drone
@@ -1605,6 +1606,9 @@ class Controller(object):
         self.meas['est_vel_y'].append(self.drone_vel_est.y)
         self.meas['est_vel_z'].append(self.drone_vel_est.z)
         self.meas['est_time'].append(rospy.get_time())
+        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.x)
+        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.y)
+        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.z)
 
         if self.meas['meas_time'][-1] != self.meas_time:
             self.meas['meas_pos_x'].append(self.meas_pos_x)

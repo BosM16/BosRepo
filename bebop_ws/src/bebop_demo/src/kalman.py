@@ -38,7 +38,7 @@ class Kalman(object):
 
         # Kalman tuning parameters.
         self.R = np.identity(3)  # measurement noise covariance
-        self.Q = np.identity(8)  # process noise covariance
+        self.Q = 1e3*np.identity(8)  # process noise covariance
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
