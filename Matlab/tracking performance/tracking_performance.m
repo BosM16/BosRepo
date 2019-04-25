@@ -50,71 +50,31 @@ for file = files'
     if figures    
         
         figure('Name',file.name(1:end-4))
-        subplot(5,1,[1 2])
+        
+        subplot(3,2,[1 3 5])
         plot3(data.drawn_path_x, data.drawn_path_y, data.drawn_path_z,'Color', red, 'LineStyle', '--')
         hold on
         plot3(data.real_path_x, data.real_path_y, data.real_path_z,'Color', blue)
         legend('Reference trajectory', 'Tracked result')
         
-        
-        subplot(5,1,3)
+        subplot(3,2,2)
         plot(t, ex, 'Color', yellow)
-        title('x tracking error')
-        xlabel('time [s]')
-        ylabel('x error [m]')
+        title('X tracking error')
+        xlabel('Time (s)')
+        ylabel('Error (m)')
         
-        subplot(5,1,4)
+        subplot(3,2,4)
         plot(t, ey, 'Color', yellow)
-        title('y tracking error')
-        xlabel('time [s]')
-        ylabel('y error [m]')
+        title('Y tracking error')
+        xlabel('Time (s)')
+        ylabel('Error (m)')
         
-        subplot(5,1,5)
+        subplot(3,2,6)
         plot(t, ey, 'Color', yellow)
-        title('z tracking error')
-        xlabel('time [s]')
-        ylabel('z error [m]')
+        title('Z tracking error')
+        xlabel('Time (s)')
+        ylabel('Error (m)')
               
-%         figure('Name',strcat(file.name(1:end-4), ' - 3d view'))
-%         plot3(data.drawn_path_x, data.drawn_path_y, data.drawn_path_z)
-%         hold on
-%         plot3(data.real_path_x, data.real_path_y, data.real_path_z)
-%         
-%         figure('Name',strcat(file.name(1:end-4), ' - x tracking'))
-%         subplot(211)
-%         hold on
-%         plot(t, data.drawn_path_x ,'Color', red)
-%         plot(t, data.real_path_x, 'Color', blue)
-%         xlabel('time [s]')
-%         ylabel('x position [m]')
-%         subplot(212)
-%         plot(t, ex, 'Color', yellow)
-%         xlabel('time [s]')
-%         ylabel('x error [m]')
-%         
-%         figure('Name',strcat(file.name(1:end-4), ' - y tracking'))
-%         subplot(211)
-%         hold on
-%         plot(t, data.drawn_path_y ,'Color', red)
-%         plot(t, data.real_path_y, 'Color', blue)
-%         xlabel('time [s]')
-%         ylabel('z position [m]')
-%         subplot(212)
-%         plot(t, ey, 'Color', yellow)
-%         xlabel('time [s]')
-%         ylabel('y error [m]')
-%         
-%         figure('Name',strcat(file.name(1:end-4), ' - z tracking'))
-%         subplot(211)
-%         hold on
-%         plot(t, data.drawn_path_z ,'Color', red)
-%         plot(t, data.real_path_z, 'Color', blue)
-%         xlabel('time [s]')
-%         ylabel('z position [m]')
-%         subplot(212)
-%         plot(t, ey, 'Color', yellow)
-%         xlabel('time [s]')
-%         ylabel('z error [m]')
     end
     
     fprintf('===================================================\n')
