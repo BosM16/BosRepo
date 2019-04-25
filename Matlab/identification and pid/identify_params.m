@@ -796,6 +796,9 @@ sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 [b_dLPFi, a_dLPFi] = tfdata(sys_dLPF^(-1), 'v');
 [A_dLPFi, B_dLPFi, C_dLPFi, D_dLPFi] = tf2ss(b_dLPFi, a_dLPFi);
 ss_vel_invLPF = ss(A_dLPFi,B_dLPFi,C_dLPFi,D_dLPFi,0.01);
+
+% ! Numerically more stable state space representation of the same system:
+ss_vel_invLPF = prescale(ss_vel_invLPF);
     
 if options.all_figures
     % Simulate on realistic desired speed signal: interpolated simulation result
