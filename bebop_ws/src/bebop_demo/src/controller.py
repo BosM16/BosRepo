@@ -1079,12 +1079,6 @@ class Controller(object):
         and removes this subscriber when the controller switches states.
         '''
         self.meas = {}
-<<<<<<< HEAD
-        self.meas['meas_pos_x'], self.meas['meas_pos_y'], self.meas['meas_pos_z'] = [], [], []
-        self.meas['est_pos_x'], self.meas['est_pos_y'], self.meas['est_pos_z'] = [], [], []
-        self.meas['est_vel_x'], self.meas['est_vel_y'], self.meas['est_vel_z'] = [], [], []
-        self.meas['input_x'], self.meas['input_y'], self.meas['input_z'] = [], [], []
-=======
         (self.meas['meas_pos_x'], self.meas['meas_pos_y'],
          self.meas['meas_pos_z']) = [], [], []
         (self.meas['est_pos_x'], self.meas['est_pos_y'],
@@ -1093,7 +1087,6 @@ class Controller(object):
          self.meas['est_vel_z']) = [], [], []
         (self.meas['input_x'], self.meas['input_y'],
          self.meas['input_z']) = [], [], []
->>>>>>> fsm_dyn_obstacles
         self.meas['meas_time'], self.meas['est_time'] = [], []
 
         self.meas['meas_pos_x'].append(self.meas_pos_x)
@@ -1111,39 +1104,6 @@ class Controller(object):
             rospy.sleep(0.1)
         self.gamepad_input.unregister()
         print 'length of meas', len(self.meas['meas_pos_x'])
-<<<<<<< HEAD
-        io.savemat('../vhat_data_check.mat', self.meas)
-
-    def retrieve_gp_input(self, gp_input):
-        '''Reads out the commands sent by the gamepad and sends these to the
-        kalman filter to update the state estimation.
-        '''
-        self.cmd_twist_convert.twist.linear = gp_input.linear
-        self.cmd_twist_convert.header.stamp = rospy.get_rostime()
-        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
-            measurement_valid) = self.get_pose_est()
-        self.publish_vhat_vector(self.drone_pose_est.position,
-                                 self.drone_vel_est)
-
-        # Saves data to be able to compare the velocity estimation to the
-        # numerically differentiated velocity afterward.
-        self.meas['est_pos_x'].append(self.drone_pose_est.position.x)
-        self.meas['est_pos_y'].append(self.drone_pose_est.position.y)
-        self.meas['est_pos_z'].append(self.drone_pose_est.position.z)
-        self.meas['est_vel_x'].append(self.drone_vel_est.x)
-        self.meas['est_vel_y'].append(self.drone_vel_est.y)
-        self.meas['est_vel_z'].append(self.drone_vel_est.z)
-        self.meas['est_time'].append(rospy.get_time())
-        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.x)
-        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.y)
-        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.z)
-
-        if self.meas['meas_time'][-1] != self.meas_time:
-            self.meas['meas_pos_x'].append(self.meas_pos_x)
-            self.meas['meas_pos_y'].append(self.meas_pos_y)
-            self.meas['meas_pos_z'].append(self.meas_pos_z)
-            self.meas['meas_time'].append(self.meas_time)
-=======
         io.savemat('../kalman_check.mat', self.meas)
 
     def dodge_dyn_obst(self):
@@ -1169,7 +1129,6 @@ class Controller(object):
         self.omg_index = 1
         self.set_omg_update_time()
         self.set_ff_pid_gains()
->>>>>>> fsm_dyn_obstacles
 
         while not (self.state_changed or (
                 rospy.is_shutdown() or self.state_killed)):
