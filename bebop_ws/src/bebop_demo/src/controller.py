@@ -67,14 +67,8 @@ class Controller(object):
 
     def _init_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
-        angle inputs.
-        State space model in observable canonical
-        form, corresponding to continuous time transfer function
-
-                      b0
-        G(z) = -----------------
-                s^2 + a1*s + a0
-
+        angle inputs. Discrete time state space model (Ts=0.01s) of the inverted,
+        LPF filtered velocity system.
         '''
         Ax = np.array([[1.947, -0.9481],
                        [1.0000, 0.]])
