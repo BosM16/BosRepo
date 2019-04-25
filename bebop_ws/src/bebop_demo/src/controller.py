@@ -1112,7 +1112,7 @@ class Controller(object):
         hard term constraint op false?
 
         '''
-        radius = 0.25
+        radius = 0.50
         self.dynamic_obst = [Obstacle(obst_type=String(
                             data="inf_cylinder"),
                             shape=[radius],
@@ -1124,6 +1124,7 @@ class Controller(object):
         self.static_obst = []
         self.config_mp()
         self.set_omg_goal(self.drone_pose_est)
+        # self.set_omg_goal(Pose())
         self.omg_index = 1
         self.set_omg_update_time()
         self.set_ff_pid_gains()

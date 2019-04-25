@@ -52,6 +52,7 @@ class MotionPlanner(object):
                 difficult_obst
         """
         mp_configured = False
+        print 'configuration mp', data
 
         if data.difficult_obst:
             self.omg_update_time = rospy.get_param(
@@ -210,6 +211,7 @@ class MotionPlanner(object):
         Args:
             cmd : contains data sent over Trigger topic.
         """
+        print 'update mp', cmd.dyn_obstacles
         # In case goal has changed: set new goal.
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
@@ -226,15 +228,21 @@ class MotionPlanner(object):
             self._deployer.reset()
             print magenta('---- Motionplanner received a new goal -'
                           ' deployer resetted ----')
-        print 'motionplanner update'
         state0 = [cmd.pos_state.position.x,
                   cmd.pos_state.position.y,
                   cmd.pos_state.position.z]
+        print 'state drone', state0
         input0 = [cmd.vel_state.x, cmd.vel_state.y, cmd.vel_state.z]
         for k in range(self.n_dyn_obst):
             pos = cmd.dyn_obstacles[k].pose
             vel = cmd.dyn_obstacles[k].velocity
+            # Dirty fix necessary to make dynamic obstacle work in OMG-tools.
+            # -> NIET OKE, gedverdekke Ruben.
+            pos = np.round(pos, 1)
+            vel = np.round(vel, 1)
             obst_i = k + self.n_stat_obst
+            # (self._deployer.problem.environment.obstacles[obst_i].set_state(
+            #                             {'position': pos, 'velocity': vel}))
             (self._deployer.problem.environment.obstacles[obst_i].set_state(
                                         {'position': pos, 'velocity': vel}))
             print 'obst state pos', self._deployer.problem.environment.obstacles[obst_i].signals['position']

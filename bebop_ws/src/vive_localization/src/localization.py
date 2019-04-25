@@ -30,7 +30,7 @@ class ViveLocalization(object):
         self.alpha = 0.1
 
         # testing
-        self.index = -2000
+        self.index = -4000
 
         self.tracked_objects = ["tracker_1", "controller_1", "controller_2"]
 
@@ -252,8 +252,8 @@ class ViveLocalization(object):
             pose_c_in_w = PoseStamped()
             pose_c_in_w.header.frame_id = "world"
             pose_c_in_w.header.stamp = rospy.Time.now()
-            pose_c_in_w.pose.position.x = 0.
-            pose_c_in_w.pose.position.y = 1.
+            pose_c_in_w.pose.position.x = 1.
+            pose_c_in_w.pose.position.y = 0.
             pose_c_in_w.pose.position.z = 1.
             pose_c_in_w.pose.orientation.x = quat[0]
             pose_c_in_w.pose.orientation.y = quat[1]
@@ -310,12 +310,13 @@ class ViveLocalization(object):
             # =============
             #  CONTROLLERS
             # =============
+            # For testing
+            self.index += 1
+            pose_c_in_w.pose.position.x = pose_c_in_w.pose.position.x
+            pose_c_in_w.pose.position.y = pose_c_in_w.pose.position.y + self.index*0.0015
+
             for i in range(1, len(self.tracked_objects)):
                 # controller_1 (& 2)
-                # For testing
-                self.index += 1
-                pose_c_in_w.pose.position.x = pose_c_in_w.pose.position.x  #+ self.index*0.00006
-                pose_c_in_w.pose.position.y = pose_c_in_w.pose.position.y #+ 3.1
 
                 # Pose
                 pos_c_in_w = PointStamped()
