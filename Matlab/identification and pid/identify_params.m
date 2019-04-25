@@ -110,7 +110,7 @@ data.f = f;
 % Differentiation of position
 velocity = gradient(output)/Ts;
 data.velocity = velocity;
-acc = gradient(velocity)/Ts;
+
 
 if options.all_figures
     figure('Name','Measurement Data full')
@@ -153,6 +153,7 @@ input_filt = filtfilt(B,A,input);
 % output filtering
 output_filt = filtfilt(B,A,output);
 velocity_filt = filtfilt(B,A,velocity);
+acc = gradient(velocity_filt)/Ts;
 acc_filt = filtfilt(B,A,acc);
 
 
@@ -318,6 +319,10 @@ transff.discr = tf(params.b, params.a, Ts);
 FRF = squeeze(freqresp(transff.discr,2*pi*f));
 data.FRF_vel = FRF;
 
+% Simulation
+x = lsim(transff.discr,input,t);
+
+
 if options.prints
    fprintf(strcat("\n* Discrete time velocity transfer function ",axplot,' direction:\n'))
    display(transff.discr) 
@@ -341,7 +346,6 @@ if options.all_figures
     xlabel('f  [Hz]')
     ylabel('\phi(FRF)  [^\circ]')
 
-    x = lsim(transff.discr,input,t);
 
     figure('Name','1st - filtered - strictly proper - Minimum Phase: Simulation')
     subplot(211)
