@@ -234,6 +234,10 @@ class MotionPlanner(object):
         for k in range(self.n_dyn_obst):
             pos = cmd.dyn_obstacles[k].pose
             vel = cmd.dyn_obstacles[k].velocity
+            # Dirty fix necessary to make dynamic obstacle work in OMG-tools.
+            # -> NIET OKE, gedverdekke Ruben.
+            pos = np.round(pos, 1)
+            vel = np.round(vel, 1)
             obst_i = k + self.n_stat_obst
             (self._deployer.problem.environment.obstacles[obst_i].set_state(
                                         {'position': pos, 'velocity': vel}))
