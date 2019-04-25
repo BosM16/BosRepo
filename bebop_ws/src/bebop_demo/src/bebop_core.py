@@ -16,7 +16,7 @@ import tf2_ros
 import tf2_geometry_msgs as tf2_geom
 
 from fabulous.color import (highlight_red, highlight_green, highlight_blue,
-                            cyan, green)
+                            highlight_yellow, cyan, green)
 
 from perception import *
 from world_model import *
@@ -73,9 +73,11 @@ class Demo(object):
             "draw follow traj": ["land", "draw path", "take-off",
                                  "fly to start", "follow path"],
             "drag drone": ["drag drone"],
-            "undamped spring": ["undamped spring", "reset_PID"],
-            "viscous fluid": ["viscous fluid", "reset_PID"],
-            "gamepad flying": ["gamepad flying"]}
+            "undamped spring": ["undamped spring", "reset PID"],
+            "viscous fluid": ["viscous fluid", "reset PID"],
+            "gamepad flying": ["gamepad flying"],
+            "dodge dynamic obstacle": ["dodge dyn obst",
+                                       "configure motionplanner"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)
@@ -298,13 +300,16 @@ class Demo(object):
             self.airborne = True
         elif flying_state.state == 0:
             self.airborne = False
-            
+
     def battery_state(self, battery):
-        '''Checks the discharge state of the battery and gives a warning 
+        '''Checks the discharge state of the battery and gives a warning
         when the battery voltage gets low.
         '''
-        if (battery.percent <= 20) and ((battery.percent % 5) == 0):
-            print highlight_red(' Battery voltage low, switch to a freshly charged battery! ')
+        if ((battery.percent <= 20) and ((battery.percent % 5) == 0)):
+            print 'battery.percent', battery.percent, (battery.percent % 5)
+            print highlight_yellow(
+                        ' Battery voltage low -- ', battery.percent,
+                        '% left, switch to a freshly charged battery! ')
 
     def ctrl_state_finish(self, empty):
         '''Checks whether controller has finished the current state.
