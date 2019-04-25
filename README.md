@@ -127,20 +127,23 @@ All control parameters are set in `bebop_ws/src/bebop_demo/launch/controller.lau
 
 ### Executing Tasks
 Now it's time for the actual demo. The demo is divided in a number of tasks: fixed sequences of states to illustrate specific control principles. The available tasks are:
+* *'gamepad flying'*  
+Manually fly the drone around using the gamepad.
 * *'take-off'* and *'land'*  
 Press the menu button on the right Vive controller. When taking off as part of the sequence of another task, do not use this button but press the trackpad on the right Vive controller to proceed.
-* *'point-to-point'*  
-Use OMG-tools to navigate from the current position to the goal evading the current set of (static) obstacles. The goal is set by the pulling the trigger on the right Vive controller and holding it at the desired location,
+* *'undamped spring'* and *'viscous fluid'*  
+Do positioning with only proportional gain or only derivative gain respectively, to show the analogy with an undamped spring or a viscous fluid.
 * *'draw follow traj'*  
 Draw an arbitrary path using the left Vive controller. The drone flies to the starting point and subsequently tracks the drawn trajectory.
 * *'drag drone'*  
 Manipulate the drone as if he is fixed to the left Vive controller.
-* *'undamped spring'* and *'viscous fluid'*  
-Do positioning with only proportional gain or only derivative gain respectively, to show the analogy with an undamped spring or a viscous fluid.
-* *'gamepad flying'*  
-Manually fly around the drone using the gamepad.
+* *'dodge dynamic obstacle'*
+Walk through the flight area holding the right Vive controller. The drone moves out of the way to let you pass and returns when its original position is no longer obstructed.
+* *'point-to-point'*  
+Use OMG-tools to navigate from the current position to the goal evading the current set of (static) obstacles. The goal is set by the pulling the trigger on the right Vive controller and holding it at the desired location.
 
-Auxiliary tasks:
+
+Auxiliary tasks for obstacle placement:
 * *'place cyl obstacles'*  
 Place cylindrical obstacles (room height, variable diameter) using the left Vive controller that are evaded in the 'point-to-point' task.
 * *'place slalom obstacles'*  
