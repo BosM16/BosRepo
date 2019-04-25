@@ -88,18 +88,26 @@ class Controller(object):
         self.A[4:5, 4:5] = Az
 
         self.B = np.zeros([5, 3])
-        self.B[0, 0] = 1
-        self.B[2, 1] = 1
+#         self.B[0, 0] = 1
+#         self.B[2, 1] = 1
+#         self.B[4, 2] = 1
+        self.B[0, 0] = 0.0625
+        self.B[2, 1] = 0.125
         self.B[4, 2] = 1
 
         self.C = np.zeros([3, 5])
-        self.C[0, 0:2] = [0.004232, -0.005015]
-        self.C[1, 2:4] = [-0.003704, 0.002797]
-        self.C[2, 4:5] = [-0.0002301]
+#         self.C[0, 0:2] = [0.004232, -0.005015]
+#         self.C[1, 2:4] = [-0.003704, 0.002797]
+#         self.C[2, 4:5] = [-0.0002301]
+        
+        # Numerically more stable:
+        self.C[0, 0:2] = [-0.04588, 0.0314]
+        self.C[1, 2:4] = [-0.07476, 0.06684]
+        self.C[2, 4:5] = [-0.003141] 
 
-        self.D = np.array([[0.6338, 0.0, 0.0],
-                           [0.0, 0.7709, 0.0],
-                           [0.0, 0.0, 1.036]])
+        self.D = np.array([[0.7498, 0.0, 0.0],
+                           [0.0, 0.8537, 0.0],
+                           [0.0, 0.0, 1.088]])
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
