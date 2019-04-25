@@ -866,6 +866,7 @@ class Controller(object):
                     self.diff_interp_traj()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
+                else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
 
