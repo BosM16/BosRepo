@@ -7,7 +7,7 @@ Master's thesis project by Rian Beck and Mathias Bos titled
 **'Interactive demo on the indoor localization, control and navigation of drones'**  
 at KULeuven, Faculty of Engineering Science, Department of Mechanical Engineering  
 
-This document serves as an instruction manual for installation and usage of the demo.
+This document serves as an instruction manual for installation and use of the demo.
 
 ## Hardware requirements
 * Parrot Bebop 2 drone  
@@ -32,7 +32,7 @@ $ catkin build
 
 ### Steam Setup
 To run the demo on a computer with a non-compatible graphics card for the HTC
-Vive HMD, follow these instructions to construct a null-driver and use the HMD only as bluetooth dongle for the Vive Controllers. Note that two bluetooth dongles as the one for the Vive Tracker would work just as well, without any Vive HMD present.
+Vive HMD, follow these instructions to construct a null-driver and use the HMD only as bluetooth dongle for the Vive controllers. Note that two bluetooth dongles as the one for the Vive tracker would work just as well, without any Vive HMD present.
 
 The steps below are based on instructions found [here](https://gist.github.com/DanielArnett/c9a56c9c7cc0def20648480bca1f6772)
 and [here](http://help.triadsemi.com/steamvr-tracking/steamvr-tracking-without-an-hmd).
@@ -57,11 +57,15 @@ Example default.vrsettings files are found [here](https://github.com/BosMathias/
 
 **Note -**  Even when the null driver is working properly, Steam might complain that the Vive Hmd is not found. The error 306 message can safely be ignored. Also the message in some versions of SteamVR that it is 'Not Ready' is normal. The demo will work just as well.
 
+### OMG-tools setup
+We use OMG-tools with HSL's linear solver *ma57* which can be obtained [here](http://www.hsl.rl.ac.uk/download/MA57/3.10.0/
+). The demo can be used without the solver, but equal performance is not guaranteed.
+
 
 ## Executing the demo
 ### Launch
 
-* Make sure SteamVR is running and the Vive Tracker as well as both Vive Controllers are visible for the Vive Lighthouses (fully green, not blinking in SteamVR window).  
+* Make sure SteamVR is running and the Vive tracker as well as both Vive controllers are visible for the Vive lighthouses (fully green, not blinking in SteamVR window).  
 * Make sure the Bebop drone is turned on and your computer is connected to it via Wi-Fi.
 * Open a terminal, browse to the main folder of this repository `<path to BosRepo>/BosRepo/` and run the 'run_demo.sh' script:    
 
@@ -111,7 +115,7 @@ Building nlp ...  in 0.027586 s
 ```
 If this is not the case, make sure to check for the common errors listed below.
 
-The last message marked in blue instructs the user to identify the left and right Vive Controller. The controllers only become active once both triggers have been pushed and the controllers are identified.  
+The last message marked in blue instructs the user to identify the left and right Vive controller. The controllers only become active once both triggers have been pushed and the controllers are identified.  
 The right controller is reserved for the demo operator. It is used for state transitions and actions that require a person standing in the flight area while the drone is flying. The left controller can be handed to a spectator because it is used only for operations during which the drone is at rest on the floor or that can be executed standing outside the flight area.
 
 ### Calibration
@@ -124,13 +128,13 @@ All control parameters are set in `bebop_ws/src/bebop_demo/launch/controller.lau
 ### Executing Tasks
 Now it's time for the actual demo. The demo is divided in a number of tasks: fixed sequences of states to illustrate specific control principles. The available tasks are:
 * *'take-off'* and *'land'*  
-Press the menu button on the right Vive Controller. When taking off as part of the sequence of another task, do not use this button but press the trackpad on the right Vive Controller to proceed.
-* *'point to point'*  
-Use OMG-tools to navigate from the current position to the goal evading the current set of (static) obstacles. The goal is set by the pulling the trigger on the right Vive Controller and holding it at the desired location,
+Press the menu button on the right Vive controller. When taking off as part of the sequence of another task, do not use this button but press the trackpad on the right Vive controller to proceed.
+* *'point-to-point'*  
+Use OMG-tools to navigate from the current position to the goal evading the current set of (static) obstacles. The goal is set by the pulling the trigger on the right Vive controller and holding it at the desired location,
 * *'draw follow traj'*  
-Draw an arbitrary path using the left Vive Controller. The drone flies to the starting point and subsequently tracks the drawn trajectory.
+Draw an arbitrary path using the left Vive controller. The drone flies to the starting point and subsequently tracks the drawn trajectory.
 * *'drag drone'*  
-Manipulate the drone as if he is fixed to the left Vive Controller.
+Manipulate the drone as if he is fixed to the left Vive controller.
 * *'undamped spring'* and *'viscous fluid'*  
 Do positioning with only proportional gain or only derivative gain respectively, to show the analogy with an undamped spring or a viscous fluid.
 * *'gamepad flying'*  
@@ -138,26 +142,28 @@ Manually fly around the drone using the gamepad.
 
 Auxiliary tasks:
 * *'place cyl obstacles'*  
-Place cylindrical obstacles (room height, variable diameter) using the left Vive Controller that are evaded in the 'point to point' task.
+Place cylindrical obstacles (room height, variable diameter) using the left Vive controller that are evaded in the 'point-to-point' task.
 * *'place slalom obstacles'*  
-Place obstacles to slalom between using the left Vive Controller. Drag to define the side where the drone may not pass (only in y-direction). Execute 'point to point' task to perform the slalom.
+Place obstacles to slalom between using the left Vive controller. Drag to define the side where the drone may not pass (only in y-direction). Execute 'point-to-point' task to perform the slalom.
 * *'place plate obstacles'*  
-Place plates that are evaded in the 'point to point' task using the left Vive Controller.
+Place plates that are evaded in the 'point-to-point' task using the left Vive controller.
 * *'place hex obstacles'*  
-Place hexagonal obstacles (variable height) that are evaded in the 'point to point' task using the left Vive Controller.
+Place hexagonal obstacles (variable height) that are evaded in the 'point-to-point' task using the left Vive controller.
 * *'place window obstacles'*  
-Place window obstacles (variable height and width) through which the drone flies in the 'point to point' task using the left Vive Controller.
+Place window obstacles (variable height and width) through which the drone flies in the 'point-to-point' task using the left Vive controller.
 
 ### Common Errors
 * *No response from gamepad actions*.  
 In the file `bebop_ws/src/bebop_autonomy/bebop_tools/launch/joy_teleop.launch` check the parameter "joy_dev". Your pc might see the gamepad as device "/dev/input/js1" while it should be '/js0' or vice versa.  
-* *SteamVR doesn't find trackers or controllers*.  
+* *SteamVR doesn't find tracker or controllers*.  
 Restart SteamVR, or Steam itself.  
 Check your Steam 'default.vrsettings' files as discussed above in the Section 'Steam Setup'
 * *Bebop drone takes off and immediately flies away into the surroundings*.  
 Check the 'flat trim' of your drone. The config files from bebop_tools contain the button combination to set the flat trim (define level for your drone). This can alternatively be set via the [Parrot FreeFlight Pro](https://www.parrot.com/global/freeflight-pro#freeflight-pro-the-indispensable-application-to-pilot-your-drone) application on a smartphone.
 * *Behavior that can not be explained by what is in the code*.  
 Consider recompiling the code, using the commands mentioned under the Section 'Demo Setup' above. This is especially important when switching git branches.
+* *Error 'Invalid_option [...] Holonomic has no attribute trajectories' or similar*  
+Make sure the ma57-solver is correctly installed or removed as option.
 
 
 ## Acknowledgements

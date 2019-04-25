@@ -50,9 +50,10 @@ class Controller(object):
                            "follow path": self.follow_traj,
                            "undamped spring": self.hover_changed_gains,
                            "viscous fluid": self.hover_changed_gains,
-                           "reset_PID": self.reset_pid_gains,
+                           "reset PID": self.reset_pid_gains,
                            "drag drone": self.drag_drone,
-                           "gamepad flying": self.gamepad_flying}
+                           "gamepad flying": self.gamepad_flying,
+                           "dodge dyn obst": self.dodge_dyn_obst}
 
         self._init_params()
         self._init_variables()
@@ -111,8 +112,6 @@ class Controller(object):
             'bebop/land', Empty, queue_size=1)
         self._mp_trigger_topic = rospy.Publisher(
             'motionplanner/trigger', Trigger, queue_size=1)
-        self.interrupt_mp = rospy.Publisher(
-            'motionplanner/interrupt', Empty, queue_size=1)
         self.obst_pub = rospy.Publisher(
             'motionplanner/rviz_obst', MarkerArray, queue_size=1)
         self.vhat_vector_pub = rospy.Publisher(
@@ -145,6 +144,10 @@ class Controller(object):
             'vive_localization/c1_pose', PoseStamped, self.get_ctrl_r_pos)
         rospy.Subscriber(
             'vive_localization/c2_pose', PoseStamped, self.get_ctrl_l_pos)
+        rospy.Subscriber(
+            'vive_localization/c1_velocity', TwistStamped, self.get_ctrl_r_vel)
+        rospy.Subscriber(
+            'vive_localization/c2_velocity', TwistStamped, self.get_ctrl_l_vel)
         rospy.Subscriber('fsm/state', String, self.switch_state)
         rospy.Subscriber(
             '/bebop/states/ardrone3/PilotingState/FlyingStateChanged',
@@ -206,20 +209,23 @@ class Controller(object):
         self.trackpad_held = False
         self.r_trigger_held = False
         self.overtime = False
+
+        # Measurement related variables
         self.meas_pos_x = 0.
         self.meas_pos_y = 0.
         self.meas_pos_z = 0.
         self.meas_time = 0.
 
         self.hover_meas = {}
-        self.hover_meas['meas_pos_x'], self.hover_meas['meas_pos_y'], self.hover_meas['meas_pos_z'] = [0.], [0.], [0.]
-        self.hover_meas['hover_setpoint_x'], self.hover_meas['hover_setpoint_y'], self.hover_meas['hover_setpoint_z'] = [], [], []
+        (self.hover_meas['meas_pos_x'], self.hover_meas['meas_pos_y'],
+         self.hover_meas['meas_pos_z']) = [0.], [0.], [0.]
+        (self.hover_meas['hover_setpoint_x'],
+         self.hover_meas['hover_setpoint_y'],
+         self.hover_meas['hover_setpoint_z']) = [0], [0], [0]
+        (self.hover_meas['input_x'],
+         self.hover_meas['input_y'],
+         self.hover_meas['input_z']) = [0], [0], [0]
         self.hover_meas['meas_time'] = [0.]
-
-        self.meas['meas_pos_x'].append(self.meas_pos_x)
-        self.meas['meas_pos_y'].append(self.meas_pos_y)
-        self.meas['meas_pos_z'].append(self.meas_pos_z)
-        self.meas['meas_time'].append(self.meas_time)
 
         # Other
         self._traj = {'u': [0.0], 'v': [0.0], 'w': [0.0],
@@ -234,13 +240,16 @@ class Controller(object):
         self.pos_error_prev = PointStamped()
         self.vel_error_prev = PointStamped()
         self.measurement_valid = False
-        self.obstacles = []
+        self.static_obst = []
+        self.dynamic_obst = []
         self.omg_index = 1
         self.difficult_obst = False
         self._goal = Pose()
         self.hover_setpoint = Pose()
         self.ctrl_r_pos = Pose()
+        self.ctrl_r_vel = Twist()
         self.ctrl_l_pos = Pose()
+        self.ctrl_l_vel = Twist()
         self.draw = False
         self.drag = False
 
@@ -294,10 +303,10 @@ class Controller(object):
         by loading in the room and static obstacles. Waits for Motionplanner to
         set mp_status to configured.
         '''
-        if (self.obstacles and
-                self.obstacles[0].obst_type.data == "window plate" or
-                (self.obstacles[0].obst_type.data == "slalom plate" and
-                 len(self.obstacles) >= 3)):
+        if (self.static_obst and
+                (self.static_obst[0].obst_type.data == "window plate" or
+                 (self.static_obst[0].obst_type.data == "slalom plate" and
+                 len(self.static_obst) >= 3))):
             self.difficult_obst = True
         else:
             self.difficult_obst = False
@@ -308,7 +317,8 @@ class Controller(object):
             config_mp_resp = rospy.ServiceProxy(
                 "/motionplanner/config_motionplanner", ConfigMotionplanner)
             config_success = config_mp_resp(
-                                          obst_list=self.obstacles,
+                                          static_obstacles=self.static_obst,
+                                          dyn_obstacles=self.dynamic_obst,
                                           difficult_obst=self.difficult_obst)
         except rospy.ServiceException, e:
             print highlight_red('Service call failed: %s') % e
@@ -355,6 +365,7 @@ class Controller(object):
         trigger.goal_vel = Point()
         trigger.pos_state = self.drone_pose_est
         trigger.vel_state = self.drone_vel_est
+        trigger.dyn_obstacles = self.dynamic_obst
         trigger.current_time = self._time
 
         self._mp_trigger_topic.publish(trigger)
@@ -380,7 +391,6 @@ class Controller(object):
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        print '2 publish input cmd', self.cmd_twist_convert.twist.linear
 
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
@@ -443,11 +453,11 @@ class Controller(object):
         pos.point = Point(x=self._traj['x'][self.omg_index + 1],
                           y=self._traj['y'][self.omg_index + 1],
                           z=self._traj['z'][self.omg_index + 1])
-        vel = PointStamped()
+        vel = TwistStamped()
         vel.header.frame_id = "world"
-        vel.point = Point(x=self._traj['u'][self.omg_index + 1],
-                          y=self._traj['v'][self.omg_index + 1],
-                          z=self._traj['w'][self.omg_index + 1])
+        vel.twist.linear.x = self._traj['u'][self.omg_index + 1]
+        vel.twist.linear.y = self._traj['v'][self.omg_index + 1]
+        vel.twist.linear.z = self._traj['w'][self.omg_index + 1]
 
         self.publish_current_ff_vel(pos, vel)
 
@@ -477,7 +487,6 @@ class Controller(object):
         # Send velocity sample.
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        # print '3 publish input cmd', self.cmd_twist_convert.twist.linear
 
         # Retrieve new pose estimate from World Model.
         # This is a pose estimate for the first following time instance [k+1]
@@ -502,11 +511,12 @@ class Controller(object):
         pos.point = Point(x=self.drawn_pos_x[index],
                           y=self.drawn_pos_y[index],
                           z=self.drawn_pos_z[index])
-        vel = PointStamped()
+        vel = TwistStamped()
         vel.header.frame_id = "world"
-        vel.point = Point(x=self.drawn_vel_x[index],
-                          y=self.drawn_vel_y[index],
-                          z=self.drawn_vel_z[index])
+        vel.twist.linear.x = self.drawn_vel_x[index]
+        vel.twist.linear.y = self.drawn_vel_y[index]
+        vel.twist.linear.z = self.drawn_vel_z[index]
+
         self.publish_current_ff_vel(pos, vel)
 
         # Calculate the desired yaw angle based on the pointing direction of
@@ -544,7 +554,7 @@ class Controller(object):
         if state.data == "standby":
             self.reset_markers()
 
-    def hover(self):
+    def hover(self, vel_desired=Twist()):
         '''Drone keeps itself in same location through a PID controller.
         '''
         if self.airborne:
@@ -558,8 +568,7 @@ class Controller(object):
             pos_desired.point = Point(x=self.hover_setpoint.position.x,
                                       y=self.hover_setpoint.position.y,
                                       z=self.hover_setpoint.position.z)
-            vel_desired = PointStamped()
-            vel_desired.point = Point()
+
             feedback_cmd = self.feedbeck(pos_desired, vel_desired)
 
             self.cmd_twist_convert.twist = feedback_cmd
@@ -578,18 +587,29 @@ class Controller(object):
                                                 self.hover_setpoint.position.y)
                 self.hover_meas['hover_setpoint_z'].append(
                                                 self.hover_setpoint.position.z)
-            # print '4 publish input cmd', self.cmd_twist_convert.twist.linear
+                self.hover_meas['input_x'].append(
+                                        self.cmd_twist_convert.twist.linear.x)
+                self.hover_meas['input_y'].append(
+                                        self.cmd_twist_convert.twist.linear.y)
+                self.hover_meas['input_z'].append(
+                                        self.cmd_twist_convert.twist.linear.z)
 
     def set_hover_setpoint(self, new_setpoint):
         '''Set new hover setpoint manually.
         '''
-        self.hover_setpoint = new_setpoint
+        self.hover_setpoint.position.x = (
+                    self.hover_setpoint.position.x + new_setpoint.position.x)
+        self.hover_setpoint.position.y = (
+                    self.hover_setpoint.position.y + new_setpoint.position.y)
+        self.hover_setpoint.position.z = (
+                    self.hover_setpoint.position.z + new_setpoint.position.z)
 
     def save_data(self, empty):
         '''Save pid testing data.
         '''
         if self.airborne:
-            io.savemat('..pid_step_input.mat', self.hover_meas)
+            io.savemat('../pid_step_input.mat', self.hover_meas)
+            print yellow(' Data saved ')
         self.hover_meas['meas_pos_x'] = [0.]
         self.hover_meas['meas_pos_y'] = [0.]
         self.hover_meas['meas_pos_z'] = [0.]
@@ -597,6 +617,10 @@ class Controller(object):
         self.hover_meas['hover_setpoint_x'] = [self.hover_setpoint.position.x]
         self.hover_meas['hover_setpoint_y'] = [self.hover_setpoint.position.y]
         self.hover_meas['hover_setpoint_z'] = [self.hover_setpoint.position.z]
+        self.hover_meas['input_x'] = [0.]
+        self.hover_meas['input_y'] = [0.]
+        self.hover_meas['input_z'] = [0.]
+        print yellow(' Measurement data resetted ')
 
     def take_off_land(self):
         '''Function needed to wait when taking of or landing to make sure no
@@ -606,10 +630,13 @@ class Controller(object):
         self.cmd_twist_convert.twist = Twist()
 
         if self.state == "take-off" and not self.airborne:
+            counter = 0
             self.take_off.publish(Empty())
-            while not (self.airborne or (
+            while not (self.airborne or (counter > 50) or (
                     rospy.is_shutdown() or self.state_killed)):
+                counter += 1
                 rospy.sleep(0.1)
+
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
             self.land.publish(Empty())
@@ -623,7 +650,7 @@ class Controller(object):
         controller determines the radius of the obstacle. Obstacles are saved
         and drawn in rviz.
         '''
-        self.obstacles = []
+        self.static_obst = []
         self.publish_obst_room(Empty)
 
         print highlight_green(' Drag left controller to place obstacle ')
@@ -632,7 +659,7 @@ class Controller(object):
                 self.state_changed = False
                 break
             if self.draw:
-                self.obstacles.append(None)
+                self.static_obst.append(None)
                 center = Point(x=self.ctrl_l_pos.position.x,
                                y=self.ctrl_l_pos.position.y,
                                z=self.ctrl_l_pos.position.z/2.)
@@ -651,7 +678,7 @@ class Controller(object):
                                         data="hexagon"),
                                         shape=[radius, 2.*center.z],
                                         pose=[center.x, center.y, center.z])
-                    self.obstacles[-1] = Sjaaakie
+                    self.static_obst[-1] = Sjaaakie
                     self.publish_obst_room(Empty)
                     self.rate.sleep()
                 print highlight_blue(' Obstacle added ')
@@ -663,7 +690,7 @@ class Controller(object):
         obstacle.
         Obstacles are saved and drawn in rviz.
         '''
-        self.obstacles = []
+        self.static_obst = []
         self.publish_obst_room(Empty)
 
         print highlight_green(
@@ -675,7 +702,7 @@ class Controller(object):
                 break
             height = self.room_height
             if self.draw:
-                self.obstacles.append(None)
+                self.static_obst.append(None)
                 edge = Point(x=self.ctrl_l_pos.position.x,
                              y=self.ctrl_l_pos.position.y,
                              z=height/2.)
@@ -699,7 +726,7 @@ class Controller(object):
                                     direction=d,
                                     edge=[edge.x, edge.y, edge.z])
 
-                self.obstacles[-1] = Sjaaakie
+                self.static_obst[-1] = Sjaaakie
                 self.publish_obst_room(Empty)
                 print highlight_blue(' Obstacle added ')
             self.rate.sleep()
@@ -710,7 +737,7 @@ class Controller(object):
         controller determines the orientation and other corners of the plate.
         Obstacles are saved and drawn in rviz.
         '''
-        self.obstacles = []
+        self.static_obst = []
         self.publish_obst_room(Empty)
 
         print highlight_green(
@@ -722,7 +749,7 @@ class Controller(object):
                 break
 
             if self.draw:
-                self.obstacles.append(None)
+                self.static_obst.append(None)
                 upper_corner = Point(x=self.ctrl_l_pos.position.x,
                                      y=self.ctrl_l_pos.position.y,
                                      z=self.ctrl_l_pos.position.z)
@@ -749,7 +776,7 @@ class Controller(object):
                                         pose=[center.x, center.y, center.z],
                                         direction=orientation)
 
-                    self.obstacles[-1] = Sjaaakie
+                    self.static_obst[-1] = Sjaaakie
                     self.publish_obst_room(Empty)
                     rospy.sleep(0.05)
                 print highlight_blue(' Obstacle added ')
@@ -760,7 +787,7 @@ class Controller(object):
         upper right corner. Windows can only be placed perpendicular to the
         x-direction.
         '''
-        self.obstacles = []
+        self.static_obst = []
         self.publish_obst_room(Empty)
 
         print highlight_green(
@@ -773,7 +800,7 @@ class Controller(object):
 
             if self.draw:
                 for _ in range(0, 4):
-                    self.obstacles.append(None)
+                    self.static_obst.append(None)
                 corner1 = Point(x=self.ctrl_l_pos.position.x,
                                 y=self.ctrl_l_pos.position.y,
                                 z=self.ctrl_l_pos.position.z)
@@ -827,10 +854,10 @@ class Controller(object):
                                       shape=[h_p4, w_p4, thickness],
                                       pose=[x_p4, y_p4, z_p4])
 
-                    self.obstacles[-4] = plate1
-                    self.obstacles[-3] = plate2
-                    self.obstacles[-2] = plate3
-                    self.obstacles[-1] = plate4
+                    self.static_obst[-4] = plate1
+                    self.static_obst[-3] = plate2
+                    self.static_obst[-2] = plate3
+                    self.static_obst[-1] = plate4
                     self.publish_obst_room(Empty)
                     rospy.sleep(0.05)
                 print highlight_blue(' Obstacle added ')
@@ -906,16 +933,12 @@ class Controller(object):
         if not len(self.drawn_pos_x):
             return
 
-        self.set_ff_pid_gains()
-
         goal = Pose()
         goal.position.x = self.drawn_pos_x[0]
         goal.position.y = self.drawn_pos_y[0]
         goal.position.z = self.drawn_pos_z[0]
         self.set_omg_goal(goal)
         self.omg_fly()
-
-        self.reset_pid_gains()
 
     def follow_traj(self):
         '''Lets the drone fly along the drawn path.
@@ -969,6 +992,8 @@ class Controller(object):
         '''Adapts hover setpoint to follow vive right controller when trigger
         is pressed.
         '''
+        self.set_ff_pid_gains()
+        self.drag_velocity = Twist()
         while not (rospy.is_shutdown() or self.state_killed):
             drag_offset = Point(
                 x=(self.drone_pose_est.position.x-self.ctrl_l_pos.position.x),
@@ -978,8 +1003,11 @@ class Controller(object):
             while (self.drag and not (
                                     self.state_killed or rospy.is_shutdown())):
                 # When trigger pulled, freeze offset controller-drone and adapt
-                # hover setpoint, until trigger is released.
-                # print yellow('in den drag while, drag = ', self.drag)
+                # hover position and velocity setpoint, until trigger is
+                # released. print yellow('in den drag while, drag = ',
+                # self.drag)
+
+                # Position setpoint
                 self.hover_setpoint.position = Point(
                     x=max(- (self.room_width/2. - self.drone_radius),
                           min((self.room_width/2. - self.drone_radius),
@@ -990,7 +1018,12 @@ class Controller(object):
                     z=max(self.drone_radius * 2,
                           min(self.room_height - self.drone_radius,
                               (self.ctrl_l_pos.position.z + drag_offset.z))))
-                self.hover()
+                # Velocity setpoint
+                self.drag_velocity.linear.x = self.ctrl_l_vel.linear.x
+                self.drag_velocity.linear.y = self.ctrl_l_vel.linear.y
+                self.drag_velocity.linear.z = self.ctrl_l_vel.linear.z
+
+                self.hover(self.drag_velocity)
                 self.rate.sleep()
 
             if self.state_changed:
@@ -999,6 +1032,7 @@ class Controller(object):
 
             self.hover()
             self.rate.sleep()
+        self.reset_pid_gains()
 
     def hover_changed_gains(self):
         '''Adapts gains for the undamped spring (only Kp) or viscous fluid
@@ -1061,7 +1095,7 @@ class Controller(object):
             self.Kp_z = rospy.get_param('controller/Kp_omg_low_z', 0.5)
             self.Ki_z = rospy.get_param('controller/Ki_omg_low_z', 1.5792)
 
-        elif self.state in {"omg fly", "fly to start"}:
+        elif self.state in {"omg fly", "fly to start", "dodge dyn obst"}:
             self.Kp_x = rospy.get_param('controller/Kp_omg_x', 0.6864)
             self.Ki_x = rospy.get_param('controller/Ki_omg_x', 0.6864)
             self.Kd_x = rospy.get_param('controller/Kd_omg_x', 0.6864)
@@ -1071,7 +1105,7 @@ class Controller(object):
             self.Kp_z = rospy.get_param('controller/Kp_omg_z', 0.5)
             self.Ki_z = rospy.get_param('controller/Ki_omg_z', 1.5792)
 
-        elif self.state == "follow path":
+        elif self.state in {"follow path", "drag drone"}:
             self.Kp_x = rospy.get_param('controller/Kp_dt_x', 0.6864)
             self.Ki_x = rospy.get_param('controller/Ki_dt_x', 0.6864)
             self.Kd_x = rospy.get_param('controller/Kd_dt_x', 0.6864)
@@ -1099,9 +1133,14 @@ class Controller(object):
         and removes this subscriber when the controller switches states.
         '''
         self.meas = {}
-        self.meas['meas_pos_x'], self.meas['meas_pos_y'], self.meas['meas_pos_z'] = [], [], []
-        self.meas['est_pos_x'], self.meas['est_pos_y'], self.meas['est_pos_z'] = [], [], []
-        self.meas['est_vel_x'], self.meas['est_vel_y'], self.meas['est_vel_z'] = [], [], []
+        (self.meas['meas_pos_x'], self.meas['meas_pos_y'],
+         self.meas['meas_pos_z']) = [], [], []
+        (self.meas['est_pos_x'], self.meas['est_pos_y'],
+         self.meas['est_pos_z']) = [], [], []
+        (self.meas['est_vel_x'], self.meas['est_vel_y'],
+         self.meas['est_vel_z']) = [], [], []
+        (self.meas['input_x'], self.meas['input_y'],
+         self.meas['input_z']) = [], [], []
         self.meas['meas_time'], self.meas['est_time'] = [], []
 
         self.meas['meas_pos_x'].append(self.meas_pos_x)
@@ -1118,43 +1157,54 @@ class Controller(object):
                 break
             rospy.sleep(0.1)
         self.gamepad_input.unregister()
-        io.savemat('..kalman_est_check.mat', self.meas)
+        print 'length of meas', len(self.meas['meas_pos_x'])
+        io.savemat('../kalman_check.mat', self.meas)
 
-    def retrieve_gp_input(self, gp_input):
-        '''Reads out the commands sent by the gamepad and sends these to the
-        kalman filter to update the state estimation.
+    def dodge_dyn_obst(self):
+        '''Uses OMG-tools to dodge a moving obstacle coming towards the drone
+        and returns back to original position when possible.
+
+        dikke straal aanpassen
+        dyn obst in omg-tools steken
+        hard term constraint op false?
+
         '''
-        self.cmd_twist_convert.twist.linear = gp_input.linear
-        self.cmd_twist_convert.header.stamp = rospy.get_rostime()
-        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
-            measurement_valid) = self.get_pose_est()
-        self.publish_vhat_vector(self.drone_pose_est.position,
-                                 self.drone_vel_est)
+        radius = 0.75
+        self.dynamic_obst = [Obstacle(obst_type=String(
+                            data="inf_cylinder"),
+                            shape=[radius],
+                            pose=[self.ctrl_r_pos.position.x,
+                                  self.ctrl_r_pos.position.y],
+                            velocity=[self.ctrl_r_vel.linear.x,
+                                      self.ctrl_r_vel.linear.y])]
+        self.static_obst = []
+        self.config_mp()
+        self.set_omg_goal(self.drone_pose_est)
+        self.omg_index = 1
+        self.set_omg_update_time()
+        self.set_ff_pid_gains()
 
-        # Saves data to be able to compare the velocity estimation to the
-        # numerically differentiated velocity afterward.
-        self.meas['est_pos_x'].append(self.drone_pose_est.position.x)
-        self.meas['est_pos_y'].append(self.drone_pose_est.position.y)
-        self.meas['est_pos_z'].append(self.drone_pose_est.position.z)
-        self.meas['est_vel_x'].append(self.drone_vel_est.x)
-        self.meas['est_vel_y'].append(self.drone_vel_est.y)
-        self.meas['est_vel_z'].append(self.drone_vel_est.z)
-        self.meas['est_time'].append(rospy.get_time())
-
-        if self.meas['meas_time'][-1] != self.meas_time:
-            self.meas['meas_pos_x'].append(self.meas_pos_x)
-            self.meas['meas_pos_y'].append(self.meas_pos_y)
-            self.meas['meas_pos_z'].append(self.meas_pos_z)
-            self.meas['meas_time'].append(self.meas_time)
-
-    def new_measurement(self, data):
-        '''Reads out vive pose and saves this data when flying with the gamepad.
-        '''
-        if (self.state in {"gamepad flying", "standby"}):
-            self.meas_pos_x = data.meas_world.pose.position.x
-            self.meas_pos_y = data.meas_world.pose.position.y
-            self.meas_pos_z = data.meas_world.pose.position.z
-            self.meas_time = rospy.get_time()
+        while not (self.state_changed or (
+                rospy.is_shutdown() or self.state_killed)):
+            # Becomes True when goal is set.
+            if self.startup:
+                # Update dynamic obstacle info for when motionplanner is fired.
+                self.dynamic_obst = [Obstacle(obst_type=String(
+                                      data="inf_cylinder"),
+                                      shape=[radius],
+                                      pose=[self.ctrl_r_pos.position.x,
+                                            self.ctrl_r_pos.position.y],
+                                      velocity=[self.ctrl_r_vel.linear.x,
+                                                self.ctrl_r_vel.linear.y])]
+                self.omg_update()
+            self.rate.sleep()
+        self.dynamic_obst = []
+        self.config_mp()
+        self.hover_setpoint = self.drone_pose_est
+        self.reset_pid_gains()
+        if not self.state_killed:
+            self.state_changed = False
+        self.startup = False
 
     ####################
     # Helper functions #
@@ -1179,9 +1229,9 @@ class Controller(object):
         '''Transforms the velocity commands from the global world frame to the
         rotated world frame world_rot.
         '''
-        self.feedforward_cmd.linear.x = vel.point.x
-        self.feedforward_cmd.linear.y = vel.point.y
-        self.feedforward_cmd.linear.z = vel.point.z
+        self.feedforward_cmd.linear.x = vel.twist.linear.x
+        self.feedforward_cmd.linear.y = vel.twist.linear.y
+        self.feedforward_cmd.linear.z = vel.twist.linear.z
         self.feedforward_cmd = self.transform_twist(
                                     self.feedforward_cmd, "world", "world_rot")
 
@@ -1204,7 +1254,7 @@ class Controller(object):
         '''
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
-        feedback_cmd = self.feedbeck(pos_desired, vel_desired)
+        feedback_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
         self.cmd_twist_convert.twist.linear.x = max(min((
                         self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
@@ -1241,8 +1291,8 @@ class Controller(object):
 
             vel_error = PointStamped()
             vel_error.header.frame_id = "world"
-            vel_error.point.x = vel_desired.point.x - self.drone_vel_est.x
-            vel_error.point.y = vel_desired.point.y - self.drone_vel_est.y
+            vel_error.point.x = vel_desired.linear.x - self.drone_vel_est.x
+            vel_error.point.y = vel_desired.linear.y - self.drone_vel_est.y
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
@@ -1270,8 +1320,8 @@ class Controller(object):
             vel_error_prev = self.vel_error_prev
             vel_error = PointStamped()
             vel_error.header.frame_id = "world"
-            vel_error.point.x = vel_desired.point.x - self.drone_vel_est.x
-            vel_error.point.y = vel_desired.point.y - self.drone_vel_est.y
+            vel_error.point.x = vel_desired.linear.x - self.drone_vel_est.x
+            vel_error.point.y = vel_desired.linear.y - self.drone_vel_est.y
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
@@ -1325,7 +1375,6 @@ class Controller(object):
         '''
         self.cmd_twist_convert.twist = Twist()
         self.cmd_vel.publish(self.cmd_twist_convert.twist)
-        # print '1 publish input cmd', self.cmd_twist_convert.twist.linear
 
     def repeat_safety_brake(self):
         '''More permanent emergency measure: keep safety braking until new task
@@ -1427,6 +1476,11 @@ class Controller(object):
         '''
         self.ctrl_r_pos = ctrl_pose.pose
 
+    def get_ctrl_r_vel(self, ctrl_vel):
+        '''Retrieves the velocity of the right hand controller.
+        '''
+        self.ctrl_r_vel = ctrl_vel.twist
+
     def get_ctrl_l_pos(self, ctrl_pose):
         '''Retrieves the position of the left hand controller and executes
         drawing when trigger is pressed.
@@ -1435,9 +1489,14 @@ class Controller(object):
         if (self.state == 'draw path' and self.draw):
             self.draw_ctrl_path()
 
+    def get_ctrl_l_vel(self, ctrl_vel):
+        '''Retrieves the velocity of the right hand controller.
+        '''
+        self.ctrl_l_vel = ctrl_vel.twist
+
     def trackpad_press(self, trackpad_pressed):
-        '''If state is equal to drag drone state and trackpad is pressed,
-        return to standby hover.
+        '''If state is equal to state in list and trackpad is pressed,
+        set self.state_changed to true to switch states.
         '''
         if trackpad_pressed.data and not self.trackpad_held:
             if (self.state == "draw path"):
@@ -1450,7 +1509,8 @@ class Controller(object):
                                  "place slalom obstacles",
                                  "place plate obstacles",
                                  "place window obstacles",
-                                 "gamepad flying"}):
+                                 "gamepad flying",
+                                 "dodge dyn obst"}):
                 self.state_changed = True
             self.trackpad_held = True
 
@@ -1576,6 +1636,44 @@ class Controller(object):
         norm = np.linalg.norm(np.array([point1.x, point1.y, point1.z])
                               - np.array([point2.x, point2.y, point2.z]))
         return norm
+
+    def retrieve_gp_input(self, gp_input):
+        '''Reads out the commands sent by the gamepad and sends these to the
+        kalman filter to update the state estimation.
+        '''
+        self.cmd_twist_convert.twist.linear = gp_input.linear
+        self.cmd_twist_convert.header.stamp = rospy.get_rostime()
+        (self.drone_pose_est, self.drone_vel_est, self.real_yaw,
+            measurement_valid) = self.get_pose_est()
+        self.publish_vhat_vector(self.drone_pose_est.position,
+                                 self.drone_vel_est)
+
+        # Saves data to be able to compare the velocity estimation to the
+        # numerically differentiated velocity afterward.
+        self.meas['est_pos_x'].append(self.drone_pose_est.position.x)
+        self.meas['est_pos_y'].append(self.drone_pose_est.position.y)
+        self.meas['est_pos_z'].append(self.drone_pose_est.position.z)
+        self.meas['est_vel_x'].append(self.drone_vel_est.x)
+        self.meas['est_vel_y'].append(self.drone_vel_est.y)
+        self.meas['est_vel_z'].append(self.drone_vel_est.z)
+        self.meas['est_time'].append(rospy.get_time())
+        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.x)
+        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.y)
+        self.meas['input_x'].append(self.cmd_twist_convert.twist.linear.z)
+
+        if self.meas['meas_time'][-1] != self.meas_time:
+            self.meas['meas_pos_x'].append(self.meas_pos_x)
+            self.meas['meas_pos_y'].append(self.meas_pos_y)
+            self.meas['meas_pos_z'].append(self.meas_pos_z)
+            self.meas['meas_time'].append(self.meas_time)
+
+    def new_measurement(self, data):
+        '''Reads out vive pose and saves this data when flying with the gamepad.
+        '''
+        self.meas_pos_x = data.meas_world.pose.position.x
+        self.meas_pos_y = data.meas_world.pose.position.y
+        self.meas_pos_z = data.meas_world.pose.position.z
+        self.meas_time = rospy.get_time()
 
     #######################################
     # Functions for plotting Rviz markers #
@@ -1758,9 +1856,9 @@ class Controller(object):
         self.current_ff_vel.header.stamp = rospy.get_rostime()
 
         point_start = Point(x=pos.point.x, y=pos.point.y, z=pos.point.z)
-        point_end = Point(x=(pos.point.x + vel.point.x),
-                          y=(pos.point.y + vel.point.y),
-                          z=(pos.point.z + vel.point.z))
+        point_end = Point(x=(pos.point.x + vel.twist.linear.x),
+                          y=(pos.point.y + vel.twist.linear.y),
+                          z=(pos.point.z + vel.twist.linear.z))
         self.current_ff_vel.points = [point_start, point_end]
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)
@@ -1793,7 +1891,7 @@ class Controller(object):
         # self.obst_pub.publish(self.rviz_obst)
         j = 0
         window_plate = 0
-        for i, obstacle in enumerate(self.obstacles):
+        for i, obstacle in enumerate(self.static_obst):
             # Marker setup
             if obstacle.obst_type.data == 'slalom plate':
                 j += 1
@@ -1864,8 +1962,8 @@ class Controller(object):
                 window_plate = i % 4
                 if window_plate == 0:
                     left = obstacle
-                    up = self.obstacles[i+2]
-                    down = self.obstacles[i+3]
+                    up = self.static_obst[i+2]
+                    down = self.static_obst[i+3]
                     pose = [left.pose[0],
                             -(self.room_depth/2. - left.shape[1]
                               + left.shape[2]/2.),
@@ -1880,8 +1978,8 @@ class Controller(object):
                         self.room_height - (up.shape[0] + down.shape[0]))
                 elif window_plate == 1:
                     right = obstacle
-                    up = self.obstacles[i+1]
-                    down = self.obstacles[i+2]
+                    up = self.static_obst[i+1]
+                    down = self.static_obst[i+2]
                     pose = [right.pose[0],
                             (self.room_depth/2. - right.shape[1]
                              + right.shape[2]/2.),
@@ -1894,8 +1992,8 @@ class Controller(object):
                     obstacle_marker.scale.z = (
                         self.room_height - (up.shape[0] + down.shape[0]))
                 elif window_plate == 2:
-                    left = self.obstacles[i-2]
-                    right = self.obstacles[i-1]
+                    left = self.static_obst[i-2]
+                    right = self.static_obst[i-1]
                     up = obstacle
                     pose = [up.pose[0],
                             (left.shape[1] - right.shape[1])/2.,
@@ -1908,8 +2006,8 @@ class Controller(object):
                         + 2*up.shape[2])
                     obstacle_marker.scale.z = up.shape[2]
                 elif window_plate == 3:
-                    left = self.obstacles[i-3]
-                    right = self.obstacles[i-2]
+                    left = self.static_obst[i-3]
+                    right = self.static_obst[i-2]
                     down = obstacle
                     pose = [down.pose[0],
                             (left.shape[1] - right.shape[1])/2.,
