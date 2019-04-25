@@ -576,14 +576,12 @@ class Controller(object):
         self.cmd_twist_convert.twist = Twist()
 
         if self.state == "take-off" and not self.airborne:
+            counter = 0
             self.take_off.publish(Empty())
-            while not (self.airborne or (
+            while not (self.airborne or (counter > 50) or (
                     rospy.is_shutdown() or self.state_killed)):
+                counter += 1
                 rospy.sleep(0.1)
-
-            # #for testing
-            # self.airborne = True
-            #
 
         elif self.state == "land" and self.airborne:
             rospy.sleep(0.1)
@@ -1081,10 +1079,14 @@ class Controller(object):
         and removes this subscriber when the controller switches states.
         '''
         self.meas = {}
-        self.meas['meas_pos_x'], self.meas['meas_pos_y'], self.meas['meas_pos_z'] = [], [], []
-        self.meas['est_pos_x'], self.meas['est_pos_y'], self.meas['est_pos_z'] = [], [], []
-        self.meas['est_vel_x'], self.meas['est_vel_y'], self.meas['est_vel_z'] = [], [], []
-        self.meas['input_x'], self.meas['input_y'], self.meas['input_z'] = [], [], []
+        (self.meas['meas_pos_x'], self.meas['meas_pos_y'],
+         self.meas['meas_pos_z']) = [], [], []
+        (self.meas['est_pos_x'], self.meas['est_pos_y'],
+         self.meas['est_pos_z']) = [], [], []
+        (self.meas['est_vel_x'], self.meas['est_vel_y'],
+         self.meas['est_vel_z']) = [], [], []
+        (self.meas['input_x'], self.meas['input_y'],
+         self.meas['input_z']) = [], [], []
         self.meas['meas_time'], self.meas['est_time'] = [], []
 
         self.meas['meas_pos_x'].append(self.meas_pos_x)
@@ -1113,7 +1115,7 @@ class Controller(object):
         hard term constraint op false?
 
         '''
-        radius = 0.25
+        radius = 0.75
         self.dynamic_obst = [Obstacle(obst_type=String(
                             data="inf_cylinder"),
                             shape=[radius],
@@ -1121,7 +1123,6 @@ class Controller(object):
                                   self.ctrl_r_pos.position.y],
                             velocity=[self.ctrl_r_vel.linear.x,
                                       self.ctrl_r_vel.linear.y])]
-        # self.dynamic_obst = []
         self.static_obst = []
         self.config_mp()
         self.set_omg_goal(self.drone_pose_est)
@@ -1131,13 +1132,9 @@ class Controller(object):
 
         while not (self.state_changed or (
                 rospy.is_shutdown() or self.state_killed)):
-
             # Becomes True when goal is set.
             if self.startup:
-                # Send current dynamic obstacle info to motionplanner.
-                # if ((self.omg_index >= int(
-                #                     self.omg_update_time/self._sample_time))
-                #    or (self.omg_index >= len(self._traj['u'])-2)):
+                # Update dynamic obstacle info for when motionplanner is fired.
                 self.dynamic_obst = [Obstacle(obst_type=String(
                                       data="inf_cylinder"),
                                       shape=[radius],
@@ -1151,7 +1148,8 @@ class Controller(object):
         self.config_mp()
         self.hover_setpoint = self.drone_pose_est
         self.reset_pid_gains()
-        self.state_changed = False
+        if not self.state_killed:
+            self.state_changed = False
         self.startup = False
 
     ####################

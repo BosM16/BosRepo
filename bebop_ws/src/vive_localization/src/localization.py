@@ -29,9 +29,6 @@ class ViveLocalization(object):
         # Exp smoothing value
         self.alpha = 0.1
 
-        # testing
-        self.index = -2000
-
         self.tracked_objects = ["tracker_1", "controller_1", "controller_2"]
 
         self.ctrl_dict = {"ctrl_1_old_pos": Point(),
@@ -152,7 +149,7 @@ class ViveLocalization(object):
                                                         pitch_d_in_t,
                                                         yaw_d_in_t)
         self.tf_d_in_t.transform.translation.x = 0.
-        self.tf_d_in_t.transform.translation.y = 0.015  # 0.025
+        self.tf_d_in_t.transform.translation.y = 0.015
         self.tf_d_in_t.transform.translation.z = 0.1
         self.tf_d_in_t.transform.rotation.x = quat[0]
         self.tf_d_in_t.transform.rotation.y = quat[1]
@@ -173,8 +170,7 @@ class ViveLocalization(object):
 
         self.v = triad_openvr.triad_openvr()
         # self.v.print_discovered_objects()
-        if not self.v.devices:  # Check that this works!! Need to check whether
-            # empty or not.
+        if not self.v.devices: 
             print highlight_red('! Vive Error: No devices found !')
             return
 
@@ -273,9 +269,8 @@ class ViveLocalization(object):
                 pose_c_in_w = self.transform_pose(pose_c_in_v, "vive", "world")
 
                 # For testing
-                self.index += 1
-                pose_c_in_w.pose.position.x = pose_c_in_w.pose.position.x  + self.index*0.00006
-                pose_c_in_w.pose.position.y = pose_c_in_w.pose.position.y + 3.1
+                pose_c_in_w.pose.position.x = pose_c_in_w.pose.position.x
+                pose_c_in_w.pose.position.y = pose_c_in_w.pose.position.y
 
                 # Pose
                 pos_c_in_w = PointStamped()
