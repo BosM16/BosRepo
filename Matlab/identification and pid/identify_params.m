@@ -8,7 +8,7 @@ fprintf('============ Start identification ============== \n')
 
 %% Settings & Execution
 options.all_figures = false;
-options.select_figures = true;
+options.select_figures = false;
 options.fig_sel = (1:800);
 % options.fig_sel = (1450:2200);
 options.prints = false;
@@ -750,7 +750,7 @@ LPF = tf(Bpre,Apre);
 sys_LPF = sys_c/LPF;
 
 
-if true % options.all_figures
+if options.all_figures
     figure('Name','Low Pass Filter (Butterworth)')
     bode(LPF)
 
