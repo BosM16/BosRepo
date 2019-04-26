@@ -67,14 +67,8 @@ class Controller(object):
 
     def _init_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
-        angle inputs.
-        State space model in observable canonical
-        form, corresponding to continuous time transfer function
-
-                      b0
-        G(z) = -----------------
-                s^2 + a1*s + a0
-
+        angle inputs. Discrete time state space model (Ts=0.01s) of the inverted,
+        LPF filtered velocity system.
         '''
         Ax = np.array([[1.947, -0.9481],
                        [1.0000, 0.]])
@@ -88,23 +82,26 @@ class Controller(object):
         self.A[4:5, 4:5] = Az
 
         self.B = np.zeros([5, 3])
-        self.B[0, 0] = 1
-        self.B[2, 1] = 1
+#         self.B[0, 0] = 1
+#         self.B[2, 1] = 1
+#         self.B[4, 2] = 1
+        self.B[0, 0] = 0.0625
+        self.B[2, 1] = 0.125
         self.B[4, 2] = 1
 
         self.C = np.zeros([3, 5])
-        self.C[0, 0:2] = [-0.002867, 0.001963]
-        self.C[1, 2:4] = [-0.009345, 0.008355]
+#         self.C[0, 0:2] = [0.004232, -0.005015]
+#         self.C[1, 2:4] = [-0.003704, 0.002797]
+#         self.C[2, 4:5] = [-0.0002301]
+
+        # Numerically more stable:
+        self.C[0, 0:2] = [-0.04588, 0.0314]
+        self.C[1, 2:4] = [-0.07476, 0.06684]
         self.C[2, 4:5] = [-0.003141]
 
         self.D = np.array([[0.7498, 0.0, 0.0],
                            [0.0, 0.8537, 0.0],
                            [0.0, 0.0, 1.088]])
-
-        print 'A', self.A
-        print 'B', self.B
-        print 'C', self.C
-        print 'D', self.D
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
@@ -611,6 +608,7 @@ class Controller(object):
                 rospy.sleep(0.1)
 
         elif self.state == "land" and self.airborne:
+            io.savemat('../ff_model_check.mat', self.model_meas)
             rospy.sleep(0.1)
             self.land.publish(Empty())
             while self.airborne and (
@@ -908,6 +906,14 @@ class Controller(object):
         goal.position.x = self.drawn_pos_x[0]
         goal.position.y = self.drawn_pos_y[0]
         goal.position.z = self.drawn_pos_z[0]
+
+        self.model_meas = {}
+        (self.model_meas['in_x'], self.model_meas['in_y'],
+         self.model_meas['in_z']) = [], [], []
+        (self.model_meas['out_x'], self.model_meas['out_y'],
+         self.model_meas['out_z']) = [], [], []
+        self.model_meas['time'] = []
+
         self.set_omg_goal(goal)
         self.omg_fly()
 
@@ -1223,6 +1229,10 @@ class Controller(object):
         self.feedforward_cmd.twist.linear.y = Y[1, 0]
         self.feedforward_cmd.twist.linear.z = Y[2, 0]
         print 'OUT FROM drone model', self.feedforward_cmd.twist.linear
+        self.model_meas['out_x'].append(self.feedforward_cmd.twist.linear.x)
+        self.model_meas['out_y'].append(self.feedforward_cmd.twist.linear.y)
+        self.model_meas['out_z'].append(self.feedforward_cmd.twist.linear.z)
+        self.model_meas['time'].append(rospy.get_time())
 
     def combine_ff_fb(self, pos_desired, vel_desired):
         '''Combines the feedforward and feedback commands to generate the full
