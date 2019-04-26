@@ -70,38 +70,71 @@ class Controller(object):
         angle inputs. Discrete time state space model (Ts=0.01s) of the inverted,
         LPF filtered velocity system.
         '''
-        Ax = np.array([[1.947, -0.9481],
-                       [1.0000, 0.]])
-        Ay = np.array([[1.947, -0.9481],
-                       [1.0000, 0.]])
-        Az = np.array([[0.9391]])
-
-        self.A = np.zeros([5, 5])
-        self.A[0:2, 0:2] = Ax
-        self.A[2:4, 2:4] = Ay
-        self.A[4:5, 4:5] = Az
-
-        self.B = np.zeros([5, 3])
-#         self.B[0, 0] = 1
-#         self.B[2, 1] = 1
+#         Ax = np.array([[1.947, -0.9481],
+#                        [1.0000, 0.]])
+#         Ay = np.array([[1.947, -0.9481],
+#                        [1.0000, 0.]])
+#         Az = np.array([[0.9391]])
+#
+#         self.A = np.zeros([5, 5])
+#         self.A[0:2, 0:2] = Ax
+#         self.A[2:4, 2:4] = Ay
+#         self.A[4:5, 4:5] = Az
+#
+#         self.B = np.zeros([5, 3])
+# #         self.B[0, 0] = 1
+# #         self.B[2, 1] = 1
+# #         self.B[4, 2] = 1
+#         self.B[0, 0] = 0.0625
+#         self.B[2, 1] = 0.125
 #         self.B[4, 2] = 1
-        self.B[0, 0] = 0.0625
-        self.B[2, 1] = 0.125
-        self.B[4, 2] = 1
+#
+#         self.C = np.zeros([3, 5])
+# #         self.C[0, 0:2] = [0.004232, -0.005015]
+# #         self.C[1, 2:4] = [-0.003704, 0.002797]
+# #         self.C[2, 4:5] = [-0.0002301]
+#
+#         # Numerically more stable:
+#         self.C[0, 0:2] = [-0.04588, 0.0314]
+#         self.C[1, 2:4] = [-0.07476, 0.06684]
+#         self.C[2, 4:5] = [-0.003141]
+#
+#         self.D = np.array([[0.7498, 0.0, 0.0],
+#                            [0.0, 0.8537, 0.0],
+#                            [0.0, 0.0, 1.088]])
 
-        self.C = np.zeros([3, 5])
-#         self.C[0, 0:2] = [0.004232, -0.005015]
-#         self.C[1, 2:4] = [-0.003704, 0.002797]
-#         self.C[2, 4:5] = [-0.0002301]
+        Ax = np.array([[2.925, -1.426, 0.9274],
+                       [2.0,    0.,    0.],
+                       [0.,     0.5,   0.]])
+        Ay = np.array([[2.925, -1.426, 0.9274],
+                       [2.0,    0.,    0.],
+                       [0.,     0.5,   0.]])
+        Az = np.array([[1.911, -0.915],
+                       [1.0,    0.]])
 
-        # Numerically more stable:
-        self.C[0, 0:2] = [-0.04588, 0.0314]
-        self.C[1, 2:4] = [-0.07476, 0.06684]
-        self.C[2, 4:5] = [-0.003141]
+        self.A = np.zeros([8, 8])
+        self.A[0:3, 0:3] = Ax
+        self.A[3:6, 3:6] = Ay
+        self.A[6:8, 6:8] = Az
 
-        self.D = np.array([[0.7498, 0.0, 0.0],
-                           [0.0, 0.8537, 0.0],
-                           [0.0, 0.0, 1.088]])
+        self.B = np.zeros([8, 3])
+        self.B[0, 0] = 0.25
+        self.B[3, 1] = 0.25
+        self.B[6, 2] = 0.5
+
+        self.C = np.zeros([3, 8])
+        self.C[0, 0:3] = [0.1104, -0.1077, 0.105]
+        self.C[1, 3:6] = [0.1252, -0.1226, 0.12]
+        self.C[2, 6:8] = [0.1328, -0.1252]
+
+        self.D = np.array([[0.01398, 0.0, 0.0],
+                           [0.0, 0.01591, 0.0],
+                           [0.0, 0.0, 0.03371]])
+
+        print 'A matrix', self.A
+        print 'B matrix', self.B
+        print 'C matrix', self.C
+        print 'D matrix', self.D
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
@@ -230,7 +263,7 @@ class Controller(object):
                       'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
-        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
+        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
         self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
@@ -606,6 +639,8 @@ class Controller(object):
                     rospy.is_shutdown() or self.state_killed)):
                 counter += 1
                 rospy.sleep(0.1)
+            #Testing!!
+            self.airborne = True
 
         elif self.state == "land" and self.airborne:
             io.savemat('../ff_model_check.mat', self.model_meas)
