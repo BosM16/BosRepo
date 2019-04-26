@@ -19,7 +19,7 @@ set(0, 'DefaultLineLineWidth', 1.5);
 % Settings
 options.figures = false;
 options.prints = false;
-options.range = true;
+options.range = false;
 options.low_i = false;
 
 % Desired phase margin
@@ -27,7 +27,7 @@ options.low_i = false;
 % % Combined with feedforward:
 % PM_des = 45;
 % % Purely feedback (positioning):
-PM_des = 35;
+PM_des = 30;
 % MPC at low rate
 % PM_des = 60;
 
@@ -52,9 +52,9 @@ if options.range
 %  To calculate pids for one desired phase margin.    
 else
     fprintf('\n----------------- x direction ------------------\n')
-    [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
+    [xsys_cl,xsys_cl_emp,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
     fprintf('\n----------------- y direction ------------------\n')
-    [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
+    [ysys_cl,ysys_cl_emp, yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
     fprintf('\n----------------- z direction ------------------\n')
     [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
     fprintf(strcat("\n----------------- ", char(952), ' direction ------------------\n'))
@@ -69,7 +69,7 @@ fprintf('\n======== PID controller design finished ========\n')
 %                               Main functions
 %  ========================================================================
 
-function [sys_cl,D,PIDparams] = PID_design(model, PM, options, colors)
+function [sys_cl,sys_cl_emp,D,PIDparams] = PID_design(model, PM, options, colors)
 
 G = model.tf_pos;
 
@@ -131,6 +131,7 @@ end
 
 sys_ol = G*D;
 sys_cl = G*D/(1+G*D);
+sys_cl_emp = model.data.FRF_emp_pos*D/(1+model.data.FRF_emp_pos*D);
 
 [Gm,Pm,Wcg,Wcp] = margin(sys_ol);
 

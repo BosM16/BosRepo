@@ -8,7 +8,7 @@ fprintf('============ Start identification ============== \n')
 
 %% Settings & Execution
 options.all_figures = false;
-options.select_figures = false;
+options.select_figures = true;
 options.fig_sel = (1:800);
 % options.fig_sel = (1450:2200);
 options.prints = false;
@@ -25,8 +25,8 @@ set(0, 'DefaultLineLineWidth', 1);
 % -----------------------------------------------------------------
 xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options,colors);
 % xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options,colors);
-ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
-zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options,colors);
+% ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
+% zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options,colors);
 % yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
@@ -131,8 +131,10 @@ end
 
 % Empirical frequency response
 vel_fft = fft(velocity);
+pos_fft = fft(output);
 input_fft = fft(input);
 data.FRF_emp = vel_fft./input_fft;
+data.FRF_emp_pos = frd(pos_fft./input_fft, 2*pi*f);
 
 
 %% Cutoff frequency for Butterworth filtering
@@ -262,6 +264,7 @@ model.params = params;
 model.tf_vel = tf_vel;
 model.tf_pos = tf_pos;
 model.ss_vel_invLPF = ss_vel_invLPF;
+model.data = data;
 
 end
 
@@ -333,6 +336,7 @@ if options.all_figures
 
     figure('Name','1st - filtered - strictly proper - Minimum Phase: Freq Response')
     subplot(2,1,1)
+    hold on
     semilogx(f, 20*log10(abs(FRF)))
     grid on
     xlim([f(1) f(end)])
@@ -502,6 +506,8 @@ if options.all_figures
     figure('Name','2nd - filtered - strictly proper - Minimum Phase: Freq Response')
     subplot(2,1,1)
     semilogx(f, 20*log10(abs(FRF)))
+    hold on
+    semilogx(f, 20*log10(abs(data.FRF_emp)))
     grid on
     xlim([f(1) f(end)])
     xlabel('f  [Hz]')
@@ -509,6 +515,8 @@ if options.all_figures
     axis tight
     subplot(2,1,2)
     semilogx(f, 180/pi*unwrap(angle(FRF)))
+    hold on
+    semilogx(f, 180/pi*unwrap(angle(data.FRF_emp)))    
     grid on
     xlim([f(1) f(end)])
     xlabel('f  [Hz]')
@@ -725,9 +733,9 @@ FRF_diff = (FRF_emp-FRFc)./FRFc;
 
 %% Low pass filtering the inverse system ( = multiplying the regular system with inverse LPF)
 if or(ax == "z", ax == "yaw")
-    nb = 1;
-else
     nb = 2;
+else
+    nb = 3;
 end
 
 
@@ -742,7 +750,7 @@ LPF = tf(Bpre,Apre);
 sys_LPF = sys_c/LPF;
 
 
-if options.all_figures
+if true % options.all_figures
     figure('Name','Low Pass Filter (Butterworth)')
     bode(LPF)
 
@@ -750,30 +758,57 @@ if options.all_figures
     bode(sys_c)
     hold on
     bode(sys_LPF)
-    legend('Identified system before filtering','Filtered system')
+    legend('Identified system','Filtered system')
 
-    figure('Name','Difference Empirical - Continuous VS inverse filter')
-    subplot(2,1,1)
-    semilogx(f, 20*log10(abs(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
-    hold on
-    semilogx(f, 20*log10(abs(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
-    grid on 
-    xlim([f(1) f(end)])
-    xlabel('f  [Hz]')
-    ylabel('H(f)|  [m]')
-    legend('FRF_{diff}', 'LPF')
-    axis tight
-    subplot(2,1,2)
-    semilogx(f, 180/pi*unwrap(angle(FRF_diff)), 'Color', [0.3010, 0.7450, 0.9330], 'LineWidth',1.5)
-    hold on
-    semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))), 'Color', [0.6350, 0.0780, 0.1840], 'LineWidth',2.5)
-    grid on
-    xlim([f(1) f(end)])
-    xlabel('f  [Hz]')
-    ylabel('\phi(H(f))  [^\circ]')
-    legend('FRF_{diff}', 'LPF')
+    
 end
 
+if options.select_figures
+    figure('Name','Difference Empirical - Continuous VS inverse filter')
+    subplot(2,1,1)
+    semilogx(f, 20*log10(abs(FRF_diff)), 'Color', colors.blue, 'LineWidth',1.5)
+    hold on
+    semilogx(f, 20*log10(abs(FRF_LPF.^(-1))), 'Color', colors.red, 'LineWidth',2.5)
+    grid on 
+    xlim([f(1) f(end)])
+    xlabel('f  (Hz)')
+    ylabel('Magnitude (dB)')
+    legend('FRF_{diff}', 'LPF^{-1}','Location','NorthWest')
+    axis tight
+    subplot(2,1,2)
+    semilogx(f, 180/pi*unwrap(angle(FRF_diff)), 'Color', colors.blue, 'LineWidth',1.5)
+    hold on
+    semilogx(f, 180/pi*unwrap(angle(FRF_LPF.^(-1))), 'Color', colors.red, 'LineWidth',2.5)
+    grid on
+    xlim([f(1) f(end)])
+    xlabel('f  (Hz)')
+    ylabel('Phase  (^\circ)')
+    legend('FRF_{diff}', 'LPF^{-1}','Location','NorthWest')
+    
+    sys_c_inv = squeeze(freqresp(sys_c^(-1),2*pi*f));
+    sys_LPF_inv = squeeze(freqresp(sys_LPF^(-1),2*pi*f));
+    
+    figure('Name','Filtered vs non filtered inverse continuous time system')
+    subplot(2,1,1)
+    semilogx(f, 20*log10(abs(sys_c_inv)), 'Color', colors.blue, 'LineWidth',1.5)
+    hold on
+    semilogx(f, 20*log10(abs(sys_LPF_inv)), 'Color', colors.red, 'LineWidth',2.)
+    grid on 
+    xlim([f(1) f(end)])
+    xlabel('f  (Hz)')
+    ylabel('Magnitude  (dB)')
+    legend('H(s)^{-1}','LPF*H(s)^{-1}', 'Location','northwest')    
+    axis tight
+    subplot(2,1,2)
+    semilogx(f, 180/pi*unwrap(angle(sys_c_inv)), 'Color', colors.blue, 'LineWidth',1.5)
+    hold on
+    semilogx(f, 180/pi*unwrap(angle(sys_LPF_inv)), 'Color', colors.red, 'LineWidth',2.)
+    grid on
+    xlim([f(1) f(end)])
+    xlabel('f  (Hz)')
+    ylabel('Phase  (^\circ)')
+    legend('H(s)^{-1}','LPF*H(s)^{-1}', 'Location','northwest')
+end
 
 %% Discretize filtered system to 100Hz
 
@@ -798,7 +833,7 @@ sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 ss_vel_invLPF = ss(A_dLPFi,B_dLPFi,C_dLPFi,D_dLPFi,0.01);
 
 % ! Numerically more stable state space representation of the same system:
-ss_vel_invLPF = prescale(ss_vel_invLPF);
+% ss_vel_invLPF = prescale(ss_vel_invLPF);
     
 if options.all_figures
     % Simulate on realistic desired speed signal: interpolated simulation result
@@ -813,11 +848,11 @@ if options.all_figures
 
     % - manual simulation
     if or(ax == "z", ax == "yaw")
-        xsim = zeros(1, length(t100Hz));
-        xstep = zeros(1, length(t100Hz));
-    else
         xsim = zeros(2, length(t100Hz));
         xstep = zeros(2, length(t100Hz));
+    else
+        xsim = zeros(3, length(t100Hz));
+        xstep = zeros(3, length(t100Hz));
     end
     ysim = zeros(1, length(t100Hz));
     for i = 1:length(t100Hz)
