@@ -67,39 +67,62 @@ class Controller(object):
 
     def _init_vel_model(self):
         '''Initializes model parameters for conversion of desired velocities to
-        angle inputs.
-        State space model in observable canonical
-        form, corresponding to continuous time transfer function
-
-                      b0
-        G(z) = -----------------
-                s^2 + a1*s + a0
+        angle inputs.Discrete time state space model (Ts=0.01s) of the
+        inverted, LPF filtered velocity system.
 
         '''
-        Ax = np.array([[1.947, -0.9481],
-                       [1.0000, 0.]])
-        Ay = np.array([[1.947, -0.9481],
-                       [1.0000, 0.]])
-        Az = np.array([[0.9391]])
+        # Ax = np.array([[1.947, -0.9481],
+        #                [1.0000, 0.]])
+        # Ay = np.array([[1.947, -0.9481],
+        #                [1.0000, 0.]])
+        # Az = np.array([[0.9391]])
+        #
+        # self.A = np.zeros([5, 5])
+        # self.A[0:2, 0:2] = Ax
+        # self.A[2:4, 2:4] = Ay
+        # self.A[4:5, 4:5] = Az
+        #
+        # self.B = np.zeros([5, 3])
+        # self.B[0, 0] = 1
+        # self.B[2, 1] = 1
+        # self.B[4, 2] = 1
+        #
+        # self.C = np.zeros([3, 5])
+        # self.C[0, 0:2] = [0.004232, -0.005015]
+        # self.C[1, 2:4] = [-0.003704, 0.002797]
+        # self.C[2, 4:5] = [-0.0002301]
+        #
+        # self.D = np.array([[0.6338, 0.0, 0.0],
+        #                    [0.0, 0.7709, 0.0],
+        #                    [0.0, 0.0, 1.036]])
 
-        self.A = np.zeros([5, 5])
-        self.A[0:2, 0:2] = Ax
-        self.A[2:4, 2:4] = Ay
-        self.A[4:5, 4:5] = Az
+        Ax = np.array([[2.925, -1.426, 0.9274],
+                       [2.0,    0.,    0.],
+                       [0.,     0.5,   0.]])
+        Ay = np.array([[2.925, -1.426, 0.9274],
+                       [2.0,    0.,    0.],
+                       [0.,     0.5,   0.]])
+        Az = np.array([[1.911, -0.915],
+                       [1.0,    0.]])
 
-        self.B = np.zeros([5, 3])
-        self.B[0, 0] = 1
-        self.B[2, 1] = 1
-        self.B[4, 2] = 1
+        self.A = np.zeros([8, 8])
+        self.A[0:3, 0:3] = Ax
+        self.A[3:6, 3:6] = Ay
+        self.A[6:8, 6:8] = Az
 
-        self.C = np.zeros([3, 5])
-        self.C[0, 0:2] = [0.004232, -0.005015]
-        self.C[1, 2:4] = [-0.003704, 0.002797]
-        self.C[2, 4:5] = [-0.0002301]
+        self.B = np.zeros([8, 3])
+        self.B[0, 0] = 0.25
+        self.B[3, 1] = 0.25
+        self.B[6, 2] = 0.5
 
-        self.D = np.array([[0.6338, 0.0, 0.0],
-                           [0.0, 0.7709, 0.0],
-                           [0.0, 0.0, 1.036]])
+        self.C = np.zeros([3, 8])
+        self.C[0, 0:3] = [0.1104, -0.1077, 0.105]
+        self.C[1, 3:6] = [0.1252, -0.1226, 0.12]
+        self.C[2, 6:8] = [0.1328, -0.1252]
+
+        self.D = np.array([[0.01398, 0.0, 0.0],
+                           [0.0, 0.01591, 0.0],
+                           [0.0, 0.0, 0.03371]])
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
@@ -241,7 +264,7 @@ class Controller(object):
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self.feedforward_cmd = Twist()
+        self.feedforward_cmd = TwistStamped()
         self.drone_vel_est = Point()
         self.drone_pose_est = Pose()
 
@@ -343,8 +366,6 @@ class Controller(object):
         self._init = True
         self.startup = True
 
-        # print yellow('---- Motionplanner goal set! ----')
-
     def fire_motionplanner(self):
         '''Publishes inputs to motionplanner via Trigger topic.
         '''
@@ -425,6 +446,8 @@ class Controller(object):
                 # Wait for new set of trajectories when calculation has failed.
                 if not self.calc_succeeded:
                     self._init = True
+                    self.safety_brake()
+                    return
                 # Raise overtime counter when calculations were not ready in time.
                 if self.overtime:
                     self.overtime_counter += 1
@@ -541,7 +564,6 @@ class Controller(object):
                 self.state_killed = True
         else:
             print yellow(' Controller already in the correct state!')
-            # self.ctrl_state_finish.publish(Empty())
 
         # When going to standby, remove markers in Rviz from previous task.
         if state.data == "standby":
@@ -951,8 +973,7 @@ class Controller(object):
                                     self.state_killed or rospy.is_shutdown())):
                 # When trigger pulled, freeze offset controller-drone and adapt
                 # hover position and velocity setpoint, until trigger is
-                # released. print yellow('in den drag while, drag = ',
-                # self.drag)
+                # released.
 
                 # Position setpoint
                 self.hover_setpoint.position = Point(
@@ -1104,7 +1125,7 @@ class Controller(object):
                 break
             rospy.sleep(0.1)
         self.gamepad_input.unregister()
-        print 'length of meas', len(self.meas['meas_pos_x'])
+        print yellow(' Length of measurement: ', len(self.meas['meas_pos_x']))
         io.savemat('../kalman_check.mat', self.meas)
 
     def dodge_dyn_obst(self):
@@ -1177,24 +1198,23 @@ class Controller(object):
         '''Transforms the velocity commands from the global world frame to the
         rotated world frame world_rot.
         '''
-        self.feedforward_cmd.linear.x = vel.twist.linear.x
-        self.feedforward_cmd.linear.y = vel.twist.linear.y
-        self.feedforward_cmd.linear.z = vel.twist.linear.z
-        self.feedforward_cmd = self.transform_twist(
-                                    self.feedforward_cmd, "world", "world_rot")
+        self.feedforward_cmd = self.transform_twist(vel, "world", "world_rot")
 
     def convert_vel_cmd(self):
         '''Converts a velocity command to a desired input angle according to
         the state space representation of the inverse velocity model.
         '''
-        u = np.array([[self.feedforward_cmd.linear.x],
-                      [self.feedforward_cmd.linear.y],
-                      [self.feedforward_cmd.linear.z]])
+        u = np.array([[self.feedforward_cmd.twist.linear.x],
+                      [self.feedforward_cmd.twist.linear.y],
+                      [self.feedforward_cmd.twist.linear.z]])
+        print '\n omg_input z', self.feedforward_cmd.twist.linear.z
+
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
-        self.feedforward_cmd.linear.x = Y[0, 0]
-        self.feedforward_cmd.linear.y = Y[1, 0]
-        self.feedforward_cmd.linear.z = Y[2, 0]
+        self.feedforward_cmd.twist.linear.x = Y[0, 0]
+        self.feedforward_cmd.twist.linear.y = Y[1, 0]
+        self.feedforward_cmd.twist.linear.z = Y[2, 0]
+        print 'feedforward input z', self.feedforward_cmd.twist.linear.z
 
     def combine_ff_fb(self, pos_desired, vel_desired):
         '''Combines the feedforward and feedback commands to generate the full
@@ -1203,19 +1223,25 @@ class Controller(object):
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
         feedback_cmd = self.feedbeck(pos_desired, vel_desired.twist)
+        print 'feedback input z', feedback_cmd.linear.z
 
         self.cmd_twist_convert.twist.linear.x = max(min((
-                        self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
-                        self.max_input), - self.max_input)
+                self.feedforward_cmd.twist.linear.x + feedback_cmd.linear.x),
+                self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.linear.y = max(min((
-                        self.feedforward_cmd.linear.y + feedback_cmd.linear.y),
-                        self.max_input), - self.max_input)
+                self.feedforward_cmd.twist.linear.y + feedback_cmd.linear.y),
+                self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.linear.z = max(min((
-                        self.feedforward_cmd.linear.z + feedback_cmd.linear.z),
-                        self.max_input), - self.max_input)
+                self.feedforward_cmd.twist.linear.z + feedback_cmd.linear.z),
+                self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.angular.z = max(min((
-                    self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
-                    self.max_input), - self.max_input)
+                self.feedforward_cmd.twist.angular.z + feedback_cmd.angular.z),
+                self.max_input), - self.max_input)
+
+        if self.cmd_twist_convert.twist.linear.z > 0:
+            print highlight_green(self.cmd_twist_convert.twist.linear.z)
+        else:
+            print highlight_red(self.cmd_twist_convert.twist.linear.z)
 
     def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
@@ -1397,16 +1423,13 @@ class Controller(object):
             - _from, _to = string, name of frame
         '''
         cmd_vel = PointStamped()
-        cmd_vel.header.frame_id = "world"
-        cmd_vel.point.x = twist.linear.x
-        cmd_vel.point.y = twist.linear.y
-        cmd_vel.point.z = twist.linear.z
+        cmd_vel.header = twist.header
+        cmd_vel.point = twist.twist.linear
         cmd_vel_rotated = self.transform_point(cmd_vel, _from, _to)
 
-        twist_rotated = Twist()
-        twist_rotated.linear.x = cmd_vel_rotated.point.x
-        twist_rotated.linear.y = cmd_vel_rotated.point.y
-        twist_rotated.linear.z = cmd_vel_rotated.point.z
+        twist_rotated = TwistStamped()
+        twist_rotated.header.stamp = twist.header.stamp
+        twist_rotated.twist.linear = cmd_vel_rotated.point
 
         return twist_rotated
 
