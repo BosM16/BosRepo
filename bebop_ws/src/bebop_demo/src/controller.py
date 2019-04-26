@@ -93,13 +93,18 @@ class Controller(object):
         self.B[4, 2] = 1
 
         self.C = np.zeros([3, 5])
-        self.C[0, 0:2] = [0.004232, -0.005015]
-        self.C[1, 2:4] = [-0.003704, 0.002797]
-        self.C[2, 4:5] = [-0.0002301]
+        self.C[0, 0:2] = [-0.002867, 0.001963]
+        self.C[1, 2:4] = [-0.009345, 0.008355]
+        self.C[2, 4:5] = [-0.003141]
 
-        self.D = np.array([[0.6338, 0.0, 0.0],
-                           [0.0, 0.7709, 0.0],
-                           [0.0, 0.0, 1.036]])
+        self.D = np.array([[0.7498, 0.0, 0.0],
+                           [0.0, 0.8537, 0.0],
+                           [0.0, 0.0, 1.088]])
+
+        print 'A', self.A
+        print 'B', self.B
+        print 'C', self.C
+        print 'D', self.D
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
@@ -126,6 +131,8 @@ class Controller(object):
             'motionplanner/smoothed_path', Marker, queue_size=1)
         self.current_ff_vel_pub = rospy.Publisher(
             'motionplanner/current_ff_vel', Marker, queue_size=1)
+        self.real_input_vector_pub = rospy.Publisher(
+            'motionplanner/real_input_vector', Marker, queue_size=1)
         self.draw_room = rospy.Publisher(
             'motionplanner/room_contours', Marker, queue_size=1)
         self.ctrl_state_finish = rospy.Publisher(
@@ -250,7 +257,7 @@ class Controller(object):
         self.cmd_twist_convert = TwistStamped()
         self.cmd_twist_convert.header.frame_id = "world_rot"
         self.cmd_twist_convert.header.stamp = rospy.Time.now()
-        self.feedforward_cmd = Twist()
+        self.feedforward_cmd = TwistStamped()
         self.drone_vel_est = Point()
         self.drone_pose_est = Pose()
 
@@ -475,6 +482,8 @@ class Controller(object):
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
+        self.publish_real_input_vector(
+                    self.drone_pose_est.position, self.cmd_twist_convert)
 
         self.omg_index += 1
         self.hover_setpoint = self.drone_pose_est
@@ -540,6 +549,8 @@ class Controller(object):
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
+        self.publish_real_input_vector(
+                    self.drone_pose_est.position, self.cmd_twist_convert)
 
     ###################
     # State functions #
@@ -1191,24 +1202,27 @@ class Controller(object):
         '''Transforms the velocity commands from the global world frame to the
         rotated world frame world_rot.
         '''
-        self.feedforward_cmd.linear.x = vel.twist.linear.x
-        self.feedforward_cmd.linear.y = vel.twist.linear.y
-        self.feedforward_cmd.linear.z = vel.twist.linear.z
-        self.feedforward_cmd = self.transform_twist(
-                                    self.feedforward_cmd, "world", "world_rot")
+        self.feedforward_cmd = self.transform_twist(vel, "world", "world_rot")
 
     def convert_vel_cmd(self):
         '''Converts a velocity command to a desired input angle according to
         the state space representation of the inverse velocity model.
         '''
-        u = np.array([[self.feedforward_cmd.linear.x],
-                      [self.feedforward_cmd.linear.y],
-                      [self.feedforward_cmd.linear.z]])
+        u = np.array([[self.feedforward_cmd.twist.linear.x],
+                      [self.feedforward_cmd.twist.linear.y],
+                      [self.feedforward_cmd.twist.linear.z]])
+        print 'input to drone model', self.feedforward_cmd.twist.linear
+
+        self.model_meas['in_x'].append(self.feedforward_cmd.twist.linear.x)
+        self.model_meas['in_y'].append(self.feedforward_cmd.twist.linear.y)
+        self.model_meas['in_z'].append(self.feedforward_cmd.twist.linear.z)
+
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
-        self.feedforward_cmd.linear.x = Y[0, 0]
-        self.feedforward_cmd.linear.y = Y[1, 0]
-        self.feedforward_cmd.linear.z = Y[2, 0]
+        self.feedforward_cmd.twist.linear.x = Y[0, 0]
+        self.feedforward_cmd.twist.linear.y = Y[1, 0]
+        self.feedforward_cmd.twist.linear.z = Y[2, 0]
+        print 'OUT FROM drone model', self.feedforward_cmd.twist.linear
 
     def combine_ff_fb(self, pos_desired, vel_desired):
         '''Combines the feedforward and feedback commands to generate the full
@@ -1218,17 +1232,30 @@ class Controller(object):
         # world_rot frame
         feedback_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
+        # self.cmd_twist_convert.twist.linear.x = max(min((
+        #                 self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
+        #                 self.max_input), - self.max_input)
+        # self.cmd_twist_convert.twist.linear.y = max(min((
+        #                 self.feedforward_cmd.linear.y + feedback_cmd.linear.y),
+        #                 self.max_input), - self.max_input)
+        # self.cmd_twist_convert.twist.linear.z = max(min((
+        #                 self.feedforward_cmd.linear.z + feedback_cmd.linear.z),
+        #                 self.max_input), - self.max_input)
+        # self.cmd_twist_convert.twist.angular.z = max(min((
+        #             self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
+        #             self.max_input), - self.max_input)
+
         self.cmd_twist_convert.twist.linear.x = max(min((
-                        self.feedforward_cmd.linear.x + feedback_cmd.linear.x),
+                        self.feedforward_cmd.twist.linear.x),
                         self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.linear.y = max(min((
-                        self.feedforward_cmd.linear.y + feedback_cmd.linear.y),
+                        self.feedforward_cmd.twist.linear.y),
                         self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.linear.z = max(min((
-                        self.feedforward_cmd.linear.z + feedback_cmd.linear.z),
+                        self.feedforward_cmd.twist.linear.z),
                         self.max_input), - self.max_input)
         self.cmd_twist_convert.twist.angular.z = max(min((
-                    self.feedforward_cmd.angular.z + feedback_cmd.angular.z),
+                    self.feedforward_cmd.twist.angular.z),
                     self.max_input), - self.max_input)
 
     def feedbeck(self, pos_desired, vel_desired):
@@ -1411,16 +1438,13 @@ class Controller(object):
             - _from, _to = string, name of frame
         '''
         cmd_vel = PointStamped()
-        cmd_vel.header.frame_id = "world"
-        cmd_vel.point.x = twist.linear.x
-        cmd_vel.point.y = twist.linear.y
-        cmd_vel.point.z = twist.linear.z
+        cmd_vel.header = twist.header
+        cmd_vel.point = twist.twist.linear
         cmd_vel_rotated = self.transform_point(cmd_vel, _from, _to)
 
-        twist_rotated = Twist()
-        twist_rotated.linear.x = cmd_vel_rotated.point.x
-        twist_rotated.linear.y = cmd_vel_rotated.point.y
-        twist_rotated.linear.z = cmd_vel_rotated.point.z
+        twist_rotated = TwistStamped()
+        twist_rotated.header.stamp = twist.header.stamp
+        twist_rotated.twist.linear = cmd_vel_rotated.point
 
         return twist_rotated
 
@@ -1755,6 +1779,22 @@ class Controller(object):
         self.vhat_vector.color.a = 1.0
         self.vhat_vector.lifetime = rospy.Duration(0)
 
+        # Current input vector
+        self.real_input_vector = Marker()
+        self.real_input_vector.header.frame_id = 'world'
+        self.real_input_vector.ns = "real_input"
+        self.real_input_vector.id = 8
+        self.real_input_vector.type = 0  # Arrow
+        self.real_input_vector.action = 0
+        self.real_input_vector.scale.x = 0.06  # shaft diameter
+        self.real_input_vector.scale.y = 0.1  # head diameter
+        self.real_input_vector.scale.z = 0.15  # head length
+        self.real_input_vector.color.r = 1.0
+        self.real_input_vector.color.g = 1.0
+        self.real_input_vector.color.b = 1.0
+        self.real_input_vector.color.a = 1.0
+        self.real_input_vector.lifetime = rospy.Duration(0)
+
     def reset_markers(self):
         '''Resets all Rviz markers (except for obstacles).
         '''
@@ -1825,6 +1865,20 @@ class Controller(object):
         self.current_ff_vel.points = [point_start, point_end]
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)
+
+    def publish_real_input_vector(self, pos, vel):
+        '''Publish current real input vector where origin of the
+        vector is equal to current position.
+        '''
+        self.real_input_vector.header.stamp = rospy.get_rostime()
+
+        point_start = Point(x=pos.x, y=pos.y, z=pos.z)
+        point_end = Point(x=(pos.x + 30*vel.twist.linear.y),
+                          y=(pos.y - 30*vel.twist.linear.x),
+                          z=(pos.z + 30*vel.twist.linear.z))
+        self.real_input_vector.points = [point_start, point_end]
+
+        self.real_input_vector_pub.publish(self.real_input_vector)
 
     def publish_vhat_vector(self, pos, vel):
         '''Publish current vhat estimate from the kalman filter as a vector
