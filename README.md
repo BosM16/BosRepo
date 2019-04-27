@@ -115,7 +115,7 @@ Building nlp ...  in 0.027586 s
 ```
 If this is not the case, make sure to check for the common errors listed below.
 
-The last message marked in blue instructs the user to identify the left and right Vive controller. The controllers only become active once both triggers have been pushed and the controllers are identified.  
+The last message marked in blue instructs the user to identify the left and right Vive controller. The controllers only become active once both triggers have been pulled and the controllers are identified.  
 The right controller is reserved for the demo operator. It is used for state transitions and actions that require a person standing in the flight area while the drone is flying. The left controller can be handed to a spectator because it is used only for operations during which the drone is at rest on the floor or that can be executed standing outside the flight area.
 
 ### Calibration
@@ -137,7 +137,7 @@ Do positioning with only proportional gain or only derivative gain respectively,
 Draw an arbitrary path using the left Vive controller. The drone flies to the starting point and subsequently tracks the drawn trajectory.
 * *'drag drone'*  
 Manipulate the drone as if he is fixed to the left Vive controller.
-* *'dodge dynamic obstacle'*
+* *'dodge dynamic obstacle'*  
 Walk through the flight area holding the right Vive controller. The drone moves out of the way to let you pass and returns when its original position is no longer obstructed.
 * *'point-to-point'*  
 Use OMG-tools to navigate from the current position to the goal evading the current set of (static) obstacles. The goal is set by the pulling the trigger on the right Vive controller and holding it at the desired location.
