@@ -103,14 +103,42 @@ class Controller(object):
 #                            [0.0, 0.8537, 0.0],
 #                            [0.0, 0.0, 1.088]])
 
-        Ax = np.array([[2.925, -1.426, 0.9274],
-                       [2.0,    0.,    0.],
-                       [0.,     0.5,   0.]])
-        Ay = np.array([[2.925, -1.426, 0.9274],
-                       [2.0,    0.,    0.],
-                       [0.,     0.5,   0.]])
-        Az = np.array([[1.911, -0.915],
-                       [1.0,    0.]])
+        # Ax = np.array([[2.924615161772681, -1.426022503893993, 0.927378249329201],
+        #                [2.0,    0.,    0.],
+        #                [0.,     0.5,   0.]])
+        # Ay = np.array([[ 2.924615161772681, -1.426022503893993, 0.927378249329201],
+        #                [2.0,    0.,    0.],
+        #                [0.,     0.5,   0.]])
+        # Az = np.array([[1.911226230340913, -0.915002566798495],
+        #                [1.0,    0.]])
+        #
+        # self.A = np.zeros([8, 8])
+        # self.A[0:3, 0:3] = Ax
+        # self.A[3:6, 3:6] = Ay
+        # self.A[6:8, 6:8] = Az
+        #
+        # self.B = np.zeros([8, 3])
+        # self.B[0, 0] = 0.25
+        # self.B[3, 1] = 0.25
+        # self.B[6, 2] = 0.25
+        #
+        # self.C = np.zeros([3, 8])
+        # self.C[0, 0:3] = [0.093794142767462, -0.091022743092107, 0.088262872564127]
+        # self.C[1, 3:6] = [0.110260524508392, -0.107520541682973, 0.104800707877982]
+        # self.C[2, 6:8] = [0.253207018013103, -0.238104476994503]
+        #
+        # self.D = np.array([[0.011815313012427, 0.0, 0.0],
+        #                    [0.0, 0.013957040852033, 0.0],
+        #                    [0.0, 0.0, 0.032101549662616]])
+
+        Ax = np.array([[0.826565505947035, -0.515426068610289, 0.086478133292666],
+                       [1.,     0.,    0.],
+                       [0.,     1.,    0.]])
+        Ay = np.array([[0.826565505947034, -0.515426068610288, 0.086478133292665],
+                       [1.,     0.,    0.],
+                       [0.,     1.,    0.]])
+        Az = np.array([[0.530109681820304, -0.221694090773952],
+                       [1.,     0.]])
 
         self.A = np.zeros([8, 8])
         self.A[0:3, 0:3] = Ax
@@ -118,23 +146,18 @@ class Controller(object):
         self.A[6:8, 6:8] = Az
 
         self.B = np.zeros([8, 3])
-        self.B[0, 0] = 0.25
-        self.B[3, 1] = 0.25
-        self.B[6, 2] = 0.5
+        self.B[0, 0] = 16.
+        self.B[3, 1] = 16.
+        self.B[6, 2] = 4.
 
         self.C = np.zeros([3, 8])
-        self.C[0, 0:3] = [0.1104, -0.1077, 0.105]
-        self.C[1, 3:6] = [0.1252, -0.1226, 0.12]
-        self.C[2, 6:8] = [0.1328, -0.1252]
+        self.C[0, 0:3] = [-1.264436317500493, -15.455773748501429, 10.579429541039664]
+        self.C[1, 3:6] = [-1.522252325051070, -17.595540104804694, 12.127715537213421]
+        self.C[2, 6:8] = [0.907734714613195, -1.795999112561946]
 
-        self.D = np.array([[0.01398, 0.0, 0.0],
-                           [0.0, 0.01591, 0.0],
-                           [0.0, 0.0, 0.03371]])
-
-        print 'A matrix', self.A
-        print 'B matrix', self.B
-        print 'C matrix', self.C
-        print 'D matrix', self.D
+        self.D = np.array([[163.2024769637900, 0.0, 0.0],
+                           [0.0, 185.8026277259809, 0.0],
+                           [0.0, 0.0, 6.173599736393230]])
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
@@ -500,6 +523,7 @@ class Controller(object):
         vel.twist.linear.z = self._traj['w'][self.omg_index + 1]
 
         self.publish_current_ff_vel(pos, vel)
+        print '\n, omg tools ff vector', vel.twist.linear.y
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
@@ -507,14 +531,20 @@ class Controller(object):
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
+        print 'ff vel gedraaid', self.ff_velocity.twist.linear.y
 
         # Convert feedforward velocity command to angle input.
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
+        if self.ff_cmd.linear.x > 0:
+            print highlight_green('feedforward input cmd', self.ff_cmd.linear.y)
+        else:
+            print highlight_red('feedforward input cmd', self.ff_cmd.linear.y)
+        print 'full input cmd', self.full_cmd.twist.linear.y
         self.publish_real_input_vector(
-                    self.drone_pose_est.position, self.cmd_twist_convert)
+                    self.drone_pose_est.position, self.full_cmd)
 
         self.omg_index += 1
         self.hover_setpoint = self.drone_pose_est
@@ -581,7 +611,7 @@ class Controller(object):
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
         self.publish_real_input_vector(
-                    self.drone_pose_est.position, self.cmd_twist_convert)
+                    self.drone_pose_est.position, self.full_cmd)
 
     ###################
     # State functions #
@@ -639,8 +669,6 @@ class Controller(object):
                     rospy.is_shutdown() or self.state_killed)):
                 counter += 1
                 rospy.sleep(0.1)
-            #Testing!!
-            self.airborne = True
 
         elif self.state == "land" and self.airborne:
             io.savemat('../ff_model_check.mat', self.model_meas)
@@ -1251,7 +1279,6 @@ class Controller(object):
         u = np.array([[self.ff_velocity.twist.linear.x],
                       [self.ff_velocity.twist.linear.y],
                       [self.ff_velocity.twist.linear.z]])
-        print 'input to drone model', self.ff_velocity.twist.linear
 
         self.model_meas['in_x'].append(self.ff_velocity.twist.linear.x)
         self.model_meas['in_y'].append(self.ff_velocity.twist.linear.y)
@@ -1262,7 +1289,7 @@ class Controller(object):
         self.ff_cmd.linear.x = Y[0, 0]
         self.ff_cmd.linear.y = Y[1, 0]
         self.ff_cmd.linear.z = Y[2, 0]
-        print 'OUT FROM drone model', self.ff_cmd.linear
+
         self.model_meas['out_x'].append(self.ff_cmd.linear.x)
         self.model_meas['out_y'].append(self.ff_cmd.linear.y)
         self.model_meas['out_z'].append(self.ff_cmd.linear.z)
@@ -1290,18 +1317,30 @@ class Controller(object):
         #         self.max_input), - self.max_input)
 
         self.full_cmd.twist.linear.x = max(min((
-                self.ff_cmd.linear.x),
+                fb_cmd.linear.x),
                 self.max_input), - self.max_input)
         self.full_cmd.twist.linear.y = max(min((
-                self.ff_cmd.linear.y),
+                fb_cmd.linear.y),
                 self.max_input), - self.max_input)
         self.full_cmd.twist.linear.z = max(min((
-                self.ff_cmd.linear.z),
+                fb_cmd.linear.z),
                 self.max_input), - self.max_input)
         self.full_cmd.twist.angular.z = max(min((
-                self.ff_cmd.angular.z),
+                fb_cmd.angular.z),
                 self.max_input), - self.max_input)
 
+        # self.full_cmd.twist.linear.x = max(min((
+        #         self.ff_cmd.linear.x),
+        #         self.max_input), - self.max_input)
+        # self.full_cmd.twist.linear.y = max(min((
+        #         self.ff_cmd.linear.y),
+        #         self.max_input), - self.max_input)
+        # self.full_cmd.twist.linear.z = max(min((
+        #         self.ff_cmd.linear.z),
+        #         self.max_input), - self.max_input)
+        # self.full_cmd.twist.angular.z = max(min((
+        #         self.ff_cmd.angular.z),
+        #         self.max_input), - self.max_input)
 
     def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
@@ -1911,16 +1950,16 @@ class Controller(object):
 
         self.current_ff_vel_pub.publish(self.current_ff_vel)
 
-    def publish_real_input_vector(self, pos, vel):
+    def publish_real_input_vector(self, pos, input_cmd):
         '''Publish current real input vector where origin of the
         vector is equal to current position.
         '''
         self.real_input_vector.header.stamp = rospy.get_rostime()
 
         point_start = Point(x=pos.x, y=pos.y, z=pos.z)
-        point_end = Point(x=(pos.x + 30*vel.twist.linear.y),
-                          y=(pos.y - 30*vel.twist.linear.x),
-                          z=(pos.z + 30*vel.twist.linear.z))
+        point_end = Point(x=(pos.x - 10*input_cmd.twist.linear.y),
+                          y=(pos.y + 10*input_cmd.twist.linear.x),
+                          z=(pos.z + 10*input_cmd.twist.linear.z))
         self.real_input_vector.points = [point_start, point_end]
 
         self.real_input_vector_pub.publish(self.real_input_vector)

@@ -264,7 +264,6 @@ class Demo(object):
                 self.state_sequence = self.task_dict.get("land", [])
             else:
                 self.state_sequence = self.task_dict.get("take-off", [])
-                self.airborne = True
             self.new_task = True
             print cyan(
                 ' Bebop_core received a new task: ',
