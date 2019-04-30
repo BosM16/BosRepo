@@ -71,58 +71,30 @@ class Controller(object):
         inverted, LPF filtered velocity system.
 
         '''
-        # Ax = np.array([[1.947, -0.9481],
-        #                [1.0000, 0.]])
-        # Ay = np.array([[1.947, -0.9481],
-        #                [1.0000, 0.]])
-        # Az = np.array([[0.9391]])
-        #
-        # self.A = np.zeros([5, 5])
-        # self.A[0:2, 0:2] = Ax
-        # self.A[2:4, 2:4] = Ay
-        # self.A[4:5, 4:5] = Az
-        #
-        # self.B = np.zeros([5, 3])
-        # self.B[0, 0] = 1
-        # self.B[2, 1] = 1
-        # self.B[4, 2] = 1
-        #
-        # self.C = np.zeros([3, 5])
-        # self.C[0, 0:2] = [0.004232, -0.005015]
-        # self.C[1, 2:4] = [-0.003704, 0.002797]
-        # self.C[2, 4:5] = [-0.0002301]
-        #
-        # self.D = np.array([[0.6338, 0.0, 0.0],
-        #                    [0.0, 0.7709, 0.0],
-        #                    [0.0, 0.0, 1.036]])
+        Ax = np.array([[1.947, -0.9481],
+                       [1.0000, 0.]])
+        Ay = np.array([[1.947, -0.9481],
+                       [1.0000, 0.]])
+        Az = np.array([[0.9391]])
 
-        Ax = np.array([[2.925, -1.426, 0.9274],
-                       [2.0,    0.,    0.],
-                       [0.,     0.5,   0.]])
-        Ay = np.array([[2.925, -1.426, 0.9274],
-                       [2.0,    0.,    0.],
-                       [0.,     0.5,   0.]])
-        Az = np.array([[1.911, -0.915],
-                       [1.0,    0.]])
+        self.A = np.zeros([5, 5])
+        self.A[0:2, 0:2] = Ax
+        self.A[2:4, 2:4] = Ay
+        self.A[4:5, 4:5] = Az
 
-        self.A = np.zeros([8, 8])
-        self.A[0:3, 0:3] = Ax
-        self.A[3:6, 3:6] = Ay
-        self.A[6:8, 6:8] = Az
+        self.B = np.zeros([5, 3])
+        self.B[0, 0] = 1
+        self.B[2, 1] = 1
+        self.B[4, 2] = 1
 
-        self.B = np.zeros([8, 3])
-        self.B[0, 0] = 0.25
-        self.B[3, 1] = 0.25
-        self.B[6, 2] = 0.5
+        self.C = np.zeros([3, 5])
+        self.C[0, 0:2] = [0.004232, -0.005015]
+        self.C[1, 2:4] = [-0.003704, 0.002797]
+        self.C[2, 4:5] = [-0.0002301]
 
-        self.C = np.zeros([3, 8])
-        self.C[0, 0:3] = [0.1104, -0.1077, 0.105]
-        self.C[1, 3:6] = [0.1252, -0.1226, 0.12]
-        self.C[2, 6:8] = [0.1328, -0.1252]
-
-        self.D = np.array([[0.01398, 0.0, 0.0],
-                           [0.0, 0.01591, 0.0],
-                           [0.0, 0.0, 0.03371]])
+        self.D = np.array([[0.6338, 0.0, 0.0],
+                           [0.0, 0.7709, 0.0],
+                           [0.0, 0.0, 1.036]])
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
@@ -865,6 +837,9 @@ class Controller(object):
             if self.draw:
                 # Erase previous markers in Rviz.
                 self.reset_markers()
+
+                while self.draw and not rospy.is_shutdown():
+                    self.rate.sleep()
 
                 print yellow('---- Trigger button has been released,'
                              'path will be calculated ----')
