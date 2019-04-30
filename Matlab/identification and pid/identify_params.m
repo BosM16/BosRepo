@@ -2,15 +2,16 @@
 clear variables
 close all
 clc
+format long
 fprintf('============ Start identification ============== \n')
-
 
 
 %% Settings & Execution
 options.all_figures = false;
 options.select_figures = false;
-options.fig_sel = (1:800);
-% options.fig_sel = (1450:2200);
+% options.fig_sel = (1:800);
+% options.fig_sel = (1:800);
+options.fig_sel = (1450:2200);
 options.prints = false;
 
 % colors & linewidth for figures
@@ -23,11 +24,11 @@ set(0, 'DefaultLineLineWidth', 1);
 % SYNTAX: 
 %   model = identify("data/data_mat_file",'axis','axis symbol',Ts,f0,Fc,options,colors);
 % -----------------------------------------------------------------
-xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options,colors);
+xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,20,options,colors);
 % xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options,colors);
-% ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
-% zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,1.,options,colors);
-% yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
+ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,20,options,colors);
+zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,20,options,colors);
+yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -151,12 +152,17 @@ end
 
 [B, A] = butter(nb,fcn);
 % input filtering
-input_filt = filtfilt(B,A,input);
+% input_filt = filtfilt(B,A,input);
+input_filt = filter(B,A,input);
+
 % output filtering
-output_filt = filtfilt(B,A,output);
-velocity_filt = filtfilt(B,A,velocity);
+% output_filt = filtfilt(B,A,output);
+output_filt = filter(B,A,output);
+% velocity_filt = filtfilt(B,A,velocity);
+velocity_filt = filter(B,A,velocity);
 acc = gradient(velocity_filt)/Ts;
-acc_filt = filtfilt(B,A,acc);
+% acc_filt = filtfilt(B,A,acc);
+acc_filt = filter(B,A,acc);
 
 
 data.input_filt = input_filt;
@@ -178,6 +184,10 @@ end
 
 if or(options.all_figures, options.select_figures)
     tsel = t(options.fig_sel);
+    
+    % Remove shift due to filtering
+    
+    
     figure('Name','Measurement Data cut')
     subplot(311)
     hold on
@@ -256,7 +266,7 @@ end
 
 %% Invert velocity model + LPF, state space for feedforward control
 
-ss_vel_invLPF = invert_LPF_ss(tf_vel, ax, data, Fc, options,colors);
+[ss_vel_invLPF, data] = invert_LPF_ss(tf_vel, ax, data, Fc, options,colors);
 
 
 %% Return results
@@ -738,14 +748,14 @@ else
     nb = 3;
 end
 
-
 [Bpre, Apre] = butter(nb, Fc*2*pi, 's'); % continuous time!
-
-filt = tf(Bpre,Apre);
-FRF_LPF = squeeze(freqresp(filt,2*pi*f));
+data.LPF.A = Apre;
+data.LPF.B = Bpre;
 
 
 LPF = tf(Bpre,Apre);
+data.LPF.tf = LPF;
+FRF_LPF = squeeze(freqresp(LPF,2*pi*f));
 
 sys_LPF = sys_c/LPF;
 
@@ -833,49 +843,9 @@ sys_dLPF = c2d(sys_LPF,0.01,'tustin');
 ss_vel_invLPF = ss(A_dLPFi,B_dLPFi,C_dLPFi,D_dLPFi,0.01);
 
 % ! Numerically more stable state space representation of the same system:
-ss_vel_invLPF = prescale(ss_vel_invLPF,{0.1,1.0});
-    
-if options.all_figures
-    % Simulate on realistic desired speed signal: interpolated simulation result
-    dt100Hz = .01;
-    t100Hz = (0:dt100Hz:(length(input)-1)*dt)';
-    % - lsim simulation    
-    x_50Hz = lsim(tf_vel.discr,input,t);
-    x_100Hz = interp1(t,x_50Hz,t100Hz);
-    sim_ss = lsim(ss_vel_invLPF, x_100Hz, t100Hz);
-    figure('Name', 'Realistic desired velocity - Result of lsim')
-    plot(t100Hz, sim_ss)
+ss_vel_invLPF = prescale(ss_vel_invLPF);
 
-    % - manual simulation
-    if or(ax == "z", ax == "yaw")
-        xsim = zeros(2, length(t100Hz));
-        xstep = zeros(2, length(t100Hz));
-    else
-        xsim = zeros(3, length(t100Hz));
-        xstep = zeros(3, length(t100Hz));
-    end
-    ysim = zeros(1, length(t100Hz));
-    for i = 1:length(t100Hz)
-        xsim(:,i+1) = A_dLPFi*xsim(:,i) + B_dLPFi*x_100Hz(i);
-        ysim(i) = C_dLPFi*xsim(:,i) + D_dLPFi*x_100Hz(i);
-    end
-
-    figure('Name','Realistic desired velocity - Result of manual state space simulation')
-    plot(t100Hz, ysim)
-
-    % step response:
-    vstep = 0.2*ones(length(t100Hz),1);
-    
-    ystep = zeros(1, length(t100Hz));
-    for i = 1:length(t100Hz)
-        xstep(:,i+1) = A_dLPFi*xstep(:,i) + B_dLPFi*vstep(i);
-        ystep(i) = C_dLPFi*xstep(:,i) + D_dLPFi*vstep(i);
-    end
-
-    figure('Name','Result of manual state space simulation - Step input')
-    plot(t100Hz, ystep, t100Hz, vstep)
-    legend('step response','step input')
-end
+% simulation: see inverse_vel_sim.m
 
 
 end

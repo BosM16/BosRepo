@@ -1,12 +1,13 @@
 % Analyse computation times MPC for varying obstacle types and number of
 % obstacles.
 
-clear variables
+% clear variables
 close all
 clc
 set(0, 'DefaultLineLineWidth', 1.5);
 
-figures = true;
+figures = false;
+prints = false;
 
 % Colors
 blue = [0.3010, 0.7450, 0.9330];
@@ -77,11 +78,12 @@ for file = files'
               
     end
     
-    fprintf('===================================================\n')
-    display(file.name)
-    display(emag_avg)
-    display(emag_peak)
-    
+    if prints
+        fprintf('===================================================\n')
+        display(file.name)
+        display(emag_avg)
+        display(emag_peak)
+    end
 end
 
 

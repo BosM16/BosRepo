@@ -38,8 +38,8 @@ fprintf('\n= Start PI(D) controller parameter calculation =\n')
 if options.range
     for PM_des=10:5:70
 
-        [xsys_cl,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
-        [ysys_cl,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
+        [xsys_cl,xsys_cl_emp,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
+        [ysys_cl,ysys_cl_emp,yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
         [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
         [yawsys_cl,yawPIsys,yawPIparams] = PI_design(yawmodel, PM_des, options, colors);
 
@@ -53,12 +53,12 @@ if options.range
 else
     fprintf('\n----------------- x direction ------------------\n')
     [xsys_cl,xsys_cl_emp,xPIDsys,xPIDparams] = PID_design(xmodel, PM_des, options, colors);
-    fprintf('\n----------------- y direction ------------------\n')
-    [ysys_cl,ysys_cl_emp, yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
-    fprintf('\n----------------- z direction ------------------\n')
-    [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
-    fprintf(strcat("\n----------------- ", char(952), ' direction ------------------\n'))
-    [yawsys_cl,yawPIsys,yawPIparams] = PI_design(yawmodel, PM_des, options, colors);
+%     fprintf('\n----------------- y direction ------------------\n')
+%     [ysys_cl,ysys_cl_emp, yPIDsys,yPIDparams] = PID_design(ymodel, PM_des, options, colors);
+%     fprintf('\n----------------- z direction ------------------\n')
+%     [zsys_cl,zPIsys,zPIparams] = PI_design(zmodel, PM_des, options, colors);
+%     fprintf(strcat("\n----------------- ", char(952), ' direction ------------------\n'))
+%     [yawsys_cl,yawPIsys,yawPIparams] = PI_design(yawmodel, PM_des, options, colors);
 end
 
 
