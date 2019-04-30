@@ -151,13 +151,13 @@ class Controller(object):
         self.B[6, 2] = 4.
 
         self.C = np.zeros([3, 8])
-        self.C[0, 0:3] = [-1.264436317500493, -15.455773748501429, 10.579429541039664]
-        self.C[1, 3:6] = [-1.522252325051070, -17.595540104804694, 12.127715537213421]
-        self.C[2, 6:8] = [0.907734714613195, -1.795999112561946]
+        self.C[0, 0:3] = [-0.978188374460578, -13.063758356092041, 8.851139456802423]
+        self.C[1, 3:6] = [-1.253171375644747, -15.431192695607777, 10.553825278770228]
+        self.C[2, 6:8] = [0.868330528766420, -1.706365579191715]
 
-        self.D = np.array([[163.2024769637900, 0.0, 0.0],
-                           [0.0, 185.8026277259809, 0.0],
-                           [0.0, 0.0, 6.173599736393230]])
+        self.D = np.array([[137.9417457554036, 0.0, 0.0],
+                           [0.0, 162.9460496462474, 0.0],
+                           [0.0, 0.0, 5.878960071298975]])
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
@@ -286,7 +286,8 @@ class Controller(object):
                       'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
-        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
+        self.X = np.array(
+                    [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
         self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
@@ -523,7 +524,6 @@ class Controller(object):
         vel.twist.linear.z = self._traj['w'][self.omg_index + 1]
 
         self.publish_current_ff_vel(pos, vel)
-        print '\n, omg tools ff vector', vel.twist.linear.y
 
         # Calculate the desired yaw angle based on the pointing direction of
         # the resulting feedforward velocity vector.
@@ -531,18 +531,12 @@ class Controller(object):
 
         # Transform feedforward command from frame world to world_rotated.
         self.rotate_vel_cmd(vel)
-        print 'ff vel gedraaid', self.ff_velocity.twist.linear.y
 
         # Convert feedforward velocity command to angle input.
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
-        if self.ff_cmd.linear.x > 0:
-            print highlight_green('feedforward input cmd', self.ff_cmd.linear.y)
-        else:
-            print highlight_red('feedforward input cmd', self.ff_cmd.linear.y)
-        print 'full input cmd', self.full_cmd.twist.linear.y
         self.publish_real_input_vector(
                     self.drone_pose_est.position, self.full_cmd)
 
@@ -903,6 +897,9 @@ class Controller(object):
         self.omg_index = 1
         self.set_omg_update_time()
         self.set_ff_pid_gains()
+        # Reset ff model
+        self.X = np.array(
+                    [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
         while not (self.target_reached or (
                 rospy.is_shutdown() or self.state_killed)):
@@ -927,6 +924,13 @@ class Controller(object):
         self.tracking_meas['real_path_x'] = []
         self.tracking_meas['real_path_y'] = []
         self.tracking_meas['real_path_z'] = []
+        self.tracking_meas['vel_in_x'] = []
+        self.tracking_meas['vel_in_y'] = []
+        self.tracking_meas['vel_in_z'] = []
+        self.tracking_meas['input_x'] = []
+        self.tracking_meas['input_y'] = []
+        self.tracking_meas['input_z'] = []
+
         self.stop_drawing = False
         self.draw = True
 
@@ -935,6 +939,19 @@ class Controller(object):
             if self.draw:
                 # Erase previous markers in Rviz.
                 self.reset_markers()
+                padding = 10
+                self.drawn_pos_x = (
+                                [self.drawn_pos_x[0] for i in range(padding)]
+                                + self.drawn_pos_x +
+                                [self.drawn_pos_x[-1] for i in range(padding)])
+                self.drawn_pos_y = (
+                                [self.drawn_pos_y[0] for i in range(padding)]
+                                + self.drawn_pos_y +
+                                [self.drawn_pos_y[-1] for i in range(padding)])
+                self.drawn_pos_z = (
+                                [self.drawn_pos_z[0] for i in range(padding)]
+                                + self.drawn_pos_z +
+                                [self.drawn_pos_z[-1] for i in range(padding)])
 
                 print yellow('---- Trigger button has been released,'
                              'path will be calculated ----')
@@ -943,13 +960,15 @@ class Controller(object):
 
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
-                if len(self.drawn_pos_x) > 50:
+                if len(self.drawn_pos_x) > (50 + padding*2):
                     self.diff_interp_traj()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
                     self.tracking_meas['drawn_path_x'] = self.drawn_pos_x
                     self.tracking_meas['drawn_path_y'] = self.drawn_pos_y
                     self.tracking_meas['drawn_path_z'] = self.drawn_pos_z
+                    print '\n, position traj', self.drawn_pos_x[1:500]
+                    print '\n, velocity trajectory', self.drawn_vel_x[1:500]
                 else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
@@ -998,6 +1017,9 @@ class Controller(object):
         self.vhat_vector_pub.publish(self.vhat_vector)
 
         self.set_ff_pid_gains()
+        # Reset ff model
+        self.X = np.array(
+                    [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
         # Preparing hover setpoint for when trajectory is completed.
         self._goal = Pose()
@@ -1284,11 +1306,21 @@ class Controller(object):
         self.model_meas['in_y'].append(self.ff_velocity.twist.linear.y)
         self.model_meas['in_z'].append(self.ff_velocity.twist.linear.z)
 
-        self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
+        self.tracking_meas['vel_in_x'].append(self.ff_velocity.twist.linear.x)
+        self.tracking_meas['vel_in_y'].append(self.ff_velocity.twist.linear.y)
+        self.tracking_meas['vel_in_z'].append(self.ff_velocity.twist.linear.z)
+
+        print 'y velocity model in', self.ff_velocity.twist.linear.y
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
+        self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         self.ff_cmd.linear.x = Y[0, 0]
         self.ff_cmd.linear.y = Y[1, 0]
         self.ff_cmd.linear.z = Y[2, 0]
+        print 'out of model', self.ff_cmd.linear.y
+
+        self.tracking_meas['input_x'].append(self.ff_cmd.linear.x)
+        self.tracking_meas['input_y'].append(self.ff_cmd.linear.y)
+        self.tracking_meas['input_z'].append(self.ff_cmd.linear.z)
 
         self.model_meas['out_x'].append(self.ff_cmd.linear.x)
         self.model_meas['out_y'].append(self.ff_cmd.linear.y)
@@ -1303,31 +1335,45 @@ class Controller(object):
         # world_rot frame
         fb_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
+        if self.state == 'fly to start':
+            self.full_cmd.twist.linear.x = max(min((
+                    fb_cmd.linear.x),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.linear.y = max(min((
+                    fb_cmd.linear.y),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.linear.z = max(min((
+                    fb_cmd.linear.z),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.angular.z = max(min((
+                    fb_cmd.angular.z),
+                    self.max_input), - self.max_input)
+        else:
+            self.full_cmd.twist.linear.x = max(min((
+                    self.ff_cmd.linear.x + fb_cmd.linear.x),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.linear.y = max(min((
+                    self.ff_cmd.linear.y + fb_cmd.linear.y),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.linear.z = max(min((
+                    self.ff_cmd.linear.z + fb_cmd.linear.z),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.angular.z = max(min((
+                    self.ff_cmd.angular.z + fb_cmd.angular.z),
+                    self.max_input), - self.max_input)
+
         # self.full_cmd.twist.linear.x = max(min((
-        #         self.ff_cmd.linear.x + fb_cmd.linear.x),
+        #         fb_cmd.linear.x),
         #         self.max_input), - self.max_input)
         # self.full_cmd.twist.linear.y = max(min((
-        #         self.ff_cmd.linear.y + fb_cmd.linear.y),
+        #         fb_cmd.linear.y),
         #         self.max_input), - self.max_input)
         # self.full_cmd.twist.linear.z = max(min((
-        #         self.ff_cmd.linear.z + fb_cmd.linear.z),
+        #         fb_cmd.linear.z),
         #         self.max_input), - self.max_input)
         # self.full_cmd.twist.angular.z = max(min((
-        #         self.ff_cmd.angular.z + fb_cmd.angular.z),
+        #         fb_cmd.angular.z),
         #         self.max_input), - self.max_input)
-
-        self.full_cmd.twist.linear.x = max(min((
-                fb_cmd.linear.x),
-                self.max_input), - self.max_input)
-        self.full_cmd.twist.linear.y = max(min((
-                fb_cmd.linear.y),
-                self.max_input), - self.max_input)
-        self.full_cmd.twist.linear.z = max(min((
-                fb_cmd.linear.z),
-                self.max_input), - self.max_input)
-        self.full_cmd.twist.angular.z = max(min((
-                fb_cmd.angular.z),
-                self.max_input), - self.max_input)
 
         # self.full_cmd.twist.linear.x = max(min((
         #         self.ff_cmd.linear.x),
@@ -1341,6 +1387,12 @@ class Controller(object):
         # self.full_cmd.twist.angular.z = max(min((
         #         self.ff_cmd.angular.z),
         #         self.max_input), - self.max_input)
+        if self.state == 'follow path':
+            if self.ff_cmd.linear.y > 0:
+                print highlight_green('feedforward input cmd ', self.ff_cmd.linear.y)
+            else:
+                print highlight_red('feedforward input cmd', self.ff_cmd.linear.y)
+            print 'full input cmd', self.full_cmd.twist.linear.y
 
     def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
@@ -1689,12 +1741,19 @@ class Controller(object):
         '''Low pass filter the trajectory drawn with the controller in order to
         be suitable for the drone to track it.
         '''
+        # self.drawn_pos_x = filtfilt(
+        #     self.butter_b, self.butter_a, self.drawn_pos_x, padlen=50)
+        # self.drawn_pos_y = filtfilt(
+        #     self.butter_b, self.butter_a, self.drawn_pos_y, padlen=50)
+        # self.drawn_pos_z = filtfilt(
+        #     self.butter_b, self.butter_a, self.drawn_pos_z, padlen=50)
+
         self.drawn_pos_x = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_x, padlen=50)
+            self.butter_b, self.butter_a, self.drawn_pos_x)
         self.drawn_pos_y = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_y, padlen=50)
+            self.butter_b, self.butter_a, self.drawn_pos_y)
         self.drawn_pos_z = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_z, padlen=50)
+            self.butter_b, self.butter_a, self.drawn_pos_z)
 
         # Plot the smoothed trajectory in Rviz.
         self.draw_smoothed_path()
