@@ -13,7 +13,7 @@ from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 import rospy
 import numpy as np
 import scipy.io as io
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, lfilter
 import tf
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
@@ -71,30 +71,33 @@ class Controller(object):
         inverted, LPF filtered velocity system.
 
         '''
-        Ax = np.array([[1.947, -0.9481],
-                       [1.0000, 0.]])
-        Ay = np.array([[1.947, -0.9481],
-                       [1.0000, 0.]])
-        Az = np.array([[0.9391]])
+        Ax = np.array([[2.924615161772681, -1.426022503893993, 0.927378249329201],
+                       [2.0,    0.,    0.],
+                       [0.,     0.5,   0.]])
+        Ay = np.array([[2.924615161772681, -1.426022503893993, 0.927378249329201],
+                       [2.0,    0.,    0.],
+                       [0.,     0.5,   0.]])
+        Az = np.array([[1.946703849484298, -0.948087691346676],
+                       [1.0,    0.]])
 
-        self.A = np.zeros([5, 5])
-        self.A[0:2, 0:2] = Ax
-        self.A[2:4, 2:4] = Ay
-        self.A[4:5, 4:5] = Az
+        self.A = np.zeros([8, 8])
+        self.A[0:3, 0:3] = Ax
+        self.A[3:6, 3:6] = Ay
+        self.A[6:8, 6:8] = Az
 
-        self.B = np.zeros([5, 3])
-        self.B[0, 0] = 1
-        self.B[2, 1] = 1
-        self.B[4, 2] = 1
+        self.B = np.zeros([8, 3])
+        self.B[0, 0] = 0.25
+        self.B[3, 1] = 0.25
+        self.B[6, 2] = 0.25
 
-        self.C = np.zeros([3, 5])
-        self.C[0, 0:2] = [0.004232, -0.005015]
-        self.C[1, 2:4] = [-0.003704, 0.002797]
-        self.C[2, 4:5] = [-0.0002301]
+        self.C = np.zeros([3, 8])
+        self.C[0, 0:3] = [0.093794142767462, -0.091022743092107, 0.088262872564127]
+        self.C[1, 3:6] = [0.110260524508392, -0.107520541682973, 0.104800707877982]
+        self.C[2, 6:8] = [0.094457321516314, -0.088810404097729]
 
-        self.D = np.array([[0.6338, 0.0, 0.0],
-                           [0.0, 0.7709, 0.0],
-                           [0.0, 0.0, 1.036]])
+        self.D = np.array([[0.011815313012427, 0.0, 0.0],
+                           [0.0, 0.013957040852033, 0.0],
+                           [0.0, 0.0,  0.011763641499985]])
 
     def _init_topics(self):
         '''Initializes rostopic Publishers and Subscribers.
