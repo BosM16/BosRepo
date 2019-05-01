@@ -13,7 +13,7 @@ from bebop_demo.srv import GetPoseEst, ConfigMotionplanner
 import rospy
 import numpy as np
 import scipy.io as io
-from scipy.signal import butter, filtfilt
+from scipy.signal import butter, filtfilt, lfilter
 import tf
 import tf2_ros
 import tf2_geometry_msgs as tf2_geom
@@ -79,22 +79,22 @@ class Controller(object):
                        [0.,     0.5,   0.]])
         Az = np.array([[ 1.946703849484298, -0.948087691346676],
                        [1.0,    0.]])
-        
+
         self.A = np.zeros([8, 8])
         self.A[0:3, 0:3] = Ax
         self.A[3:6, 3:6] = Ay
         self.A[6:8, 6:8] = Az
-        
+
         self.B = np.zeros([8, 3])
         self.B[0, 0] = 0.25
         self.B[3, 1] = 0.25
         self.B[6, 2] = 0.25
-        
+
         self.C = np.zeros([3, 8])
         self.C[0, 0:3] = [0.093794142767462, -0.091022743092107, 0.088262872564127]
         self.C[1, 3:6] = [0.110260524508392, -0.107520541682973, 0.104800707877982]
         self.C[2, 6:8] = [0.094457321516314, -0.088810404097729]
-        
+
         self.D = np.array([[0.011815313012427, 0.0, 0.0],
                            [0.0, 0.013957040852033, 0.0],
                            [0.0, 0.0,  0.011763641499985]])
@@ -904,6 +904,10 @@ class Controller(object):
                     self.diff_interp_traj()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
+                    self.drawn_vel_x, self.drawn_vel_y, self.drawn_vel_z = (
+                                                self.pad_lpf(self.drawn_vel_x,
+                                                             self.drawn_vel_y,
+                                                             self.drawn_vel_z))
                     self.tracking_meas['drawn_path_x'] = self.drawn_pos_x
                     self.tracking_meas['drawn_path_y'] = self.drawn_pos_y
                     self.tracking_meas['drawn_path_z'] = self.drawn_pos_z
@@ -1497,6 +1501,9 @@ class Controller(object):
             z_traj : trajectory position in z-direction
         '''
         self._traj_strg = {}
+        u_traj, v_traj, w_traj = self.pad_lpf(list(u_traj),
+                                              list(v_traj),
+                                              list(w_traj))
         self._traj_strg = {'u': u_traj, 'v': v_traj, 'w': w_traj,
                            'x': x_traj, 'y': y_traj, 'z': z_traj}
         self._new_trajectories = True
@@ -1659,9 +1666,12 @@ class Controller(object):
         '''Numerically differentiates position traject to recover a list of
         feedforward velocities.
         '''
-        self.drawn_vel_x = np.diff(self.drawn_pos_x)/self._sample_time
-        self.drawn_vel_y = np.diff(self.drawn_pos_y)/self._sample_time
-        self.drawn_vel_z = np.diff(self.drawn_pos_z)/self._sample_time
+        self.drawn_vel_x = (
+                        np.diff(self.drawn_pos_x)/self._sample_time).tolist()
+        self.drawn_vel_y = (
+                        np.diff(self.drawn_pos_y)/self._sample_time).tolist()
+        self.drawn_vel_z = (
+                        np.diff(self.drawn_pos_z)/self._sample_time).tolist()
 
     def interpolate_drawn_traj(self, step):
         '''Linearly interpolates a list so that it contains the desired amount
@@ -1681,19 +1691,12 @@ class Controller(object):
         '''Low pass filter the trajectory drawn with the controller in order to
         be suitable for the drone to track it.
         '''
-        # self.drawn_pos_x = filtfilt(
-        #     self.butter_b, self.butter_a, self.drawn_pos_x, padlen=50)
-        # self.drawn_pos_y = filtfilt(
-        #     self.butter_b, self.butter_a, self.drawn_pos_y, padlen=50)
-        # self.drawn_pos_z = filtfilt(
-        #     self.butter_b, self.butter_a, self.drawn_pos_z, padlen=50)
-
         self.drawn_pos_x = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_x)
+            self.butter_b, self.butter_a, self.drawn_pos_x, padlen=50)
         self.drawn_pos_y = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_y)
+            self.butter_b, self.butter_a, self.drawn_pos_y, padlen=50)
         self.drawn_pos_z = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_z)
+            self.butter_b, self.butter_a, self.drawn_pos_z, padlen=50)
 
         # Plot the smoothed trajectory in Rviz.
         self.draw_smoothed_path()
@@ -1744,6 +1747,43 @@ class Controller(object):
             self.meas_pos_y = data.meas_world.pose.position.y
             self.meas_pos_z = data.meas_world.pose.position.z
             self.meas_time = rospy.get_time()
+
+    def pad_lpf(self, x_vec, y_vec, z_vec):
+        '''Adds padding based on derivative of curve at the end, since padding
+        will be removed due to phase shift of low pass filter which is applied
+        after padding.
+        '''
+        # Reverse vector.
+        x_vec.reverse()
+        y_vec.reverse()
+        z_vec.reverse()
+        # Add padding and filter
+        dx = (3./2.*x_vec[-1] - 2.*x_vec[-2] + 1./2.*x_vec[-3])
+        dy = (3./2.*y_vec[-1] - 2.*y_vec[-2] + 1./2.*y_vec[-3])
+        dz = (3./2.*z_vec[-1] - 2.*z_vec[-2] + 1./2.*z_vec[-3])
+
+        padlen = 50
+        x_pad = [x_vec[-1] + (np.arange(dx, dx*(padlen + 1), dx).tolist())[i]
+                 for i in range(padlen)]
+        y_pad = [y_vec[-1] + (np.arange(dy, dy*(padlen + 1), dy).tolist())[i]
+                 for i in range(padlen)]
+        z_pad = [z_vec[-1] + (np.arange(dz, dz*(padlen + 1), dz).tolist())[i]
+                 for i in range(padlen)]
+
+        x_vec = lfilter(self.butter_b, self.butter_a, x_vec + x_pad).tolist()
+        y_vec = lfilter(self.butter_b, self.butter_a, y_vec + y_pad).tolist()
+        z_vec = lfilter(self.butter_b, self.butter_a, z_vec + z_pad).tolist()
+
+        # Again reverse vector.
+        x_vec.reverse()
+        y_vec.reverse()
+        z_vec.reverse()
+        # Cutoff last part since this is created due to lpf
+        x_vec = x_vec[: -padlen]
+        y_vec = y_vec[: -padlen]
+        z_vec = z_vec[: -padlen]
+
+        return x_vec, y_vec, z_vec
 
     #######################################
     # Functions for plotting Rviz markers #
