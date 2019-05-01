@@ -526,9 +526,9 @@ class Controller(object):
                           z=self.drawn_pos_z[index])
         vel = TwistStamped()
         vel.header.frame_id = "world"
-        vel.twist.linear.x = self.drawn_vel_x[index]
-        vel.twist.linear.y = self.drawn_vel_y[index]
-        vel.twist.linear.z = self.drawn_vel_z[index]
+        vel.twist.linear.x = self.drawn_vel_filt_x[index]
+        vel.twist.linear.y = self.drawn_vel_filt_y[index]
+        vel.twist.linear.z = self.drawn_vel_filt_z[index]
 
         self.publish_current_ff_vel(pos, vel)
 
@@ -543,6 +543,11 @@ class Controller(object):
         self.convert_vel_cmd()
 
         # Combine feedback and feedforward commands.
+        vel = TwistStamped()
+        vel.header.frame_id = "world"
+        vel.twist.linear.x = self.drawn_vel_x[index]
+        vel.twist.linear.y = self.drawn_vel_y[index]
+        vel.twist.linear.z = self.drawn_vel_z[index]
         self.combine_ff_fb(pos, vel)
         self.publish_real_input_vector(
                     self.drone_pose_est.position, self.full_cmd)
@@ -904,15 +909,29 @@ class Controller(object):
                     self.diff_interp_traj()
                     self.low_pass_filter_drawn_traj()
                     self.differentiate_traj()
+                    (self.drawn_vel_filt_x,
+                     self.drawn_vel_filt_y,
+                     self.drawn_vel_filt_z) = (self.pad_lpf(self.drawn_vel_x,
+                                                            self.drawn_vel_y,
+                                                            self.drawn_vel_z))
+                    padding = 50
+                    self.drawn_pos_x, self.drawn_pos_y, self.drawn_pos_z = (
+                                            self.pad_in_front(self.drawn_pos_x,
+                                                              self.drawn_pos_y,
+                                                              self.drawn_pos_z,
+                                                              padding))
                     self.drawn_vel_x, self.drawn_vel_y, self.drawn_vel_z = (
-                                                self.pad_lpf(self.drawn_vel_x,
-                                                             self.drawn_vel_y,
-                                                             self.drawn_vel_z))
-                    self.tracking_meas['drawn_path_x'] = self.drawn_pos_x
-                    self.tracking_meas['drawn_path_y'] = self.drawn_pos_y
-                    self.tracking_meas['drawn_path_z'] = self.drawn_pos_z
-                    print '\n, position traj', self.drawn_pos_x[1:500]
-                    print '\n, velocity trajectory', self.drawn_vel_x[1:500]
+                                            self.pad_in_front(self.drawn_vel_x,
+                                                              self.drawn_vel_y,
+                                                              self.drawn_vel_z,
+                                                              padding, True))
+
+                    self.tracking_meas['fb_path_x'] = self.drawn_pos_x
+                    self.tracking_meas['fb_path_y'] = self.drawn_pos_y
+                    self.tracking_meas['fb_path_z'] = self.drawn_pos_z
+                    self.tracking_meas['fb_vel_x'] = self.drawn_vel_x
+                    self.tracking_meas['fb_vel_y'] = self.drawn_vel_y
+                    self.tracking_meas['fb_vel_z'] = self.drawn_vel_z
                 else:
                     print highlight_red(
                                     ' Path too short, draw a longer path! ')
@@ -980,7 +999,7 @@ class Controller(object):
         self.full_cmd.twist.linear.z = self.drawn_vel_z[0]
 
         index = 1
-        while (not self.target_reached and (index < len(self.drawn_vel_x))
+        while (not self.target_reached and (index < len(self.drawn_vel_filt_x))
                and (not rospy.is_shutdown())):
             if self.state_killed:
                 break
@@ -988,7 +1007,7 @@ class Controller(object):
             self.draw_update(index)
             index += 1
             # Determine whether goal has been reached.
-            if ((len(self.drawn_vel_x) - index) < 100):
+            if ((len(self.drawn_vel_filt_x) - index) < 100):
                 self.check_goal_reached()
 
             self.rate.sleep()
@@ -1250,13 +1269,11 @@ class Controller(object):
         self.model_meas['in_y'].append(self.ff_velocity.twist.linear.y)
         self.model_meas['in_z'].append(self.ff_velocity.twist.linear.z)
 
-        print 'y velocity model in', self.ff_velocity.twist.linear.y
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         self.ff_cmd.linear.x = Y[0, 0]
         self.ff_cmd.linear.y = Y[1, 0]
         self.ff_cmd.linear.z = Y[2, 0]
-        print 'out of model', self.ff_cmd.linear.y
 
         if self.state == 'follow path':
             self.tracking_meas['vel_in_x'].append(self.ff_velocity.twist.linear.x)
@@ -1280,7 +1297,31 @@ class Controller(object):
         # world_rot frame
         fb_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
-        if self.state == 'fly to start':
+        if self.state == 'follow path':
+            # self.full_cmd.twist.linear.x = max(min((
+            #         self.ff_cmd.linear.x + fb_cmd.linear.x),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.y = max(min((
+            #         self.ff_cmd.linear.y + fb_cmd.linear.y),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.z = max(min((
+            #         self.ff_cmd.linear.z + fb_cmd.linear.z),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.angular.z = max(min((
+            #         self.ff_cmd.angular.z + fb_cmd.angular.z),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.x = max(min((
+            #         self.ff_cmd.linear.x),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.y = max(min((
+            #         self.ff_cmd.linear.y),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.z = max(min((
+            #         self.ff_cmd.linear.z),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.angular.z = max(min((
+            #         self.ff_cmd.angular.z),
+            #         self.max_input), - self.max_input)
             self.full_cmd.twist.linear.x = max(min((
                     fb_cmd.linear.x),
                     self.max_input), - self.max_input)
@@ -1293,45 +1334,21 @@ class Controller(object):
             self.full_cmd.twist.angular.z = max(min((
                     fb_cmd.angular.z),
                     self.max_input), - self.max_input)
+        # Do not use feedforward in case of OMG-tools
         else:
             self.full_cmd.twist.linear.x = max(min((
-                    self.ff_cmd.linear.x + fb_cmd.linear.x),
+                    fb_cmd.linear.x),
                     self.max_input), - self.max_input)
             self.full_cmd.twist.linear.y = max(min((
-                    self.ff_cmd.linear.y + fb_cmd.linear.y),
+                    fb_cmd.linear.y),
                     self.max_input), - self.max_input)
             self.full_cmd.twist.linear.z = max(min((
-                    self.ff_cmd.linear.z + fb_cmd.linear.z),
+                    fb_cmd.linear.z),
                     self.max_input), - self.max_input)
             self.full_cmd.twist.angular.z = max(min((
-                    self.ff_cmd.angular.z + fb_cmd.angular.z),
+                    fb_cmd.angular.z),
                     self.max_input), - self.max_input)
 
-        # self.full_cmd.twist.linear.x = max(min((
-        #         fb_cmd.linear.x),
-        #         self.max_input), - self.max_input)
-        # self.full_cmd.twist.linear.y = max(min((
-        #         fb_cmd.linear.y),
-        #         self.max_input), - self.max_input)
-        # self.full_cmd.twist.linear.z = max(min((
-        #         fb_cmd.linear.z),
-        #         self.max_input), - self.max_input)
-        # self.full_cmd.twist.angular.z = max(min((
-        #         fb_cmd.angular.z),
-        #         self.max_input), - self.max_input)
-
-        # self.full_cmd.twist.linear.x = max(min((
-        #         self.ff_cmd.linear.x),
-        #         self.max_input), - self.max_input)
-        # self.full_cmd.twist.linear.y = max(min((
-        #         self.ff_cmd.linear.y),
-        #         self.max_input), - self.max_input)
-        # self.full_cmd.twist.linear.z = max(min((
-        #         self.ff_cmd.linear.z),
-        #         self.max_input), - self.max_input)
-        # self.full_cmd.twist.angular.z = max(min((
-        #         self.ff_cmd.angular.z),
-        #         self.max_input), - self.max_input)
         if self.state == 'follow path':
             if self.ff_cmd.linear.y > 0:
                 print highlight_green('feedforward input cmd ', self.ff_cmd.linear.y)
@@ -1693,11 +1710,11 @@ class Controller(object):
         be suitable for the drone to track it.
         '''
         self.drawn_pos_x = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_x, padlen=50)
+            self.butter_b, self.butter_a, self.drawn_pos_x, padlen=50).tolist()
         self.drawn_pos_y = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_y, padlen=50)
+            self.butter_b, self.butter_a, self.drawn_pos_y, padlen=50).tolist()
         self.drawn_pos_z = filtfilt(
-            self.butter_b, self.butter_a, self.drawn_pos_z, padlen=50)
+            self.butter_b, self.butter_a, self.drawn_pos_z, padlen=50).tolist()
 
         # Plot the smoothed trajectory in Rviz.
         self.draw_smoothed_path()
@@ -1754,35 +1771,49 @@ class Controller(object):
         will be removed due to phase shift of low pass filter which is applied
         after padding.
         '''
-        # # Reverse vector.
-        # x_vec.reverse()
-        # y_vec.reverse()
-        # z_vec.reverse()
-        # # Add padding and filter
-        # dx = (3./2.*x_vec[-1] - 2.*x_vec[-2] + 1./2.*x_vec[-3])
-        # dy = (3./2.*y_vec[-1] - 2.*y_vec[-2] + 1./2.*y_vec[-3])
-        # dz = (3./2.*z_vec[-1] - 2.*z_vec[-2] + 1./2.*z_vec[-3])
-        #
-        # padlen = 50
-        # x_pad = [x_vec[-1] + (np.arange(dx, dx*(padlen + 1), dx).tolist())[i]
-        #          for i in range(padlen)]
-        # y_pad = [y_vec[-1] + (np.arange(dy, dy*(padlen + 1), dy).tolist())[i]
-        #          for i in range(padlen)]
-        # z_pad = [z_vec[-1] + (np.arange(dz, dz*(padlen + 1), dz).tolist())[i]
-        #          for i in range(padlen)]
-        #
-        # x_vec = lfilter(self.butter_b, self.butter_a, x_vec + x_pad).tolist()
-        # y_vec = lfilter(self.butter_b, self.butter_a, y_vec + y_pad).tolist()
-        # z_vec = lfilter(self.butter_b, self.butter_a, z_vec + z_pad).tolist()
-        #
-        # # Again reverse vector.
-        # x_vec.reverse()
-        # y_vec.reverse()
-        # z_vec.reverse()
-        # # Cutoff last part since this is created due to lpf
-        # x_vec = x_vec[: -padlen]
-        # y_vec = y_vec[: -padlen]
-        # z_vec = z_vec[: -padlen]
+        # Reverse vector.
+        x_vec.reverse()
+        y_vec.reverse()
+        z_vec.reverse()
+        # Add padding and filter
+        dx = (3./2.*x_vec[-1] - 2.*x_vec[-2] + 1./2.*x_vec[-3])
+        dy = (3./2.*y_vec[-1] - 2.*y_vec[-2] + 1./2.*y_vec[-3])
+        dz = (3./2.*z_vec[-1] - 2.*z_vec[-2] + 1./2.*z_vec[-3])
+
+        padlen = 50
+        x_pad = [x_vec[-1] + (np.arange(dx, dx*(padlen + 1), dx).tolist())[i]
+                 for i in range(padlen)]
+        y_pad = [y_vec[-1] + (np.arange(dy, dy*(padlen + 1), dy).tolist())[i]
+                 for i in range(padlen)]
+        z_pad = [z_vec[-1] + (np.arange(dz, dz*(padlen + 1), dz).tolist())[i]
+                 for i in range(padlen)]
+
+        x_vec = lfilter(self.butter_b, self.butter_a, x_vec + x_pad).tolist()
+        y_vec = lfilter(self.butter_b, self.butter_a, y_vec + y_pad).tolist()
+        z_vec = lfilter(self.butter_b, self.butter_a, z_vec + z_pad).tolist()
+
+        # Again reverse vector.
+        x_vec.reverse()
+        y_vec.reverse()
+        z_vec.reverse()
+        # Cutoff last part since this is created due to lpf
+        x_vec = x_vec[: -padlen]
+        y_vec = y_vec[: -padlen]
+        z_vec = z_vec[: -padlen]
+
+        return x_vec, y_vec, z_vec
+
+    def pad_in_front(self, x_vec, y_vec, z_vec, pad, zeros=False):
+        '''Adds padding of len pad in front of vectors.
+        '''
+        if zeros:
+            x_vec = [0. for i in range(pad)] + x_vec
+            y_vec = [0. for i in range(pad)] + y_vec
+            z_vec = [0. for i in range(pad)] + z_vec
+        else:
+            x_vec = [x_vec[0] for i in range(pad)] + x_vec
+            y_vec = [y_vec[0] for i in range(pad)] + y_vec
+            z_vec = [z_vec[0] for i in range(pad)] + z_vec
 
         return x_vec, y_vec, z_vec
 
