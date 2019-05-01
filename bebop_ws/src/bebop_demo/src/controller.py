@@ -188,6 +188,7 @@ class Controller(object):
         norm_fc_LPF = cutoff_freq_LPF/(0.5)*self._sample_time
         self.butter_b, self.butter_a = butter(
             LPF_order, norm_fc_LPF, btype='low', analog=False)
+        print 'butter values', self.butter_a, self.butter_b
 
     def _init_variables(self):
         '''Initializes variables that are used later on.
@@ -215,7 +216,8 @@ class Controller(object):
                       'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self._traj_strg = {'u': [0.0], 'v': [0.0], 'w': [0.0],
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
-        self.X = np.array([[0.0], [0.0], [0.0], [0.0], [0.0]])
+        self.X = np.array(
+                    [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
         self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
@@ -813,6 +815,9 @@ class Controller(object):
         self.omg_index = 1
         self.set_omg_update_time()
         self.set_ff_pid_gains()
+        # Reset ff model
+        self.X = np.array(
+                    [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
         while not (self.target_reached or (
                 rospy.is_shutdown() or self.state_killed)):
@@ -861,6 +866,21 @@ class Controller(object):
                                 min((self.room_height - self.drone_radius),
                                 (elem))) for elem in self.drawn_pos_z]
 
+                # Add padding to path for filtering purposes
+                padding = 10
+                self.drawn_pos_x = (
+                                [self.drawn_pos_x[0] for i in range(padding)]
+                                + self.drawn_pos_x +
+                                [self.drawn_pos_x[-1] for i in range(padding)])
+                self.drawn_pos_y = (
+                                [self.drawn_pos_y[0] for i in range(padding)]
+                                + self.drawn_pos_y +
+                                [self.drawn_pos_y[-1] for i in range(padding)])
+                self.drawn_pos_z = (
+                                [self.drawn_pos_z[0] for i in range(padding)]
+                                + self.drawn_pos_z +
+                                [self.drawn_pos_z[-1] for i in range(padding)])
+
                 # Process the drawn trajectory so the drone is able to follow
                 # this path.
                 if len(self.drawn_pos_x) > 50:
@@ -906,6 +926,9 @@ class Controller(object):
         self.vhat_vector_pub.publish(self.vhat_vector)
 
         self.set_ff_pid_gains()
+        # Reset ff model
+        self.X = np.array(
+                    [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
 
         # Preparing hover setpoint for when trajectory is completed.
         self._goal = Pose()
@@ -1186,14 +1209,12 @@ class Controller(object):
         u = np.array([[self.ff_velocity.twist.linear.x],
                       [self.ff_velocity.twist.linear.y],
                       [self.ff_velocity.twist.linear.z]])
-        print '\n omg_input z', self.ff_velocity.twist.linear.z
 
-        self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
+        self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
         self.ff_cmd.linear.x = Y[0, 0]
         self.ff_cmd.linear.y = Y[1, 0]
         self.ff_cmd.linear.z = Y[2, 0]
-        print 'feedforward input z', self.ff_cmd.linear.z
 
     def combine_ff_fb(self, pos_desired, vel_desired):
         '''Combines the feedforward and feedback commands to generate the full
@@ -1202,7 +1223,6 @@ class Controller(object):
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
         fb_cmd = self.feedbeck(pos_desired, vel_desired.twist)
-        print 'feedback input z', fb_cmd.linear.z
 
         self.full_cmd.twist.linear.x = max(min((
                 self.ff_cmd.linear.x + fb_cmd.linear.x),
@@ -1216,11 +1236,6 @@ class Controller(object):
         self.full_cmd.twist.angular.z = max(min((
                 self.ff_cmd.angular.z + fb_cmd.angular.z),
                 self.max_input), - self.max_input)
-
-        if self.full_cmd.twist.linear.z > 0:
-            print highlight_green(self.full_cmd.twist.linear.z)
-        else:
-            print highlight_red(self.full_cmd.twist.linear.z)
 
     def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
