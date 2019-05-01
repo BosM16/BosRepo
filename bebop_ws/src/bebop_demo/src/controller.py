@@ -74,10 +74,10 @@ class Controller(object):
         Ax = np.array([[2.924615161772681, -1.426022503893993, 0.927378249329201],
                        [2.0,    0.,    0.],
                        [0.,     0.5,   0.]])
-        Ay = np.array([[ 2.924615161772681, -1.426022503893993, 0.927378249329201],
+        Ay = np.array([[2.924615161772681, -1.426022503893993, 0.927378249329201],
                        [2.0,    0.,    0.],
                        [0.,     0.5,   0.]])
-        Az = np.array([[ 1.946703849484298, -0.948087691346676],
+        Az = np.array([[1.946703849484298, -0.948087691346676],
                        [1.0,    0.]])
 
         self.A = np.zeros([8, 8])
@@ -1250,10 +1250,6 @@ class Controller(object):
         self.model_meas['in_y'].append(self.ff_velocity.twist.linear.y)
         self.model_meas['in_z'].append(self.ff_velocity.twist.linear.z)
 
-        self.tracking_meas['vel_in_x'].append(self.ff_velocity.twist.linear.x)
-        self.tracking_meas['vel_in_y'].append(self.ff_velocity.twist.linear.y)
-        self.tracking_meas['vel_in_z'].append(self.ff_velocity.twist.linear.z)
-
         print 'y velocity model in', self.ff_velocity.twist.linear.y
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
@@ -1262,9 +1258,14 @@ class Controller(object):
         self.ff_cmd.linear.z = Y[2, 0]
         print 'out of model', self.ff_cmd.linear.y
 
-        self.tracking_meas['input_x'].append(self.ff_cmd.linear.x)
-        self.tracking_meas['input_y'].append(self.ff_cmd.linear.y)
-        self.tracking_meas['input_z'].append(self.ff_cmd.linear.z)
+        if self.state == 'follow path':
+            self.tracking_meas['vel_in_x'].append(self.ff_velocity.twist.linear.x)
+            self.tracking_meas['vel_in_y'].append(self.ff_velocity.twist.linear.y)
+            self.tracking_meas['vel_in_z'].append(self.ff_velocity.twist.linear.z)
+
+            self.tracking_meas['input_x'].append(self.ff_cmd.linear.x)
+            self.tracking_meas['input_y'].append(self.ff_cmd.linear.y)
+            self.tracking_meas['input_z'].append(self.ff_cmd.linear.z)
 
         self.model_meas['out_x'].append(self.ff_cmd.linear.x)
         self.model_meas['out_y'].append(self.ff_cmd.linear.y)
@@ -1753,35 +1754,35 @@ class Controller(object):
         will be removed due to phase shift of low pass filter which is applied
         after padding.
         '''
-        # Reverse vector.
-        x_vec.reverse()
-        y_vec.reverse()
-        z_vec.reverse()
-        # Add padding and filter
-        dx = (3./2.*x_vec[-1] - 2.*x_vec[-2] + 1./2.*x_vec[-3])
-        dy = (3./2.*y_vec[-1] - 2.*y_vec[-2] + 1./2.*y_vec[-3])
-        dz = (3./2.*z_vec[-1] - 2.*z_vec[-2] + 1./2.*z_vec[-3])
-
-        padlen = 50
-        x_pad = [x_vec[-1] + (np.arange(dx, dx*(padlen + 1), dx).tolist())[i]
-                 for i in range(padlen)]
-        y_pad = [y_vec[-1] + (np.arange(dy, dy*(padlen + 1), dy).tolist())[i]
-                 for i in range(padlen)]
-        z_pad = [z_vec[-1] + (np.arange(dz, dz*(padlen + 1), dz).tolist())[i]
-                 for i in range(padlen)]
-
-        x_vec = lfilter(self.butter_b, self.butter_a, x_vec + x_pad).tolist()
-        y_vec = lfilter(self.butter_b, self.butter_a, y_vec + y_pad).tolist()
-        z_vec = lfilter(self.butter_b, self.butter_a, z_vec + z_pad).tolist()
-
-        # Again reverse vector.
-        x_vec.reverse()
-        y_vec.reverse()
-        z_vec.reverse()
-        # Cutoff last part since this is created due to lpf
-        x_vec = x_vec[: -padlen]
-        y_vec = y_vec[: -padlen]
-        z_vec = z_vec[: -padlen]
+        # # Reverse vector.
+        # x_vec.reverse()
+        # y_vec.reverse()
+        # z_vec.reverse()
+        # # Add padding and filter
+        # dx = (3./2.*x_vec[-1] - 2.*x_vec[-2] + 1./2.*x_vec[-3])
+        # dy = (3./2.*y_vec[-1] - 2.*y_vec[-2] + 1./2.*y_vec[-3])
+        # dz = (3./2.*z_vec[-1] - 2.*z_vec[-2] + 1./2.*z_vec[-3])
+        #
+        # padlen = 50
+        # x_pad = [x_vec[-1] + (np.arange(dx, dx*(padlen + 1), dx).tolist())[i]
+        #          for i in range(padlen)]
+        # y_pad = [y_vec[-1] + (np.arange(dy, dy*(padlen + 1), dy).tolist())[i]
+        #          for i in range(padlen)]
+        # z_pad = [z_vec[-1] + (np.arange(dz, dz*(padlen + 1), dz).tolist())[i]
+        #          for i in range(padlen)]
+        #
+        # x_vec = lfilter(self.butter_b, self.butter_a, x_vec + x_pad).tolist()
+        # y_vec = lfilter(self.butter_b, self.butter_a, y_vec + y_pad).tolist()
+        # z_vec = lfilter(self.butter_b, self.butter_a, z_vec + z_pad).tolist()
+        #
+        # # Again reverse vector.
+        # x_vec.reverse()
+        # y_vec.reverse()
+        # z_vec.reverse()
+        # # Cutoff last part since this is created due to lpf
+        # x_vec = x_vec[: -padlen]
+        # y_vec = y_vec[: -padlen]
+        # z_vec = z_vec[: -padlen]
 
         return x_vec, y_vec, z_vec
 
