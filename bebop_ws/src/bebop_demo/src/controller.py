@@ -911,9 +911,9 @@ class Controller(object):
                     self.differentiate_traj()
                     (self.drawn_vel_filt_x,
                      self.drawn_vel_filt_y,
-                     self.drawn_vel_filt_z) = (self.pad_lpf(self.drawn_vel_x,
-                                                            self.drawn_vel_y,
-                                                            self.drawn_vel_z))
+                     self.drawn_vel_filt_z) = (self.pad_lpf(self.drawn_vel_x[:],
+                                                            self.drawn_vel_y[:],
+                                                            self.drawn_vel_z[:]))
                     padding = 50
                     self.drawn_pos_x, self.drawn_pos_y, self.drawn_pos_z = (
                                             self.pad_in_front(self.drawn_pos_x,
