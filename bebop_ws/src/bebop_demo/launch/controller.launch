@@ -64,14 +64,23 @@
   <param name='controller/Ki_dt_z' value="4.0299" /> -->
 
   <!-- ff flying draw traj flying PM 40 high I-->
-  <param name='controller/Kp_dt_x' value="1.6152" />
+  <!-- <param name='controller/Kp_dt_x' value="1.6152" />
   <param name='controller/Ki_dt_x' value="0.4491" />
   <param name='controller/Kd_dt_x' value="1.1494" />
   <param name='controller/Kp_dt_y' value="1.3175" />
   <param name='controller/Ki_dt_y' value="0.3324" />
   <param name='controller/Kd_dt_y' value="1.0333" />
   <param name='controller/Kp_dt_z' value="5.3331" />
-  <param name='controller/Ki_dt_z' value="6.2667" />
+  <param name='controller/Ki_dt_z' value="6.2667" /> -->
+
+  <param name='controller/Kp_dt_x' value="1.1950" />
+  <param name='controller/Ki_dt_x' value="0.2851" />
+  <param name='controller/Kd_dt_x' value="1.1738" />
+  <param name='controller/Kp_dt_y' value="0.9747" />
+  <param name='controller/Ki_dt_y' value="0.2110" />
+  <param name='controller/Kd_dt_y' value="1.0552" />
+  <param name='controller/Kp_dt_z' value="5.4463" />
+  <param name='controller/Ki_dt_z' value="3.9785" />
 
   <!-- PD: -->
   <!-- <param name='controller/Kp_x' value="0.9790" />
@@ -83,6 +92,7 @@
   <param name='controller/Kp_z' value="4.0" />
   <param name='controller/Ki_z' value="0.0" /> -->
 
+
   <param name='controller/K_theta' value="0.15" />
   <param name='controller/max_input' value="1.0" />
   <param name='controller/safety_treshold' value="0.2" />
@@ -90,8 +100,8 @@
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="30.0" />
 
-  <param name='motionplanner/vmax' value="0.6" />
-  <param name='motionplanner/amax' value="0.4" />
+  <param name='motionplanner/vmax' value="2.4" />
+  <param name='motionplanner/amax' value="1.6" />
   <param name='motionplanner/vmax_low' value="0.6" />
   <param name='motionplanner/amax_low' value="0.4" />
   <param name='motionplanner/drone_radius' value="0.225" />

@@ -926,9 +926,9 @@ class Controller(object):
                                                               self.drawn_vel_z,
                                                               padding, True))
 
-                    self.tracking_meas['fb_path_x'] = self.drawn_pos_x
-                    self.tracking_meas['fb_path_y'] = self.drawn_pos_y
-                    self.tracking_meas['fb_path_z'] = self.drawn_pos_z
+                    self.tracking_meas['drawn_path_x'] = self.drawn_pos_x
+                    self.tracking_meas['drawn_path_y'] = self.drawn_pos_y
+                    self.tracking_meas['drawn_path_z'] = self.drawn_pos_z
                     self.tracking_meas['fb_vel_x'] = self.drawn_vel_x
                     self.tracking_meas['fb_vel_y'] = self.drawn_vel_y
                     self.tracking_meas['fb_vel_z'] = self.drawn_vel_z
@@ -1298,18 +1298,18 @@ class Controller(object):
         fb_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
         if self.state == 'follow path':
-            # self.full_cmd.twist.linear.x = max(min((
-            #         self.ff_cmd.linear.x + fb_cmd.linear.x),
-            #         self.max_input), - self.max_input)
-            # self.full_cmd.twist.linear.y = max(min((
-            #         self.ff_cmd.linear.y + fb_cmd.linear.y),
-            #         self.max_input), - self.max_input)
-            # self.full_cmd.twist.linear.z = max(min((
-            #         self.ff_cmd.linear.z + fb_cmd.linear.z),
-            #         self.max_input), - self.max_input)
-            # self.full_cmd.twist.angular.z = max(min((
-            #         self.ff_cmd.angular.z + fb_cmd.angular.z),
-            #         self.max_input), - self.max_input)
+            self.full_cmd.twist.linear.x = max(min((
+                    self.ff_cmd.linear.x + fb_cmd.linear.x),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.linear.y = max(min((
+                    self.ff_cmd.linear.y + fb_cmd.linear.y),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.linear.z = max(min((
+                    self.ff_cmd.linear.z + fb_cmd.linear.z),
+                    self.max_input), - self.max_input)
+            self.full_cmd.twist.angular.z = max(min((
+                    self.ff_cmd.angular.z + fb_cmd.angular.z),
+                    self.max_input), - self.max_input)
             # self.full_cmd.twist.linear.x = max(min((
             #         self.ff_cmd.linear.x),
             #         self.max_input), - self.max_input)
@@ -1322,18 +1322,18 @@ class Controller(object):
             # self.full_cmd.twist.angular.z = max(min((
             #         self.ff_cmd.angular.z),
             #         self.max_input), - self.max_input)
-            self.full_cmd.twist.linear.x = max(min((
-                    fb_cmd.linear.x),
-                    self.max_input), - self.max_input)
-            self.full_cmd.twist.linear.y = max(min((
-                    fb_cmd.linear.y),
-                    self.max_input), - self.max_input)
-            self.full_cmd.twist.linear.z = max(min((
-                    fb_cmd.linear.z),
-                    self.max_input), - self.max_input)
-            self.full_cmd.twist.angular.z = max(min((
-                    fb_cmd.angular.z),
-                    self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.x = max(min((
+            #         fb_cmd.linear.x),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.y = max(min((
+            #         fb_cmd.linear.y),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.linear.z = max(min((
+            #         fb_cmd.linear.z),
+            #         self.max_input), - self.max_input)
+            # self.full_cmd.twist.angular.z = max(min((
+            #         fb_cmd.angular.z),
+            #         self.max_input), - self.max_input)
         # Do not use feedforward in case of OMG-tools
         else:
             self.full_cmd.twist.linear.x = max(min((
