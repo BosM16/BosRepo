@@ -8,7 +8,7 @@ fprintf('============ Start identification ============== \n')
 
 %% Settings & Execution
 options.all_figures = false;
-options.select_figures = false;
+options.select_figures = true;
 % options.fig_sel = (1:800);
 % options.fig_sel = (1:800);
 options.fig_sel = (1450:2200);
@@ -24,11 +24,11 @@ set(0, 'DefaultLineLineWidth', 1);
 % SYNTAX: 
 %   model = identify("data/data_mat_file",'axis','axis symbol',Ts,f0,Fc,options,colors);
 % -----------------------------------------------------------------
-xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,20,options,colors);
+xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options,colors);
 % xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options,colors);
-ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,20,options,colors);
-zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,20,options,colors);
-yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
+% ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
+% zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,0.6,options,colors);
+% yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).
 %       For z, no crossover (DC gain below 0 dB) --> visually (trial and
@@ -760,7 +760,7 @@ FRF_LPF = squeeze(freqresp(LPF,2*pi*f));
 sys_LPF = sys_c/LPF;
 
 
-if options.all_figures
+if options.select_figures
     figure('Name','Low Pass Filter (Butterworth)')
     bode(LPF)
 

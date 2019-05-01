@@ -12,7 +12,7 @@ black = [0, 0, 0];
 run PIDdesign
 
 %% Load data
-data = load("data/pid_step_input_30");
+data = load("data/pid_step_input_x_10");
 
 % preprocessing
 timelen = length(data.meas_time);
@@ -48,20 +48,20 @@ ylabel('Position (m)')
 
 
 %% Simulation
-figure
-bode(xsys_cl)
-hold on
-bode(xsys_cl_emp)
-
-figure
-bode(1-xsys_cl)
-hold on
-bode(1-xsys_cl_emp)
-
-
-figure
-step(xsys_cl)
-hold on
+% figure
+% bode(xsys_cl)
+% hold on
+% bode(xsys_cl_emp)
+% 
+% figure
+% bode(1-xsys_cl)
+% hold on
+% bode(1-xsys_cl_emp)
+% 
+% 
+% figure
+% step(xsys_cl)
+% hold on
 
 
 

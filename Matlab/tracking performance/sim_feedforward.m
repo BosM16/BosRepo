@@ -15,7 +15,7 @@ fcn = fc/(fs/2); %
 nb = 2;
 [B, A] = butter(nb,fcn);
 
-xref = data.drawn_path_y; %- data.drawn_path_y(1);
+xref = data.drawn_path_x - data.drawn_path_x(1);
 xref = [xref(1)*ones(1,200) xref];% xref(end)*ones(1,200)];
 t    = 0:0.01:(length(xref)-1)*0.01;
 xref_filt = filtfilt(B,A,xref);
@@ -34,7 +34,7 @@ legend('ref','filtered ref')
 subplot(212)
 plot(vref)
 
-jsim = lsim(ymodel.ss_vel_invLPF,vref,t);
+jsim = lsim(xmodel.ss_vel_invLPF,vref,t);
 jsim_clip = max(min(jsim,1),-1);
 figure
 hold on
@@ -44,8 +44,8 @@ plot(t,vref)
 legend('jsim','jsim clipped','vref')
 
 
-xsim = lsim(ymodel.tf_pos,jsim,t);
-xsim_clip = lsim(ymodel.tf_pos,jsim_clip,t);
+xsim = lsim(xmodel.tf_pos,jsim,t);
+xsim_clip = lsim(xmodel.tf_pos,jsim_clip,t);
 
 figure
 hold on

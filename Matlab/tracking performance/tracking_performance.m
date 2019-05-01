@@ -6,8 +6,8 @@ close all
 clc
 set(0, 'DefaultLineLineWidth', 1.5);
 
-figures = false;
-prints = false;
+figures = true;
+prints = true;
 
 % Colors
 blue = [0.3010, 0.7450, 0.9330];
@@ -19,7 +19,7 @@ set(0, 'DefaultLineLineWidth', 1.1);
 %% Load data
 files = dir('data/*.mat');
 
-% Plot computation times and calculate average and 
+% Plot computation times and calculate average and peak
 for file = files'
     data = load(file.name);
     
