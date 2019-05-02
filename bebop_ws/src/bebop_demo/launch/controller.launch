@@ -8,7 +8,7 @@
   <param name="controller/sample_time" value="0.01" />
   <param name="controller/LPF_cutoff" value="0.6" />
   <param name="controller/LPF_order" value="3" />
-  <param name='controller/goal_reached_pos_tol' value="0.05" />
+  <param name='controller/goal_reached_pos_tol' value="0.10" />
   <param name='controller/goal_reached_pos_tol_slow' value="0.2" />
   <param name='controller/goal_reached_angle_tol' value="0.05" />
   <param name='controller/standard_height' value="1.7" />
@@ -99,15 +99,17 @@
   <param name='motionplanner/knot_intervals' value="10" />
   <param name='motionplanner/horizon_time' value="30.0" />
 
-  <param name='motionplanner/vmax' value="1.2" />
-  <param name='motionplanner/amax' value="0.6" />
-  <param name='motionplanner/vmax_low' value="0.6" />
-  <param name='motionplanner/amax_low' value="0.4" />
+  <param name='motionplanner/omg_vmax' value="1.2" />
+  <param name='motionplanner/omg_amax' value="0.8" />
+  <param name='motionplanner/omg_vmax_low' value="0.6" />
+  <param name='motionplanner/omg_amax_low' value="0.4" />
+  <param name='motionplanner/draw_vmax' value="2.0" />
+  <param name='motionplanner/draw_vmax_low' value="1.2" />
   <param name='motionplanner/drone_radius' value="0.225" />
   <param name='motionplanner/drone_radius_small' value="0.20" />
-  <param name='motionplanner/safety_margin' value="0.20" />
+  <param name='motionplanner/safety_margin' value="0.40" />
   <param name='motionplanner/safety_margin_small' value="0.10" />
-  <param name='motionplanner/safety_weight' value="10" />
+  <param name='motionplanner/safety_weight' value="20" />
   <param name='motionplanner/safety_weight_slow' value="10" />
   <param name='motionplanner/room_width' value="5.5" />
   <param name='motionplanner/room_depth' value="3.6" />

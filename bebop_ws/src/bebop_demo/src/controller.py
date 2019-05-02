@@ -45,7 +45,8 @@ class Controller(object):
                            "place plate obstacles": self.place_plate_obst,
                            "place window obstacles": self.place_window_obst,
                            "configure motionplanner": self.config_mp,
-                           "draw path": self.draw_traj,
+                           "draw path slow": self.draw_traj,
+                           "draw path fast": self.draw_traj,
                            "fly to start": self.fly_to_start,
                            "follow path": self.follow_traj,
                            "undamped spring": self.hover_changed_gains,
@@ -167,7 +168,6 @@ class Controller(object):
         self.Ki_z = rospy.get_param('controller/Ki_z', 1.5792)
         self.K_theta = rospy.get_param('controller/K_theta', 0.3)
         self.max_input = rospy.get_param('controller/max_input', 0.5)
-        self.max_vel = rospy.get_param('motionplanner/vmax', 0.5)
         self.room_width = rospy.get_param('motionplanner/room_width', 1.)
         self.room_depth = rospy.get_param('motionplanner/room_depth', 1.)
         self.room_height = rospy.get_param('motionplanner/room_height', 1.)
@@ -588,6 +588,7 @@ class Controller(object):
                 rospy.sleep(0.1)
 
         elif self.state == "land" and self.airborne:
+            self.reset_pid_gains()
             rospy.sleep(0.1)
             self.land.publish(Empty())
             while self.airborne and (
@@ -620,7 +621,7 @@ class Controller(object):
                     radius = self.position_diff_norm(edge, center)
                     if self.state == "place cyl obstacles":
                         Sjaaakie = Obstacle(obst_type=String(
-                                            data="inf_cylinder"),
+                                            data="inf cylinder"),
                                             shape=[radius],
                                             pose=[center.x, center.y])
                     else:
@@ -843,6 +844,10 @@ class Controller(object):
         print highlight_green('---- Start drawing path with left Vive'
                               ' controller while holding trigger ----')
         self.stop_drawing = False
+        if self.state == "draw traj fast":
+            self.max_vel = rospy.get_param('motionplanner/draw_vmax_fast', 0.5)
+        else:
+            self.max_vel = rospy.get_param('motionplanner/draw_vmax_low', 0.5)
 
         while not (self.stop_drawing or (
                 rospy.is_shutdown() or self.state_killed)):
@@ -1033,23 +1038,23 @@ class Controller(object):
             'controller/standard_height', 1.5)
 
         if self.state == "undamped spring":
-            self.Kp_x = self.Kp_x/2.
+            self.Kp_x = self.Kp_x/4.
             self.Ki_x = 0.
             self.Kd_x = 0.
-            self.Kp_y = self.Kp_y/2.
+            self.Kp_y = self.Kp_y/4.
             self.Ki_y = 0.
             self.Kd_y = 0.
-            self.Kp_z = self.Kp_z/2.
+            self.Kp_z = self.Kp_z/8.
             self.Ki_z = 0.
 
         elif self.state == "viscous fluid":
             self.Kp_x = 0.
             self.Ki_x = 0.
-            self.Kd_x = self.Kd_x/8.
+            self.Kd_x = self.Kd_x
             self.Kp_y = 0.
             self.Ki_y = 0.
-            self.Kd_y = self.Kd_y/8.
-            self.Kp_z = self.Kp_z/4.
+            self.Kd_y = self.Kd_y
+            self.Kp_z = self.Kp_z/8.
             self.Ki_z = 0.
 
         while not (self.state_changed or
@@ -1162,7 +1167,7 @@ class Controller(object):
         '''
         radius = 0.75
         self.dynamic_obst = [Obstacle(obst_type=String(
-                            data="inf_cylinder"),
+                            data="inf cylinder"),
                             shape=[radius],
                             pose=[self.ctrl_r_pos.position.x,
                                   self.ctrl_r_pos.position.y],
@@ -1181,7 +1186,7 @@ class Controller(object):
             if self.startup:
                 # Update dynamic obstacle info for when motionplanner is fired.
                 self.dynamic_obst = [Obstacle(obst_type=String(
-                                      data="inf_cylinder"),
+                                      data="inf cylinder"),
                                       shape=[radius],
                                       pose=[self.ctrl_r_pos.position.x,
                                             self.ctrl_r_pos.position.y],
@@ -1280,8 +1285,7 @@ class Controller(object):
         '''
         fb_cmd = Twist()
 
-        if ((self.state == "undamped spring") or
-           (self.state == "viscous fluid")):
+        if (self.state in {"undamped spring", "viscous fluid"}):
             # # PD
             pos_error = PointStamped()
             pos_error.header.frame_id = "world"
@@ -1299,6 +1303,8 @@ class Controller(object):
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
+            print '\n, feedbeck position error', self.Kp_x*pos_error.point.x, self.Kp_y*pos_error.point.y
+            print 'feedbeck velocity error', self.Kd_x*vel_error.point.x, self.Kd_y*vel_error.point.y
 
             fb_cmd.linear.x = max(- self.max_input, min(self.max_input, (
                     self.Kp_x*pos_error.point.x +
@@ -2094,7 +2100,7 @@ class Controller(object):
                 obstacle_marker.color.a = 0.5
                 obstacle_marker.lifetime = rospy.Duration(0)
 
-                if obstacle.obst_type.data == 'inf_cylinder':
+                if obstacle.obst_type.data == 'inf cylinder':
                     obstacle_marker.type = 3  # Cylinder
                     obstacle.shape = [obstacle.shape[0], self.room_height]
                     obstacle.pose = [obstacle.pose[0],

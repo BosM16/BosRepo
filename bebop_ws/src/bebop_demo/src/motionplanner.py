@@ -59,26 +59,26 @@ class MotionPlanner(object):
             safety_margin = rospy.get_param(
                 'motionplanner/safety_margin_small', 0.1)
             safety_weight = rospy.get_param(
-                 'motionplanner/safety_weight', 10.)
+                 'motionplanner/safety_weight_slow', 10.)
             drone_radius = rospy.get_param(
                 'motionplanner/drone_radius_small', 0.20)
             vmax = rospy.get_param(
-                'motionplanner/vmax_low', 0.2)
+                'motionplanner/omg_vmax_low', 0.2)
             amax = rospy.get_param(
-                'motionplanner/amax_low', 0.3)
+                'motionplanner/omg_amax_low', 0.3)
         else:
             self.omg_update_time = rospy.get_param(
                 'controller/omg_update_time', 0.5)
             safety_margin = rospy.get_param(
                 'motionplanner/safety_margin', 0.2)
             safety_weight = rospy.get_param(
-                 'motionplanner/safety_weight_slow', 10.)
+                 'motionplanner/safety_weight', 10.)
             drone_radius = rospy.get_param(
                 'motionplanner/drone_radius', 0.225)
             vmax = rospy.get_param(
-                'motionplanner/vmax', 0.2)
+                'motionplanner/omg_vmax', 0.2)
             amax = rospy.get_param(
-                'motionplanner/amax', 0.3)
+                'motionplanner/omg_amax', 0.3)
 
         self._vehicle = omg.Holonomic3D(
             shapes=omg.Sphere(drone_radius),
@@ -106,7 +106,7 @@ class MotionPlanner(object):
         # Static obstacles.
         self.n_stat_obst = len(data.static_obstacles)
         for k, obst in enumerate(data.static_obstacles):
-            if obst.obst_type.data == "inf_cylinder":
+            if obst.obst_type.data == "inf cylinder":
                 # 2D shape is extended infinitely along z.
                 shape = omg.Circle(obst.shape[0])
                 position = [obst.pose[0], obst.pose[1]]
@@ -128,7 +128,7 @@ class MotionPlanner(object):
                                                 obst.shape[0], obst.shape[1]),
                                       height=obst.shape[2],
                                       orientation=[0., np.pi/2, 0.])
-                    position = [obst.pose[0], obst.pose[1], obst.pose[2]]
+                    position = [obst.pose[0], 0., obst.pose[2]]
 
             elif obst.obst_type.data == "plate":
                 shape = omg.Plate(shape2d=omg.Rectangle(
@@ -156,16 +156,18 @@ class MotionPlanner(object):
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
 
+        print 'number static obstacles', self.n_stat_obst, self.n_dyn_obst
+
         # Create problem.
         problem = omg.Point2point(self._vehicle, environment, freeT=False)
         problem.set_options({'solver_options': {'ipopt': {
             'ipopt.linear_solver': 'ma57',
-            'ipopt.max_iter': 800,
+            'ipopt.max_iter': 1000,
             'ipopt.print_level': 0,
-            'ipopt.tol': 1e-5,
+            'ipopt.tol': 1e-4,
             'ipopt.warm_start_init_point': 'yes',
-            'ipopt.warm_start_bound_push': 1e-6,
-            'ipopt.warm_start_mult_bound_push': 1e-6,
+            'ipopt.warm_start_bound_push': 1e-8,
+            'ipopt.warm_start_mult_bound_push': 1e-8,
             'ipopt.mu_init': 1e-5,
             'ipopt.hessian_approximation': 'limited-memory'
             }}})
@@ -210,6 +212,7 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
+        print '\n cmd motionplanner', cmd
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
