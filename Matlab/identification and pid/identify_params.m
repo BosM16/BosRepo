@@ -8,7 +8,7 @@ fprintf('============ Start identification ============== \n')
 
 %% Settings & Execution
 options.all_figures = false;
-options.select_figures = true;
+options.select_figures = false;
 % options.fig_sel = (1:800);
 % options.fig_sel = (1:800);
 options.fig_sel = (1450:2200);

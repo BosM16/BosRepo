@@ -17,7 +17,7 @@ colors.yellow = [0.9290, 0.6940, 0.1250];
 set(0, 'DefaultLineLineWidth', 1.5);
 
 % Settings
-options.figures = false;
+options.figures = true;
 options.prints = false;
 options.range = false;
 options.low_i = false;
@@ -119,6 +119,11 @@ PIDparams.K = K;
 PIDparams.Kp = K*(1+Td/Ti);
 PIDparams.Ki = K/Ti;
 PIDparams.Kd = K*Td;
+
+% Chosen parameters (REMOVE THIS FOR ACTUAL CALCULATIONS!)
+% PIDparams.Kp = 100.4806;
+% PIDparams.Ki = 0;
+% PIDparams.Kd = 0;
 
 % Display calculated parameters in command window
 if options.prints
