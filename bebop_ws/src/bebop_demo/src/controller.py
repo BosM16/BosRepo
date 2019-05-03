@@ -410,8 +410,29 @@ class Controller(object):
             self.omg_index = int(self.omg_update_time/self._sample_time)
             self._init = False
 
-        if ((self.omg_index >= int(self.omg_update_time/self._sample_time))
-                or (self.omg_index >= len(self._traj['u'])-2)):
+        if (self.omg_index >= len(self._traj['u'])-2):
+            if self._new_trajectories:
+                    # Load fresh trajectories.
+                    self.load_trajectories()
+                    self._new_trajectories = False
+                    self._time += self.omg_index*self._sample_time
+                    self.pos_index = self.omg_index
+                    self.omg_index = 1
+
+                    # Trigger motion planner.
+                    self.fire_motionplanner()
+
+                    # Wait for new set of trajectories when calculation has failed.
+                    if not self.calc_succeeded:
+                        self._init = True
+                        self.safety_brake()
+                        return
+            else:
+                self.safety_brake()
+                self.omg_index += 1
+                return
+
+        if (self.omg_index >= int(self.omg_update_time/self._sample_time)):
             if self._new_trajectories:
                 # Load fresh trajectories.
                 self.load_trajectories()
@@ -419,6 +440,9 @@ class Controller(object):
                 self._time += self.omg_index*self._sample_time
                 self.pos_index = self.omg_index
                 self.omg_index = 1
+
+                # Trigger motion planner.
+                self.fire_motionplanner()
 
                 # Wait for new set of trajectories when calculation has failed.
                 if not self.calc_succeeded:
@@ -429,16 +453,13 @@ class Controller(object):
                 if self.overtime:
                     self.overtime_counter += 1
                     self.overtime = False
-
-                # Trigger motion planner.
-                self.fire_motionplanner()
+                    # self.omg_index = int(self.pos_index - self.omg_update_time/self._sample_time)
 
             else:
                 self.overtime = True
                 if self.overtime_counter > 3:
                     self.hover()
                     print highlight_yellow('---- WARNING - OVERTIME  ----')
-                return
 
         # publish current pose and velocity calculated by omg-tools
         pos = PointStamped()

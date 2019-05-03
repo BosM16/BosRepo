@@ -95,7 +95,6 @@ class MotionPlanner(object):
         room_width = rospy.get_param('motionplanner/room_width', 1.)
         room_depth = rospy.get_param('motionplanner/room_depth', 1.)
         room_height = rospy.get_param('motionplanner/room_height', 1.)
-        print 'mp room dim', room_width, room_depth, room_height
         room_origin_x = 0.
         room_origin_y = 0.
         room_origin_z = room_height/2
@@ -156,8 +155,6 @@ class MotionPlanner(object):
         environment = omg.Environment(room=room)
         environment.add_obstacle(self._obstacles)
 
-        print 'number static obstacles', self.n_stat_obst, self.n_dyn_obst
-
         # Create problem.
         problem = omg.Point2point(self._vehicle, environment, freeT=False)
         problem.set_options({'solver_options': {'ipopt': {
@@ -212,7 +209,6 @@ class MotionPlanner(object):
             cmd : contains data sent over Trigger topic.
         """
         # In case goal has changed: set new goal.
-        print '\n cmd motionplanner', cmd
         if cmd.goal_pos != self._goal:
             self._goal = cmd.goal_pos
             self._vehicle.set_initial_conditions(
