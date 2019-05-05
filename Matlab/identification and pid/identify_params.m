@@ -26,8 +26,8 @@ set(0, 'DefaultLineLineWidth', 1);
 % -----------------------------------------------------------------
 xmodel = identify("data/angle_identification_x","x","x",0.02,0.53,0.6,options,colors);
 % xmodel_slow = identify("data/identification_x_cut","x","x",0.02,0.53,0.6,options,colors);
-% ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
-% zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,0.6,options,colors);
+ymodel = identify("data/angle_identification_y","y","y",0.02,0.53,0.6,options,colors);
+zmodel = identify("data/vel_identification_z","z","z",0.02,0.3,0.6,options,colors);
 % yawmodel = identify("data/vel_identification_yaw_preprocessed","yaw",char(952),0.02,0.3,1.,options,colors);
 
 % IMPORTANT NOTE: cutoff freq for x and y is based on crossover frequency (iteratively).

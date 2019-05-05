@@ -6,7 +6,7 @@ close all
 clc
 set(0, 'DefaultLineLineWidth', 1.5);
 
-figures = true;
+figures = false;
 prints = true;
 
 % Colors

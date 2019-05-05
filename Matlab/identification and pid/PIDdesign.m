@@ -17,7 +17,7 @@ colors.yellow = [0.9290, 0.6940, 0.1250];
 set(0, 'DefaultLineLineWidth', 1.5);
 
 % Settings
-options.figures = true;
+options.figures = false;
 options.prints = false;
 options.range = false;
 options.low_i = false;
