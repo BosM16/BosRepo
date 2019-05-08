@@ -17,13 +17,21 @@ set(0, 'DefaultLineLineWidth', 1.1);
 
 
 %% Load data
-files = dir('data/*.mat');
+files = dir('data_new/*.mat');
+% files = dir('data_new/tracking_performance_ff_fb_slow.mat');
+
 
 % Plot computation times and calculate average and peak
 for file = files'
     data = load(file.name);
     
+    off = 0;
     % preprocess data to have the same length
+    data.real_path_x = data.real_path_x(1:end-off);
+    data.real_path_y = data.real_path_y(1:end-off);
+    data.real_path_z = data.real_path_z(1:end-off);
+ 
+    
     data.drawn_path_x = data.drawn_path_x(1:length(data.real_path_x));
     data.drawn_path_y = data.drawn_path_y(1:length(data.real_path_x));
     data.drawn_path_z = data.drawn_path_z(1:length(data.real_path_x));
@@ -32,6 +40,10 @@ for file = files'
     t = 0:0.01:(length(data.drawn_path_z)-1)*0.01;
     
     % tracking errors
+%     figure
+%     hold on
+%     plot(data.drawn_path_x)
+%     plot(data.real_path_x)
     ex = data.drawn_path_x - data.real_path_x;
     ey = data.drawn_path_y - data.real_path_y;
     ez = data.drawn_path_z - data.real_path_z;
@@ -81,8 +93,8 @@ for file = files'
     if prints
         fprintf('===================================================\n')
         display(file.name)
-        display(emag_avg)
         display(emag_peak)
+        display(emag_avg
     end
 end
 
