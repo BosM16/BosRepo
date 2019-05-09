@@ -115,8 +115,8 @@ class KeyPress(object):
             (result, pControllerState) = (
                 self.vrsystem.getControllerState(self.left_id))
             d = self.from_controller_state_to_dict(pControllerState)
-            print '\n left controller:', self.last_unPacketNum_left, d['unPacketNum']
-            print highlight_green('trigger value: ', d['trigger'])
+            # print '\n left controller:', self.last_unPacketNum_left, d['unPacketNum']
+            # print highlight_green('trigger value: ', d['trigger'])
             if (self.show_only_new_events and self.last_unPacketNum_left
                     != d['unPacketNum']):
                 self.last_unPacketNum_left = d['unPacketNum']
@@ -129,8 +129,8 @@ class KeyPress(object):
             (result, pControllerState) = (
                 self.vrsystem.getControllerState(self.right_id))
             d = self.from_controller_state_to_dict(pControllerState)
-            print 'right controller: ', self.last_unPacketNum_right, d['unPacketNum']
-            print highlight_green('trigger value: ', d['trigger'])
+            # print 'right controller: ', self.last_unPacketNum_right, d['unPacketNum']
+            # print highlight_green('trigger value: ', d['trigger'])
             if (self.show_only_new_events and self.last_unPacketNum_right
                     != d['unPacketNum']):
                 self.last_unPacketNum_right = d['unPacketNum']
@@ -153,8 +153,7 @@ class KeyPress(object):
 
                 print '\n left controller:', self.last_unPacketNum_left, d['unPacketNum']
                 print highlight_green('trigger value: ', d['trigger'])
-                if (self.show_only_new_events and self.last_unPacketNum_left
-                        != d['unPacketNum']):
+                if (self.show_only_new_events):
                     self.last_unPacketNum_left = d['unPacketNum']
                     # print("Left controller:")
                     # self.pp.pprint(d)
@@ -169,8 +168,7 @@ class KeyPress(object):
 
                 print 'right controller: ', self.last_unPacketNum_right, d['unPacketNum']
                 print highlight_green('trigger value: ', d['trigger'])
-                if (self.show_only_new_events and self.last_unPacketNum_right
-                        != d['unPacketNum']):
+                if (self.show_only_new_events):
                     self.last_unPacketNum_right = d['unPacketNum']
                     # print("Right controller:")
                     # self.pp.pprint(d)

@@ -217,7 +217,7 @@ class Controller(object):
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array(
                     [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.desired_yaw = np.pi/2.
+        self.desired_yaw = 0.  # np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.fb_cmd_prev = Twist()
@@ -1036,9 +1036,15 @@ class Controller(object):
                           min(self.room_height - self.drone_radius,
                               (self.ctrl_l_pos.position.z + drag_offset.z))))
                 # Velocity setpoint
-                self.drag_velocity.linear.x = self.ctrl_l_vel.linear.x
-                self.drag_velocity.linear.y = self.ctrl_l_vel.linear.y
-                self.drag_velocity.linear.z = self.ctrl_l_vel.linear.z
+                self.drag_velocity.linear.x = (self.ctrl_l_vel.linear.x*(
+                    abs(self.ctrl_l_pos.position.x + drag_offset.x) < (
+                        self.room_width/2. - self.drone_radius)))
+                self.drag_velocity.linear.y = (self.ctrl_l_vel.linear.y*(
+                    abs(self.ctrl_l_pos.position.y + drag_offset.y) < (
+                        self.room_depth/2. - self.drone_radius)))
+                self.drag_velocity.linear.z = (self.ctrl_l_vel.linear.z*(
+                    abs(self.ctrl_l_pos.position.z + drag_offset.z) < (
+                        self.room_height - self.drone_radius)))
 
                 self.hover(self.drag_velocity)
                 self.rate.sleep()
@@ -1186,7 +1192,7 @@ class Controller(object):
         hard term constraint op false?
 
         '''
-        radius = 0.75
+        radius = 0.40
         self.dynamic_obst = [Obstacle(obst_type=String(
                             data="inf cylinder"),
                             shape=[radius],
