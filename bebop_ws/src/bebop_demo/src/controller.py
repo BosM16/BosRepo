@@ -72,12 +72,14 @@ class Controller(object):
         inverted, LPF filtered velocity system.
 
         '''
-        Ax = np.array([[2.924615161772681, -1.426022503893993, 0.927378249329201],
-                       [2.0,    0.,    0.],
-                       [0.,     0.5,   0.]])
-        Ay = np.array([[2.924615161772681, -1.426022503893993, 0.927378249329201],
-                       [2.0,    0.,    0.],
-                       [0.,     0.5,   0.]])
+        Ax = np.array([
+                    [2.924615161772681, -1.426022503893993, 0.927378249329201],
+                    [2.0,    0.,    0.],
+                    [0.,     0.5,   0.]])
+        Ay = np.array([
+                    [2.924615161772681, -1.426022503893993, 0.927378249329201],
+                    [2.0,    0.,    0.],
+                    [0.,     0.5,   0.]])
         Az = np.array([[1.946703849484298, -0.948087691346676],
                        [1.0,    0.]])
 
@@ -92,9 +94,14 @@ class Controller(object):
         self.B[6, 2] = 0.25
 
         self.C = np.zeros([3, 8])
-        self.C[0, 0:3] = [0.093794142767462, -0.091022743092107, 0.088262872564127]
-        self.C[1, 3:6] = [0.110260524508392, -0.107520541682973, 0.104800707877982]
-        self.C[2, 6:8] = [0.094457321516314, -0.088810404097729]
+        self.C[0, 0:3] = [0.093794142767462,
+                          -0.091022743092107,
+                          0.088262872564127]
+        self.C[1, 3:6] = [0.110260524508392,
+                          -0.107520541682973,
+                          0.104800707877982]
+        self.C[2, 6:8] = [0.094457321516314,
+                          -0.088810404097729]
 
         self.D = np.array([[0.011815313012427, 0.0, 0.0],
                            [0.0, 0.013957040852033, 0.0],
@@ -422,7 +429,8 @@ class Controller(object):
                     # Trigger motion planner.
                     self.fire_motionplanner()
 
-                    # Wait for new set of trajectories when calculation has failed.
+                    # Wait for new set of trajectories when calculation
+                    # has failed.
                     if not self.calc_succeeded:
                         self._init = True
                         self.safety_brake()
@@ -449,11 +457,11 @@ class Controller(object):
                     self._init = True
                     self.safety_brake()
                     return
-                # Raise overtime counter when calculations were not ready in time.
+                # Raise overtime counter when calculations were not ready
+                # in time.
                 if self.overtime:
                     self.overtime_counter += 1
                     self.overtime = False
-                    # self.omg_index = int(self.pos_index - self.omg_update_time/self._sample_time)
 
             else:
                 self.overtime = True
@@ -562,7 +570,8 @@ class Controller(object):
         if not (state.data == self.state):
             self.state = state.data
             self.state_changed = True
-            # If new state received before old one is finished, kill current state.
+            # If new state received before old one is finished,
+            # kill current state.
             if self.executing_state:
                 self.state_killed = True
         else:
@@ -1330,8 +1339,6 @@ class Controller(object):
 
             pos_error = self.transform_point(pos_error, "world", "world_rot")
             vel_error = self.transform_point(vel_error, "world", "world_rot")
-            print '\n, feedbeck position error', self.Kp_x*pos_error.point.x, self.Kp_y*pos_error.point.y
-            print 'feedbeck velocity error', self.Kd_x*vel_error.point.x, self.Kd_y*vel_error.point.y
 
             fb_cmd.linear.x = max(- self.max_input, min(self.max_input, (
                     self.Kp_x*pos_error.point.x +

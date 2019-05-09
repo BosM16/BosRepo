@@ -151,8 +151,8 @@ class KeyPress(object):
                     self.vrsystem.getControllerState(self.left_id))
                 d = self.from_controller_state_to_dict(pControllerState)
 
-                print '\n left controller:', self.last_unPacketNum_left, d['unPacketNum']
-                print highlight_green('trigger value: ', d['trigger'])
+                # print '\n left controller:', self.last_unPacketNum_left, d['unPacketNum']
+                # print highlight_green('trigger value: ', d['trigger'])
                 if (self.show_only_new_events):
                     self.last_unPacketNum_left = d['unPacketNum']
                     # print("Left controller:")
@@ -166,8 +166,8 @@ class KeyPress(object):
                     self.vrsystem.getControllerState(self.right_id))
                 d = self.from_controller_state_to_dict(pControllerState)
 
-                print 'right controller: ', self.last_unPacketNum_right, d['unPacketNum']
-                print highlight_green('trigger value: ', d['trigger'])
+                # print 'right controller: ', self.last_unPacketNum_right, d['unPacketNum']
+                # print highlight_green('trigger value: ', d['trigger'])
                 if (self.show_only_new_events):
                     self.last_unPacketNum_right = d['unPacketNum']
                     # print("Right controller:")
