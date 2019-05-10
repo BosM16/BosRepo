@@ -224,7 +224,7 @@ class Controller(object):
                            'x': [0.0], 'y': [0.0], 'z': [0.0]}
         self.X = np.array(
                     [[0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0], [0.0]])
-        self.desired_yaw = 0.  # np.pi/2.
+        self.desired_yaw = np.pi/2.
         self.real_yaw = 0.0
         self.pos_nrm = np.inf
         self.fb_cmd_prev = Twist()
