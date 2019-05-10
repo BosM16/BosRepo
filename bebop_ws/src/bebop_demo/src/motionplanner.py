@@ -52,6 +52,8 @@ class MotionPlanner(object):
                 difficult_obst
         """
         mp_configured = False
+        self.n_stat_obst = len(data.static_obstacles)
+        self.n_dyn_obst = len(data.dyn_obstacles)
 
         if data.difficult_obst:
             self.omg_update_time = rospy.get_param(
@@ -80,6 +82,12 @@ class MotionPlanner(object):
             amax = rospy.get_param(
                 'motionplanner/omg_amax', 0.3)
 
+        if self.n_dyn_obst:
+            safety_margin = rospy.get_param(
+                'motionplanner/safety_margin_dyn_obst', 0.2)
+            safety_weight = rospy.get_param(
+                 'motionplanner/safety_weight_dyn_obst', 10.)
+
         self._vehicle = omg.Holonomic3D(
             shapes=omg.Sphere(drone_radius),
             bounds={'vmax': vmax, 'vmin': -vmax,
@@ -103,7 +111,6 @@ class MotionPlanner(object):
                 'position': [room_origin_x, room_origin_y, room_origin_z]}
 
         # Static obstacles.
-        self.n_stat_obst = len(data.static_obstacles)
         for k, obst in enumerate(data.static_obstacles):
             if obst.obst_type.data == "inf cylinder":
                 # 2D shape is extended infinitely along z.
@@ -144,7 +151,6 @@ class MotionPlanner(object):
                                         {'position': position}, shape=shape))
 
         # Dynamic obstacles.
-        self.n_dyn_obst = len(data.dyn_obstacles)
         for obst in data.dyn_obstacles:
             shape = omg.Circle(obst.shape[0])
             position = [obst.pose[0], obst.pose[1]]
@@ -169,7 +175,7 @@ class MotionPlanner(object):
             'ipopt.hessian_approximation': 'limited-memory'
             }}})
 
-        if self.n_dyn_obst != 0:
+        if self.n_dyn_obst:
             problem.set_options({
                 'hard_term_con': False, 'horizon_time': self.horizon_time,
                 'verbose': 1.})

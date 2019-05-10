@@ -52,7 +52,6 @@ class KeyPress(object):
         rospy.init_node('ctrl_keypress')
 
         self.reading_rate_hz = 10
-        self.show_only_new_events = True
         self.last_unPacketNum_left = 0
         self.last_unPacketNum_right = 0
         self.vive_loc_ready = False
@@ -117,8 +116,7 @@ class KeyPress(object):
             d = self.from_controller_state_to_dict(pControllerState)
             # print '\n left controller:', self.last_unPacketNum_left, d['unPacketNum']
             # print highlight_green('trigger value: ', d['trigger'])
-            if (self.show_only_new_events and self.last_unPacketNum_left
-                    != d['unPacketNum']):
+            if (self.last_unPacketNum_left != d['unPacketNum']):
                 self.last_unPacketNum_left = d['unPacketNum']
                 # print("Left controller:")
                 # self.pp.pprint(d)
@@ -131,8 +129,7 @@ class KeyPress(object):
             d = self.from_controller_state_to_dict(pControllerState)
             # print 'right controller: ', self.last_unPacketNum_right, d['unPacketNum']
             # print highlight_green('trigger value: ', d['trigger'])
-            if (self.show_only_new_events and self.last_unPacketNum_right
-                    != d['unPacketNum']):
+            if (self.last_unPacketNum_right != d['unPacketNum']):
                 self.last_unPacketNum_right = d['unPacketNum']
                 if d['trigger'] == 1.0:
                     print highlight_blue(' Right trigger ')
@@ -153,7 +150,9 @@ class KeyPress(object):
 
                 # print '\n left controller:', self.last_unPacketNum_left, d['unPacketNum']
                 # print highlight_green('trigger value: ', d['trigger'])
-                if (self.show_only_new_events):
+                # print 'trackpad', d['trackpad_pressed']
+                # print 'trigger', d['trigger']
+                if (self.last_unPacketNum_left != d['unPacketNum']):
                     self.last_unPacketNum_left = d['unPacketNum']
                     # print("Left controller:")
                     # self.pp.pprint(d)
@@ -168,7 +167,9 @@ class KeyPress(object):
 
                 # print 'right controller: ', self.last_unPacketNum_right, d['unPacketNum']
                 # print highlight_green('trigger value: ', d['trigger'])
-                if (self.show_only_new_events):
+                # print 'trackpad', d['trackpad_pressed']
+                # print 'trigger', d['trigger']
+                if (self.last_unPacketNum_right != d['unPacketNum']):
                     self.last_unPacketNum_right = d['unPacketNum']
                     # print("Right controller:")
                     # self.pp.pprint(d)

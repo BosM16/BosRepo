@@ -8,7 +8,7 @@
   <param name="controller/sample_time" value="0.01" />
   <param name="controller/LPF_cutoff" value="1.0" />
   <param name="controller/LPF_order" value="3" />
-  <param name='controller/goal_reached_pos_tol' value="0.10" />
+  <param name='controller/goal_reached_pos_tol' value="0.05" />
   <param name='controller/goal_reached_pos_tol_slow' value="0.2" />
   <param name='controller/goal_reached_angle_tol' value="0.05" />
   <param name='controller/standard_height' value="1.7" />
@@ -109,8 +109,10 @@
   <param name='motionplanner/drone_radius_small' value="0.20" />
   <param name='motionplanner/safety_margin' value="0.40" />
   <param name='motionplanner/safety_margin_small' value="0.10" />
+  <param name='motionplanner/safety_margin_dyn_obst' value="0.10" />
   <param name='motionplanner/safety_weight' value="20" />
   <param name='motionplanner/safety_weight_slow' value="10" />
+  <param name='motionplanner/safety_weight_dyn_obst' value="10" />
   <param name='motionplanner/room_width' value="5.5" />
   <param name='motionplanner/room_depth' value="3.6" />
   <param name='motionplanner/room_height' value="2.5" />

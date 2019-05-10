@@ -1201,7 +1201,7 @@ class Controller(object):
         hard term constraint op false?
 
         '''
-        radius = 0.40
+        radius = 0.50
         self.dynamic_obst = [Obstacle(obst_type=String(
                             data="inf cylinder"),
                             shape=[radius],
@@ -1287,6 +1287,7 @@ class Controller(object):
         fb_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
         if self.state == 'follow path':
+            print 'state follow path'
             self.full_cmd.twist.linear.x = max(min((
                     self.ff_cmd.linear.x + fb_cmd.linear.x),
                     self.max_input), - self.max_input)
@@ -1529,7 +1530,7 @@ class Controller(object):
         drawing when trigger is pressed.
         '''
         self.ctrl_l_pos = ctrl_pose.pose
-        if (self.state == 'draw path' and self.draw):
+        if (self.state in {"draw path slow", "draw path fast"} and self.draw):
             self.draw_ctrl_path()
 
     def get_ctrl_l_vel(self, ctrl_vel):
@@ -1542,7 +1543,7 @@ class Controller(object):
         set self.state_changed to true to switch states.
         '''
         if trackpad_pressed.data and not self.trackpad_held:
-            if (self.state == "draw path"):
+            if (self.state in {"draw path slow", "draw path fast"}):
                 self.stop_drawing = True
             elif (self.state in {"drag drone",
                                  "viscous fluid",
@@ -1585,7 +1586,7 @@ class Controller(object):
         enables dragging of the drone.
         '''
 
-        if self.state == "draw path":
+        if self.state in {"draw path slow", "draw path fast"}:
             # Start drawing and saving path
             if (button_pushed.data and not self.draw):
                 self.drawn_pos_x = []
