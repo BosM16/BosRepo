@@ -885,7 +885,7 @@ class Controller(object):
             if self.draw:
                 # Erase previous markers in Rviz.
                 self.reset_markers()
-                padding = 100
+                padding = 10
                 self.drawn_pos_x = (
                                 [self.drawn_pos_x[0] for i in range(padding)]
                                 + self.drawn_pos_x +
