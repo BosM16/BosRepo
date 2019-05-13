@@ -477,8 +477,8 @@ class Controller(object):
 
         # Combine feedback and feedforward commands.
         self.combine_ff_fb(pos, vel)
-        self.publish_real_input_vector(
-                    self.drone_pose_est.position, self.full_cmd)
+        # self.publish_real_input_vector(
+        #             self.drone_pose_est.position, self.full_cmd.twist)
 
         self.omg_index += 1
         self.hover_setpoint = self.drone_pose_est
@@ -549,8 +549,8 @@ class Controller(object):
         vel.twist.linear.y = self.drawn_vel_y[index]
         vel.twist.linear.z = self.drawn_vel_z[index]
         self.combine_ff_fb(pos, vel)
-        self.publish_real_input_vector(
-                    self.drone_pose_est.position, self.full_cmd)
+        # self.publish_real_input_vector(
+        #             self.drone_pose_est.position, self.full_cmd.twist)
 
     ###################
     # State functions #
@@ -610,7 +610,7 @@ class Controller(object):
                 rospy.sleep(0.1)
 
         elif self.state == "land" and self.airborne:
-            io.savemat('../ff_model_check.mat', self.model_meas)
+            # io.savemat('../ff_model_check.mat', self.model_meas)
             rospy.sleep(0.1)
             self.land.publish(Empty())
             while self.airborne and (
@@ -875,6 +875,7 @@ class Controller(object):
         self.tracking_meas['input_x'] = []
         self.tracking_meas['input_y'] = []
         self.tracking_meas['input_z'] = []
+        self.tracking_meas['time'] = []
 
         self.stop_drawing = False
         self.draw = True
@@ -884,7 +885,7 @@ class Controller(object):
             if self.draw:
                 # Erase previous markers in Rviz.
                 self.reset_markers()
-                padding = 10
+                padding = 100
                 self.drawn_pos_x = (
                                 [self.drawn_pos_x[0] for i in range(padding)]
                                 + self.drawn_pos_x +
@@ -952,12 +953,12 @@ class Controller(object):
         goal.position.y = self.drawn_pos_y[0]
         goal.position.z = self.drawn_pos_z[0]
 
-        self.model_meas = {}
-        (self.model_meas['in_x'], self.model_meas['in_y'],
-         self.model_meas['in_z']) = [], [], []
-        (self.model_meas['out_x'], self.model_meas['out_y'],
-         self.model_meas['out_z']) = [], [], []
-        self.model_meas['time'] = []
+        # self.model_meas = {}
+        # (self.model_meas['in_x'], self.model_meas['in_y'],
+        #  self.model_meas['in_z']) = [], [], []
+        # (self.model_meas['out_x'], self.model_meas['out_y'],
+        #  self.model_meas['out_z']) = [], [], []
+        # self.model_meas['time'] = []
 
         self.set_omg_goal(goal)
         self.omg_fly()
@@ -1182,8 +1183,8 @@ class Controller(object):
                 break
             rospy.sleep(0.1)
         self.gamepad_input.unregister()
-        print yellow(' Length of measurement: ', len(self.meas['meas_pos_x']))
-        io.savemat('../kalman_check.mat', self.meas)
+        # print yellow(' Length of measurement: ', len(self.meas['meas_pos_x']))
+        # io.savemat('../kalman_check.mat', self.meas)
 
     def dodge_dyn_obst(self):
         '''Uses OMG-tools to dodge a moving obstacle coming towards the drone
@@ -1265,9 +1266,9 @@ class Controller(object):
                       [self.ff_velocity.twist.linear.y],
                       [self.ff_velocity.twist.linear.z]])
 
-        self.model_meas['in_x'].append(self.ff_velocity.twist.linear.x)
-        self.model_meas['in_y'].append(self.ff_velocity.twist.linear.y)
-        self.model_meas['in_z'].append(self.ff_velocity.twist.linear.z)
+        # self.model_meas['in_x'].append(self.ff_velocity.twist.linear.x)
+        # self.model_meas['in_y'].append(self.ff_velocity.twist.linear.y)
+        # self.model_meas['in_z'].append(self.ff_velocity.twist.linear.z)
 
         Y = np.matmul(self.C, self.X) + np.matmul(self.D, u)
         self.X = np.matmul(self.A, self.X) + np.matmul(self.B, u)
@@ -1283,11 +1284,12 @@ class Controller(object):
             self.tracking_meas['input_x'].append(self.ff_cmd.linear.x)
             self.tracking_meas['input_y'].append(self.ff_cmd.linear.y)
             self.tracking_meas['input_z'].append(self.ff_cmd.linear.z)
+            self.tracking_meas['time'].append(rospy.get_time())
 
-        self.model_meas['out_x'].append(self.ff_cmd.linear.x)
-        self.model_meas['out_y'].append(self.ff_cmd.linear.y)
-        self.model_meas['out_z'].append(self.ff_cmd.linear.z)
-        self.model_meas['time'].append(rospy.get_time())
+        # self.model_meas['out_x'].append(self.ff_cmd.linear.x)
+        # self.model_meas['out_y'].append(self.ff_cmd.linear.y)
+        # self.model_meas['out_z'].append(self.ff_cmd.linear.z)
+        # self.model_meas['time'].append(rospy.get_time())
 
     def combine_ff_fb(self, pos_desired, vel_desired):
         '''Combines the feedforward and feedback commands to generate the full
@@ -1296,6 +1298,8 @@ class Controller(object):
         # Transform feedback desired position and velocity from world frame to
         # world_rot frame
         fb_cmd = self.feedbeck(pos_desired, vel_desired.twist)
+        self.publish_real_input_vector(
+                    self.drone_pose_est.position, self.ff_cmd)
 
         if self.state == 'follow path':
             self.full_cmd.twist.linear.x = max(min((
@@ -1349,12 +1353,12 @@ class Controller(object):
                     fb_cmd.angular.z),
                     self.max_input), - self.max_input)
 
-        if self.state == 'follow path':
-            if self.ff_cmd.linear.y > 0:
-                print highlight_green('feedforward input cmd ', self.ff_cmd.linear.y)
-            else:
-                print highlight_red('feedforward input cmd', self.ff_cmd.linear.y)
-            print 'full input cmd', self.full_cmd.twist.linear.y
+        # if self.state == 'follow path':
+        #     if self.ff_cmd.linear.y > 0:
+        #         print highlight_green('feedforward input cmd ', self.ff_cmd.linear.y)
+        #     else:
+        #         print highlight_red('feedforward input cmd', self.ff_cmd.linear.y)
+        #     print 'full input cmd', self.full_cmd.twist.linear.y
 
     def feedbeck(self, pos_desired, vel_desired):
         '''Whenever the target is reached, apply position feedback to the
@@ -2028,9 +2032,9 @@ class Controller(object):
         self.real_input_vector.header.stamp = rospy.get_rostime()
 
         point_start = Point(x=pos.x, y=pos.y, z=pos.z)
-        point_end = Point(x=(pos.x - 10*input_cmd.twist.linear.y),
-                          y=(pos.y + 10*input_cmd.twist.linear.x),
-                          z=(pos.z + 10*input_cmd.twist.linear.z))
+        point_end = Point(x=(pos.x - 10*input_cmd.linear.y),
+                          y=(pos.y + 10*input_cmd.linear.x),
+                          z=(pos.z + 10*input_cmd.linear.z))
         self.real_input_vector.points = [point_start, point_end]
 
         self.real_input_vector_pub.publish(self.real_input_vector)
