@@ -1290,7 +1290,6 @@ class Controller(object):
         fb_cmd = self.feedbeck(pos_desired, vel_desired.twist)
 
         if self.state == 'follow path':
-            print 'state follow path'
             self.full_cmd.twist.linear.x = max(min((
                     self.ff_cmd.linear.x + fb_cmd.linear.x),
                     self.max_input), - self.max_input)

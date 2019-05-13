@@ -103,7 +103,7 @@
   <param name='motionplanner/omg_amax' value="0.8" />
   <param name='motionplanner/omg_vmax_low' value="0.6" />
   <param name='motionplanner/omg_amax_low' value="0.4" />
-  <param name='motionplanner/draw_vmax' value="2.0" />
+  <param name='motionplanner/draw_vmax_fast' value="2.0" />
   <param name='motionplanner/draw_vmax_low' value="1.2" />
   <param name='motionplanner/drone_radius' value="0.225" />
   <param name='motionplanner/drone_radius_small' value="0.20" />
