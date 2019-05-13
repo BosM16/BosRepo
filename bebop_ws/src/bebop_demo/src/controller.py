@@ -343,8 +343,8 @@ class Controller(object):
 
         self._goal = goal
         # Used to store calculation time of motionplanner.
-        self.calc_time = {}
-        self.calc_time['time'] = []
+        # self.calc_time = {}
+        # self.calc_time['time'] = []
         self.fire_motionplanner()
 
         self._init = True
@@ -361,7 +361,7 @@ class Controller(object):
         trigger.dyn_obstacles = self.dynamic_obst
         trigger.current_time = self._time
 
-        self.fire_time = rospy.get_rostime()
+        # self.fire_time = rospy.get_rostime()
 
         self._mp_trigger_topic.publish(trigger)
 
@@ -375,9 +375,9 @@ class Controller(object):
         self.store_trajectories(data.u_traj, data.v_traj, data.w_traj,
                                 data.x_traj, data.y_traj, data.z_traj,
                                 data.success)
-        self.receive_time = rospy.get_rostime()
-        self.calc_time['time'].append(
-                                (self.receive_time - self.fire_time).to_sec())
+        # self.receive_time = rospy.get_rostime()
+        # self.calc_time['time'].append(
+        #                         (self.receive_time - self.fire_time).to_sec())
 
     def omg_update(self):
         '''
@@ -578,6 +578,7 @@ class Controller(object):
             print yellow(' Controller already in the correct state!')
 
         # When going to standby, remove markers in Rviz from previous task.
+        # GEBEURT TOCH NOOIT?
         if state.data == "standby":
             self.reset_markers()
 
@@ -1219,16 +1220,15 @@ class Controller(object):
         while not (self.state_changed or (
                 rospy.is_shutdown() or self.state_killed)):
             # Becomes True when goal is set.
-            if self.startup:
-                # Update dynamic obstacle info for when motionplanner is fired.
-                self.dynamic_obst = [Obstacle(obst_type=String(
-                                      data="inf cylinder"),
-                                      shape=[radius],
-                                      pose=[self.ctrl_r_pos.position.x,
-                                            self.ctrl_r_pos.position.y],
-                                      velocity=[self.ctrl_r_vel.linear.x,
-                                                self.ctrl_r_vel.linear.y])]
-                self.omg_update()
+            # Update dynamic obstacle info for when motionplanner is fired.
+            self.dynamic_obst = [Obstacle(obst_type=String(
+                                  data="inf cylinder"),
+                                  shape=[radius],
+                                  pose=[self.ctrl_r_pos.position.x,
+                                        self.ctrl_r_pos.position.y],
+                                  velocity=[self.ctrl_r_vel.linear.x,
+                                            self.ctrl_r_vel.linear.y])]
+            self.omg_update()
             self.rate.sleep()
         self.dynamic_obst = []
         self.config_mp()
@@ -1236,7 +1236,7 @@ class Controller(object):
         self.reset_pid_gains()
         if not self.state_killed:
             self.state_changed = False
-        self.startup = False
+        self.state_killed = False
 
     ####################
     # Helper functions #
@@ -1253,7 +1253,7 @@ class Controller(object):
 
         self.target_reached = (pos_nrm < self.pos_nrm_tol)
         if self.target_reached:
-            io.savemat('../mpc_calc_time.mat', self.calc_time)
+            # io.savemat('../mpc_calc_time.mat', self.calc_time)
             print yellow('=========================')
             print yellow('==== Target Reached! ====')
             print yellow('=========================')
