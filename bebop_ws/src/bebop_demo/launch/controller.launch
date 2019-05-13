@@ -6,7 +6,7 @@
   <param name="controller/omg_update_time" value="0.25" />
   <param name="controller/omg_update_time_slow" value="0.5" />
   <param name="controller/sample_time" value="0.01" />
-  <param name="controller/LPF_cutoff" value="1.0" />
+  <param name="controller/LPF_cutoff" value="0.6" />
   <param name="controller/LPF_order" value="3" />
   <param name='controller/goal_reached_pos_tol' value="0.05" />
   <param name='controller/goal_reached_pos_tol_slow' value="0.2" />
@@ -107,7 +107,7 @@
   <param name='motionplanner/draw_vmax_low' value="1.2" />
   <param name='motionplanner/drone_radius' value="0.225" />
   <param name='motionplanner/drone_radius_small' value="0.20" />
-  <param name='motionplanner/safety_margin' value="0.40" />
+  <param name='motionplanner/safety_margin' value="0.20" />
   <param name='motionplanner/safety_margin_small' value="0.10" />
   <param name='motionplanner/safety_margin_dyn_obst' value="0.10" />
   <param name='motionplanner/safety_weight' value="20" />

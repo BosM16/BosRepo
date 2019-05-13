@@ -1046,15 +1046,18 @@ class Controller(object):
                           min(self.room_height - self.drone_radius,
                               (self.ctrl_l_pos.position.z + drag_offset.z))))
                 # Velocity setpoint
-                self.drag_velocity.linear.x = (self.ctrl_l_vel.linear.x*(
-                    abs(self.ctrl_l_pos.position.x + drag_offset.x) < (
-                        self.room_width/2. - self.drone_radius)))
-                self.drag_velocity.linear.y = (self.ctrl_l_vel.linear.y*(
-                    abs(self.ctrl_l_pos.position.y + drag_offset.y) < (
-                        self.room_depth/2. - self.drone_radius)))
-                self.drag_velocity.linear.z = (self.ctrl_l_vel.linear.z*(
-                    abs(self.ctrl_l_pos.position.z + drag_offset.z) < (
-                        self.room_height - self.drone_radius)))
+                # self.drag_velocity.linear.x = (self.ctrl_l_vel.linear.x*(
+                #     abs(self.ctrl_l_pos.position.x + drag_offset.x) < (
+                #         self.room_width/2. - self.drone_radius)))
+                # self.drag_velocity.linear.y = (self.ctrl_l_vel.linear.y*(
+                #     abs(self.ctrl_l_pos.position.y + drag_offset.y) < (
+                #         self.room_depth/2. - self.drone_radius)))
+                # self.drag_velocity.linear.z = (self.ctrl_l_vel.linear.z*(
+                #     abs(self.ctrl_l_pos.position.z + drag_offset.z) < (
+                #         self.room_height - self.drone_radius)))
+                self.drag_velocity.linear.x = self.ctrl_l_vel.linear.x
+                self.drag_velocity.linear.y = self.ctrl_l_vel.linear.y
+                self.drag_velocity.linear.z = self.ctrl_l_vel.linear.z
 
                 self.hover(self.drag_velocity)
                 self.rate.sleep()
@@ -1732,7 +1735,7 @@ class Controller(object):
         x_vec.reverse()
         y_vec.reverse()
         z_vec.reverse()
-        # Add padding and filter
+        # Add padding and filter.
         dx = (3./2.*x_vec[-1] - 2.*x_vec[-2] + 1./2.*x_vec[-3])
         dy = (3./2.*y_vec[-1] - 2.*y_vec[-2] + 1./2.*y_vec[-3])
         dz = (3./2.*z_vec[-1] - 2.*z_vec[-2] + 1./2.*z_vec[-3])
