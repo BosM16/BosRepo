@@ -1033,7 +1033,7 @@ class Controller(object):
                 # hover position and velocity setpoint, until trigger is
                 # released.
 
-                # Position setpoint
+                # Position setpoint.
                 self.hover_setpoint.position = Point(
                     x=max(- (self.room_width/2. - self.drone_radius),
                           min((self.room_width/2. - self.drone_radius),
@@ -1044,10 +1044,23 @@ class Controller(object):
                     z=max(self.drone_radius * 2,
                           min(self.room_height - self.drone_radius,
                               (self.ctrl_l_pos.position.z + drag_offset.z))))
-                # Velocity setpoint
-                self.drag_velocity.linear.x = self.ctrl_l_vel.linear.x
-                self.drag_velocity.linear.y = self.ctrl_l_vel.linear.y
-                self.drag_velocity.linear.z = self.ctrl_l_vel.linear.z
+
+                # Safety check on velocity.
+                max_speed = 2
+                if (max(self.ctrl_l_vel.linear.x,
+                        self.ctrl_l_vel.linear.y,
+                        self.ctrl_l_vel.linear.z) > max_speed):
+                    self.ctrl_l_vel = Twist()
+                # Velocity setpoint.
+                self.drag_velocity.linear.x = (self.ctrl_l_vel.linear.x*(
+                    abs(self.ctrl_l_pos.position.x + drag_offset.x) < (
+                        self.room_width/2. - self.drone_radius)))
+                self.drag_velocity.linear.y = (self.ctrl_l_vel.linear.y*(
+                    abs(self.ctrl_l_pos.position.y + drag_offset.y) < (
+                        self.room_depth/2. - self.drone_radius)))
+                self.drag_velocity.linear.z = (self.ctrl_l_vel.linear.z*(
+                    abs(self.ctrl_l_pos.position.z + drag_offset.z) < (
+                        self.room_height - self.drone_radius)))
 
                 self.hover(self.drag_velocity)
                 self.rate.sleep()
