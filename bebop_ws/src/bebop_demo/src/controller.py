@@ -875,7 +875,7 @@ class Controller(object):
         print highlight_green('---- Start drawing path with left Vive'
                               ' controller while holding trigger ----')
         self.stop_drawing = False
-        if self.state == "draw traj fast":
+        if self.state == "draw path fast":
             self.max_vel = rospy.get_param('motionplanner/draw_vmax_fast', 0.5)
         else:
             self.max_vel = rospy.get_param('motionplanner/draw_vmax_low', 0.5)
@@ -1046,18 +1046,15 @@ class Controller(object):
                           min(self.room_height - self.drone_radius,
                               (self.ctrl_l_pos.position.z + drag_offset.z))))
                 # Velocity setpoint
-                # self.drag_velocity.linear.x = (self.ctrl_l_vel.linear.x*(
-                #     abs(self.ctrl_l_pos.position.x + drag_offset.x) < (
-                #         self.room_width/2. - self.drone_radius)))
-                # self.drag_velocity.linear.y = (self.ctrl_l_vel.linear.y*(
-                #     abs(self.ctrl_l_pos.position.y + drag_offset.y) < (
-                #         self.room_depth/2. - self.drone_radius)))
-                # self.drag_velocity.linear.z = (self.ctrl_l_vel.linear.z*(
-                #     abs(self.ctrl_l_pos.position.z + drag_offset.z) < (
-                #         self.room_height - self.drone_radius)))
-                self.drag_velocity.linear.x = self.ctrl_l_vel.linear.x
-                self.drag_velocity.linear.y = self.ctrl_l_vel.linear.y
-                self.drag_velocity.linear.z = self.ctrl_l_vel.linear.z
+                self.drag_velocity.linear.x = (self.ctrl_l_vel.linear.x*(
+                    abs(self.ctrl_l_pos.position.x + drag_offset.x) < (
+                        self.room_width/2. - self.drone_radius)))
+                self.drag_velocity.linear.y = (self.ctrl_l_vel.linear.y*(
+                    abs(self.ctrl_l_pos.position.y + drag_offset.y) < (
+                        self.room_depth/2. - self.drone_radius)))
+                self.drag_velocity.linear.z = (self.ctrl_l_vel.linear.z*(
+                    abs(self.ctrl_l_pos.position.z + drag_offset.z) < (
+                        self.room_height - self.drone_radius)))
 
                 self.hover(self.drag_velocity)
                 self.rate.sleep()
@@ -1199,11 +1196,6 @@ class Controller(object):
     def dodge_dyn_obst(self):
         '''Uses OMG-tools to dodge a moving obstacle coming towards the drone
         and returns back to original position when possible.
-
-        dikke straal aanpassen
-        dyn obst in omg-tools steken
-        hard term constraint op false?
-
         '''
         radius = 0.50
         self.dynamic_obst = [Obstacle(obst_type=String(
