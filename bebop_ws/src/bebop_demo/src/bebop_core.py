@@ -80,8 +80,7 @@ class Demo(object):
             "undamped spring": ["undamped spring", "reset PID"],
             "viscous fluid": ["viscous fluid", "reset PID"],
             "gamepad flying": ["gamepad flying"],
-            "dodge dynamic obstacle": ["dodge dyn obst",
-                                       "configure motionplanner"]}
+            "dodge dynamic obstacle": ["dodge dyn obst"]}
 
         self.pose_pub = rospy.Publisher(
             'world_model/yhat', PointStamped, queue_size=1)

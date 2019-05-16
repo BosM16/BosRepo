@@ -863,7 +863,12 @@ class Controller(object):
                 # Determine whether goal has been reached.
                 self.check_goal_reached()
             self.rate.sleep()
-        self.hover_setpoint = self.drone_pose_est
+        if self.state == "follow path":
+            self.hover_setpoint.position = Point(x=self.drawn_pos_x[0],
+                                                 y=self.drawn_pos_y[0],
+                                                 z=self.drawn_pos_z[0])
+        else:
+            self.hover_setpoint = self.drone_pose_est
         self.reset_pid_gains()
         self.startup = False
 
@@ -902,7 +907,7 @@ class Controller(object):
                                 min((self.room_depth/2. - self.drone_radius),
                                 (elem))) for elem in self.drawn_pos_y]
                 self.drawn_pos_z = [
-                            max(- (self.drone_radius),
+                            max((self.drone_radius * 2.5),
                                 min((self.room_height - self.drone_radius),
                                 (elem))) for elem in self.drawn_pos_z]
 
@@ -1042,7 +1047,7 @@ class Controller(object):
                     y=max(- (self.room_depth/2. - self.drone_radius),
                           min((self.room_depth/2. - self.drone_radius),
                               (self.ctrl_l_pos.position.y + drag_offset.y))),
-                    z=max(self.drone_radius * 2,
+                    z=max(self.drone_radius * 3,
                           min(self.room_height - self.drone_radius,
                               (self.ctrl_l_pos.position.z + drag_offset.z))))
                 # Velocity setpoint
@@ -1206,6 +1211,7 @@ class Controller(object):
                             velocity=[self.ctrl_r_vel.linear.x,
                                       self.ctrl_r_vel.linear.y])]
         self.static_obst = []
+        self.reset_markers()
         self.config_mp()
         self.set_omg_goal(self.drone_pose_est)
         self.omg_index = 1

@@ -68,8 +68,8 @@ class KeyPress(object):
         rospy.Subscriber(
                     'vive_localization/ready', Empty, self.vive_localization_ready)
 
-        openvr.init(openvr.VRApplication_Other)
-        self.vrsystem = openvr.VRSystem()
+        self.vrsystem = openvr.init(openvr.VRApplication_Other)
+        # self.vrsystem = openvr.VRSystem()
         # Let system choose id's at first to make sure both controllers are
         # found.
         self.left_id, self.right_id = None, None
