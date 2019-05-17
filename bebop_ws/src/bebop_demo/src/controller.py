@@ -339,7 +339,7 @@ class Controller(object):
          self.real_yaw, measurement_valid) = self.get_pose_est()
 
         if not self.state == "fly to start":
-            self.reset_markers()
+            self.reset_traj_markers()
 
         self._goal = goal
         # Used to store calculation time of motionplanner.
@@ -580,7 +580,7 @@ class Controller(object):
         # When going to standby, remove markers in Rviz from previous task.
         # GEBEURT TOCH NOOIT?
         if state.data == "standby":
-            self.reset_markers()
+            self.reset_traj_markers()
 
     def hover(self, vel_desired=Twist()):
         '''Drone keeps itself in same location through a PID controller.
@@ -876,7 +876,7 @@ class Controller(object):
         '''Start building a trajectory according to the trajectory of the
         controller.
         '''
-        self.reset_markers()
+        self.reset_traj_markers()
         print highlight_green('---- Start drawing path with left Vive'
                               ' controller while holding trigger ----')
         self.stop_drawing = False
@@ -889,7 +889,7 @@ class Controller(object):
                 rospy.is_shutdown() or self.state_killed)):
             if self.draw:
                 # Erase previous markers in Rviz.
-                self.reset_markers()
+                self.reset_traj_markers()
 
                 while self.draw and not rospy.is_shutdown():
                     self.rate.sleep()
@@ -1211,7 +1211,7 @@ class Controller(object):
                             velocity=[self.ctrl_r_vel.linear.x,
                                       self.ctrl_r_vel.linear.y])]
         self.static_obst = []
-        self.reset_markers()
+        self.publish_obst_room(Empty)
         self.config_mp()
         self.set_omg_goal(self.drone_pose_est)
         self.omg_index = 1
@@ -1891,7 +1891,7 @@ class Controller(object):
         self.vhat_vector.color.a = 1.0
         self.vhat_vector.lifetime = rospy.Duration(0)
 
-    def reset_markers(self):
+    def reset_traj_markers(self):
         '''Resets all Rviz markers (except for obstacles).
         '''
         self._desired_path.points = []
@@ -2169,7 +2169,7 @@ class Controller(object):
                 # Append marker to marker array:
                 self.rviz_obst.markers.append(obstacle_marker)
 
-        self.reset_markers()
+        self.reset_traj_markers()
         self.obst_pub.publish(self.rviz_obst)
         self.draw_room_contours()
 

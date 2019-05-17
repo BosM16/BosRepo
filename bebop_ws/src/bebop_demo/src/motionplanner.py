@@ -52,6 +52,7 @@ class MotionPlanner(object):
                 difficult_obst
         """
         mp_configured = False
+        self._obstacles = []
         self.n_stat_obst = len(data.static_obstacles)
         self.n_dyn_obst = len(data.dyn_obstacles)
 
