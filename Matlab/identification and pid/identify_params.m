@@ -1,6 +1,6 @@
 % Identification of LTI models for x, y, z, yaw motion.
 clear variables
-close all
+% close all
 clc
 format long
 fprintf('============ Start identification ============== \n')

@@ -2,7 +2,7 @@
 % obstacles.
 
 % clear variables
-close all
+% close all
 clc
 set(0, 'DefaultLineLineWidth', 1.5);
 
@@ -17,8 +17,9 @@ set(0, 'DefaultLineLineWidth', 1.1);
 
 
 %% Load data
-files = dir('data_new/*.mat');
-% files = dir('data_new/tracking_performance_ff_fb_slow.mat');
+% files = dir('data_new/*.mat');
+% files = dir('data_new/tracking_performance_ff_fb_medium.mat');
+files = dir('data_new/gans_kaput.mat');
 
 
 % Plot computation times and calculate average and peak
@@ -94,7 +95,7 @@ for file = files'
         fprintf('===================================================\n')
         display(file.name)
         display(emag_peak)
-        display(emag_avg
+        display(emag_avg)
     end
 end
 
