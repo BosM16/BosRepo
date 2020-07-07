@@ -1,0 +1,10 @@
+<launch>
+
+  <node name="identification" pkg="bebop_demo" type="ourbot_id.py" output="screen"/>
+
+  <!--- Manual flight - Also safety measure -->
+  <include file="$(find vive_localization)/launch/localization.launch" />
+  <!-- <include file="$(find bebop_tools)/launch/joy_teleop.launch" /> -->
+  <!-- <include file="$(find bebop_driver)/launch/bebop_node.launch" /> -->
+
+</launch>

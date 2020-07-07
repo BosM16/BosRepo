@@ -20,13 +20,14 @@ zfig = false;
 % data = load("data/varying_accelerations");
 % data = load("data/kalman_check_1e_1");
 % data = load("data/kalman_check_1e_3");
+% data = load("data/kalman_check_1e_5");
 % data = load("data/vhat_data_check_xy");
 data = load("data/kalman_check_Qvel_1e1");
 
 xrange_all = [0,data.est_time(end)-data.est_time(1)];
 xrange_Qvel_1e1_low = [26.4,26.6];
 xrange_Qvel_1e1_high = [35.5,35.85];
-xrange_emin5 = [3.35,4.6];
+xrange_emin5 = [3.6,4.6];
 xrange_med = [8.44,8.8];
 xrange_high = [6.3,6.65];
 
@@ -177,7 +178,7 @@ end
 % Accelerations
 % =============
 fs = mean(1./dt_meas);
-f0 = 0.8;
+f0 = 0.4;
 fc = f0; % cutoff frequency (chosen)
 fcn = fc/(fs/2); % normalized cutoff frequency (as butter() accepts)
 nb = 3;
@@ -185,6 +186,11 @@ nb = 3;
 vel_x_filt = filtfilt(B,A,vel_FD_x);
 acc_FD_x = gradient(vel_x_filt)./dt_meas;
 acc_x_filt = filtfilt(B,A,acc_FD_x);
+
+acc_t_est = interp1(t_meas,acc_x_filt,t_est);
+accRMS = rms(acc_t_est(indexl:indexr));
+display(accRMS)
+
 
 if figures
         % only x
@@ -217,15 +223,17 @@ end
 
 %% Compare ZOH using only measurements VS AKF predictions
 reference = interp1(t_meas,data.meas_pos_x,t_est);
+reffilt = filtfilt(B,A,data.meas_pos_x);
 ZOH = interp1(t_meas,data.meas_pos_x,t_est,'previous');
 if figures
     % pos
     figure
     hold on
+    plot(t_est, reference, '--o', 'MarkerSize',3.0,'Color',black,'markerfacecolor',black)
     plot(t_meas, data.meas_pos_x,'o','MarkerSize',5.0,'Color',blue,'markerfacecolor',blue)
     plot(t_est,ZOH,'-x','MarkerSize',7.0,'Color',yellow)
     plot(t_est, data.est_pos_x, '-d','MarkerSize',3.0, 'Color',red,'markerfacecolor',red)
-    legend('Measurements','ZOH','AKF')
+    legend('Reference','Raw measurements','ZOH','AKF')
     xlim(xrange);
 %     ylim([-0.723, -0.7]);
     xlabel('Time (s)')
@@ -263,10 +271,12 @@ figure('Name','Comparison estimated vel with num diff vel')
 
 subplot(3,1,[1 2])
 hold on
+% plot(t_meas, reffilt, 'o','MarkerSize',5.0,'Color',black,'markerfacecolor',black)
 plot(t_meas, data.meas_pos_x,'o','MarkerSize',5.0,'Color',blue,'markerfacecolor',blue)
 plot(t_est,ZOH,'-x','MarkerSize',7.0,'Color',yellow)
 plot(t_est, data.est_pos_x, '-d','MarkerSize',3.0, 'Color',red,'markerfacecolor',red)
-legend('Measurements','ZOH','AKF')
+legend('Added noise measurements','ZOH','AKF')
+% legend('Raw measurements','Added noise measurements','ZOH','AKF')
 xlim(xrange);
 % ylim([-0.58, -0.47]);
 % ylim([-0.723, -0.7]);
@@ -330,6 +340,7 @@ if zfig
     set(gca,'FontSize',11)
 end
 
+ 
 
 
 
@@ -338,13 +349,11 @@ end
 
 
 
+%% ========================================================================
+%  ========================================================================
 
 
 
-
-
-
-%% 
 %% Load data
 % data = load("data/varying_accelerations");
 % data = load("data/kalman_check_1e_1");
@@ -551,10 +560,11 @@ if figures
     % pos
     figure
     hold on
+    plot(t_est, reference, '--o', 'MarkerSize',3.0,'Color',black,'markerfacecolor',black)
     plot(t_meas, data.meas_pos_x,'o','MarkerSize',5.0,'Color',blue,'markerfacecolor',blue)
     plot(t_est,ZOH,'-x','MarkerSize',7.0,'Color',yellow)
     plot(t_est, data.est_pos_x, '-d','MarkerSize',3.0, 'Color',red,'markerfacecolor',red)
-    legend('Measurements','ZOH','AKF')
+    legend('Reference','Raw measurements','ZOH','AKF')
     xlim(xrange);
 %     ylim([-0.723, -0.7]);
     xlabel('Time (s)')
